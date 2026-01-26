@@ -299,8 +299,8 @@ def search_designs(
     brand_name: Optional[str] = None,
     customer_name: Optional[str] = None,
     approval_status: Optional[str] = None,
-    shared_with_team: Optional[bool] = None,
-    created_by_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    include_shared: bool = False,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     skip: int = 0,
@@ -309,9 +309,26 @@ def search_designs(
     """
     Search designs with filters.
 
+    Shows only designs created by the user, unless include_shared is True,
+    in which case designs shared with the team are also included.
+
     Returns list of designs with brand name, customer name, and latest image path.
     """
     query = db.query(Design)
+
+    # Filter by user - show only user's designs, optionally include shared
+    if user_id:
+        if include_shared:
+            # Show user's designs OR designs shared with team
+            query = query.filter(
+                or_(
+                    Design.created_by_id == user_id,
+                    Design.shared_with_team == True
+                )
+            )
+        else:
+            # Show only user's designs
+            query = query.filter(Design.created_by_id == user_id)
 
     if brand_name:
         query = query.filter(Design.brand_name.ilike(f"%{brand_name}%"))
@@ -319,10 +336,6 @@ def search_designs(
         query = query.filter(Design.customer_name.ilike(f"%{customer_name}%"))
     if approval_status:
         query = query.filter(Design.approval_status == approval_status)
-    if shared_with_team is not None:
-        query = query.filter(Design.shared_with_team == shared_with_team)
-    if created_by_id:
-        query = query.filter(Design.created_by_id == created_by_id)
     if start_date:
         query = query.filter(Design.created_at >= start_date)
     if end_date:

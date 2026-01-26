@@ -2,6 +2,7 @@
 
 import base64
 import httpx
+import asyncio
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 
@@ -13,6 +14,10 @@ from ..config import get_settings
 from ..utils.prompt_builder import build_design_prompt, build_revision_prompt
 
 settings = get_settings()
+
+# Retry configuration for 503 errors
+MAX_RETRIES = 3
+RETRY_DELAY_SECONDS = 2
 
 
 def init_gemini():
@@ -177,18 +182,33 @@ async def generate_design_image(
         }
 
         async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                url,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-            )
+            # Retry logic for 503 errors (model overloaded)
+            last_error = None
+            for attempt in range(MAX_RETRIES):
+                response = await client.post(
+                    url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                )
 
-            if response.status_code != 200:
-                error_data = response.json() if response.headers.get("content-type", "").startswith("application/json") else {"error": response.text}
-                return {
-                    "success": False,
-                    "error": f"API error {response.status_code}: {error_data}",
-                }
+                if response.status_code == 503:
+                    last_error = "The model is overloaded. Please try again."
+                    if attempt < MAX_RETRIES - 1:
+                        await asyncio.sleep(RETRY_DELAY_SECONDS * (attempt + 1))
+                        continue
+                    return {
+                        "success": False,
+                        "error": f"API error 503: {last_error} (tried {MAX_RETRIES} times)",
+                    }
+
+                if response.status_code != 200:
+                    error_data = response.json() if response.headers.get("content-type", "").startswith("application/json") else {"error": response.text}
+                    return {
+                        "success": False,
+                        "error": f"API error {response.status_code}: {error_data}",
+                    }
+
+                break  # Success, exit retry loop
 
             result = response.json()
 
@@ -344,19 +364,35 @@ IMPORTANT: Keep everything else exactly the same. Only modify what is specifical
         }
 
         async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                url,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-            )
+            # Retry logic for 503 errors (model overloaded)
+            last_error = None
+            for attempt in range(MAX_RETRIES):
+                response = await client.post(
+                    url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                )
 
-            if response.status_code != 200:
-                error_data = response.json() if response.headers.get("content-type", "").startswith("application/json") else {"error": response.text}
-                return {
-                    "success": False,
-                    "prompt": revision_notes,
-                    "error": f"API error {response.status_code}: {error_data}",
-                }
+                if response.status_code == 503:
+                    last_error = "The model is overloaded. Please try again."
+                    if attempt < MAX_RETRIES - 1:
+                        await asyncio.sleep(RETRY_DELAY_SECONDS * (attempt + 1))
+                        continue
+                    return {
+                        "success": False,
+                        "prompt": revision_notes,
+                        "error": f"API error 503: {last_error} (tried {MAX_RETRIES} times)",
+                    }
+
+                if response.status_code != 200:
+                    error_data = response.json() if response.headers.get("content-type", "").startswith("application/json") else {"error": response.text}
+                    return {
+                        "success": False,
+                        "prompt": revision_notes,
+                        "error": f"API error {response.status_code}: {error_data}",
+                    }
+
+                break  # Success, exit retry loop
 
             result = response.json()
 

@@ -34,23 +34,22 @@ async def list_designs(
     brand_name: Optional[str] = Query(None),
     customer_name: Optional[str] = Query(None),
     approval_status: Optional[str] = Query(None),
-    shared_with_team: Optional[bool] = Query(None),
-    created_by_id: Optional[str] = Query(None),
+    include_shared: bool = Query(False, description="Include designs shared with your team"),
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
+    user=Depends(require_auth),
 ):
-    """List designs with optional filters."""
+    """List designs for the current user. Optionally include team-shared designs."""
     designs = search_designs(
         db=db,
         brand_name=brand_name,
         customer_name=customer_name,
         approval_status=approval_status,
-        shared_with_team=shared_with_team,
-        created_by_id=created_by_id,
+        user_id=str(user.id),
+        include_shared=include_shared,
         start_date=start_date,
         end_date=end_date,
         skip=skip,
