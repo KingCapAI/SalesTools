@@ -867,9 +867,9 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
             {/* Blank Hat */}
             <tr className="border-b border-gray-800">
               <td className="py-3 px-3 text-gray-100">Blank Hat</td>
-              <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.blank_price)}</td>
+              <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.blank_price || 0)}</td>
               <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-              <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.blank_price * result.quantity)}</td>
+              <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.blank_price || 0) * result.quantity)}</td>
             </tr>
 
             {/* Front Decoration */}
@@ -879,9 +879,9 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
                   <div>Front Decoration</div>
                   <div className="text-xs text-gray-400">{result.front_decoration}</div>
                 </td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.front_decoration_price)}</td>
+                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.front_decoration_price || 0)}</td>
                 <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.front_decoration_price * result.quantity)}</td>
+                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.front_decoration_price || 0) * result.quantity)}</td>
               </tr>
             )}
 
@@ -892,9 +892,9 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
                   <div>Left Side Decoration</div>
                   <div className="text-xs text-gray-400">{result.left_decoration}</div>
                 </td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.left_decoration_price)}</td>
+                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.left_decoration_price || 0)}</td>
                 <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.left_decoration_price * result.quantity)}</td>
+                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.left_decoration_price || 0) * result.quantity)}</td>
               </tr>
             )}
 
@@ -905,9 +905,9 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
                   <div>Right Side Decoration</div>
                   <div className="text-xs text-gray-400">{result.right_decoration}</div>
                 </td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.right_decoration_price)}</td>
+                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.right_decoration_price || 0)}</td>
                 <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.right_decoration_price * result.quantity)}</td>
+                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.right_decoration_price || 0) * result.quantity)}</td>
               </tr>
             )}
 
@@ -918,9 +918,9 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
                   <div>Back Decoration</div>
                   <div className="text-xs text-gray-400">{result.back_decoration}</div>
                 </td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.back_decoration_price)}</td>
+                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.back_decoration_price || 0)}</td>
                 <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.back_decoration_price * result.quantity)}</td>
+                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.back_decoration_price || 0) * result.quantity)}</td>
               </tr>
             )}
 
@@ -957,9 +957,9 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
             {/* Grand Total */}
             <tr className="bg-gray-800/50">
               <td className="py-3 px-3 text-gray-100 font-semibold">Total</td>
-              <td className="py-3 px-3 text-right text-gray-100 font-semibold">${formatCurrency(pb.per_piece_price)}</td>
+              <td className="py-3 px-3 text-right text-gray-100 font-semibold">${formatCurrency(pb.per_piece_price || 0)}</td>
               <td className="py-3 px-3 text-right text-gray-100 font-semibold">{result.quantity.toLocaleString()}</td>
-              <td className="py-3 px-3 text-right text-primary-400 font-semibold">${formatCurrency(pb.total)}</td>
+              <td className="py-3 px-3 text-right text-primary-400 font-semibold">${formatCurrency(pb.total || 0)}</td>
             </tr>
           </tbody>
         </table>
