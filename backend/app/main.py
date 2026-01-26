@@ -111,3 +111,12 @@ async def root():
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy"}
+
+
+@app.get("/debug/config")
+async def debug_config():
+    """Debug endpoint to check config values."""
+    return {
+        "frontend_url": settings.frontend_url,
+        "backend_url": settings.backend_url,
+    }
