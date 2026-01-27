@@ -18,6 +18,7 @@ settings = get_settings()
 # Retry configuration for 503 errors
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 2
+IMAGE_GENERATION_TIMEOUT = 300.0  # 5 minutes for image generation
 
 
 def init_gemini():
@@ -181,7 +182,7 @@ async def generate_design_image(
             }
         }
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=IMAGE_GENERATION_TIMEOUT) as client:
             # Retry logic for 503 errors (model overloaded)
             last_error = None
             for attempt in range(MAX_RETRIES):
@@ -363,7 +364,7 @@ IMPORTANT: Keep everything else exactly the same. Only modify what is specifical
             }
         }
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=IMAGE_GENERATION_TIMEOUT) as client:
             # Retry logic for 503 errors (model overloaded)
             last_error = None
             for attempt in range(MAX_RETRIES):
