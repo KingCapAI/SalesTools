@@ -162,6 +162,7 @@ export interface DesignCreate {
   material: Material;
   style_directions: StyleDirection[];
   custom_description?: string;
+  logo_path?: string;
 }
 
 export interface DesignUpdate {

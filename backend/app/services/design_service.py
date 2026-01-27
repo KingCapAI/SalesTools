@@ -67,7 +67,7 @@ async def create_design(
         material=design_data.material.value,
         style_direction=style_description,  # Combined style directions
         custom_description=design_data.custom_description,
-        logo_path=None,
+        logo_path=design_data.logo_path,  # Pass the uploaded logo
         brand_assets=[],
     )
 

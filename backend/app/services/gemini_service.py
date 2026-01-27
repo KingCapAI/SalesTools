@@ -137,10 +137,35 @@ async def generate_design_image(
         # Use Gemini 3 Pro Image (Nano Banana Pro) for professional asset production
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key={api_key}"
 
-        # Build parts list - include original image if this is a revision
+        # Build parts list - include logo and/or original image
         parts = []
 
-        # If we have an original image (revision mode), include it first
+        # If we have a logo, include it first so the model uses it
+        if logo_path:
+            try:
+                full_logo_path = Path(settings.upload_dir) / logo_path
+                if full_logo_path.exists():
+                    with open(full_logo_path, "rb") as f:
+                        logo_bytes = f.read()
+                    logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
+
+                    # Determine mime type
+                    mime_type = "image/png"
+                    if logo_path.lower().endswith((".jpg", ".jpeg")):
+                        mime_type = "image/jpeg"
+                    elif logo_path.lower().endswith(".svg"):
+                        mime_type = "image/svg+xml"
+
+                    parts.append({
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": logo_base64
+                        }
+                    })
+            except Exception as e:
+                print(f"Warning: Could not load logo: {e}")
+
+        # If we have an original image (revision mode), include it
         if original_image_path:
             try:
                 # Load the original image and convert to base64

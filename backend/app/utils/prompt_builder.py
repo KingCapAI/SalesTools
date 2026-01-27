@@ -87,7 +87,14 @@ The brand is **{client_name}**.
 
 The overall design vibe is **{style_desc}**.
 
-Design a hat with max 3 locations of decoration. You are allowed to decorate on the front, sides, and back of the hat. Front decoration methods can include flat embroidery, 3D embroidery, PVC patches, woven patches, faux leather patches, embroidered patches, sublimated patch, and 3D printing. Side and back decoration methods can include flat embroidery or woven patches. You can also sublimate a related design underneath the visor.
+IMPORTANT - LOGO USAGE: If a logo image has been provided with this prompt, you MUST use that exact logo in your design. Do NOT search for or use any other logos from the internet. Use ONLY the submitted logo artwork. If no logo is provided, create a simple text-based design using the brand name.
+
+DECORATION LOCATIONS - Use exactly 3 decoration locations:
+1. FRONT (required): Always include a decoration on the front of the hat. Methods: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
+2. SIDE (choose ONE): Decorate EITHER the left side OR right side (not both). Methods: flat embroidery or woven patch.
+3. BACK OR UNDERBRIM (choose ONE): Decorate EITHER the back of the hat OR underneath the visor bill (not both). Back methods: flat embroidery or woven patch. Underbrim: sublimated design.
+
+Do NOT add more than 3 decoration locations. Keep the design clean and professional.
 
 Professional studio lighting, white background, 4k resolution.
 

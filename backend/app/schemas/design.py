@@ -83,6 +83,7 @@ class DesignCreate(BaseModel):
     material: Material
     style_directions: List[StyleDirection]  # Up to 3 style directions
     custom_description: Optional[str] = None
+    logo_path: Optional[str] = None  # Path to uploaded logo file
 
     @field_validator('style_directions')
     @classmethod

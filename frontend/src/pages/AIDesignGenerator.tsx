@@ -76,6 +76,7 @@ export function AIDesignGenerator() {
         material: material,
         style_directions: styleDirections,
         custom_description: customDescription.trim() || undefined,
+        logo_path: logoPath,
       });
 
       // Navigate to design detail page
