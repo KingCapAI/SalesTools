@@ -12,13 +12,39 @@ interface QuoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   designId: string;
-  designNumber: number;
   existingQuote?: DesignQuote | null;
+  onSaved?: () => void;
+}
+
+// Form type definitions
+interface DomesticFormState {
+  style_number: string;
+  quantity: number;
+  front_decoration: string | null;
+  left_decoration: string | null;
+  right_decoration: string | null;
+  back_decoration: string | null;
+  shipping_speed: string;
+  include_rope: boolean;
+  num_dst_files: number;
+}
+
+interface OverseasFormState {
+  hat_type: string;
+  quantity: number;
+  front_decoration: string | null;
+  left_decoration: string | null;
+  right_decoration: string | null;
+  back_decoration: string | null;
+  visor_decoration: string | null;
+  design_addons: string[];
+  accessories: string[];
+  shipping_method: string;
 }
 
 type QuoteType = 'domestic' | 'overseas';
 
-export function QuoteModal({ isOpen, onClose, designId, designNumber, existingQuote }: QuoteModalProps) {
+export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }: QuoteModalProps) {
   const [quoteType, setQuoteType] = useState<QuoteType>(existingQuote?.quote_type || 'domestic');
   const [options, setOptions] = useState<QuoteOptions | null>(null);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
@@ -28,29 +54,29 @@ export function QuoteModal({ isOpen, onClose, designId, designNumber, existingQu
   const updateQuote = useUpdateDesignQuote();
 
   // Domestic form state
-  const [domesticForm, setDomesticForm] = useState({
+  const [domesticForm, setDomesticForm] = useState<DomesticFormState>({
     style_number: existingQuote?.style_number || '',
     quantity: existingQuote?.quantity || 144,
-    front_decoration: existingQuote?.front_decoration || null as string | null,
-    left_decoration: existingQuote?.left_decoration || null as string | null,
-    right_decoration: existingQuote?.right_decoration || null as string | null,
-    back_decoration: existingQuote?.back_decoration || null as string | null,
+    front_decoration: existingQuote?.front_decoration || null,
+    left_decoration: existingQuote?.left_decoration || null,
+    right_decoration: existingQuote?.right_decoration || null,
+    back_decoration: existingQuote?.back_decoration || null,
     shipping_speed: existingQuote?.shipping_speed || 'Standard (5-7 Production Days)',
     include_rope: existingQuote?.include_rope || false,
     num_dst_files: existingQuote?.num_dst_files || 1,
   });
 
   // Overseas form state
-  const [overseasForm, setOverseasForm] = useState({
+  const [overseasForm, setOverseasForm] = useState<OverseasFormState>({
     hat_type: existingQuote?.hat_type || 'Classic',
     quantity: existingQuote?.quantity || 5040,
-    front_decoration: existingQuote?.front_decoration || null as string | null,
-    left_decoration: existingQuote?.left_decoration || null as string | null,
-    right_decoration: existingQuote?.right_decoration || null as string | null,
-    back_decoration: existingQuote?.back_decoration || null as string | null,
-    visor_decoration: existingQuote?.visor_decoration || null as string | null,
-    design_addons: existingQuote?.design_addons || [] as string[],
-    accessories: existingQuote?.accessories || [] as string[],
+    front_decoration: existingQuote?.front_decoration || null,
+    left_decoration: existingQuote?.left_decoration || null,
+    right_decoration: existingQuote?.right_decoration || null,
+    back_decoration: existingQuote?.back_decoration || null,
+    visor_decoration: existingQuote?.visor_decoration || null,
+    design_addons: existingQuote?.design_addons || [],
+    accessories: existingQuote?.accessories || [],
     shipping_method: existingQuote?.shipping_method || 'FOB CA',
   });
 
@@ -140,6 +166,7 @@ export function QuoteModal({ isOpen, onClose, designId, designNumber, existingQu
 
     try {
       await createQuote.mutateAsync({ designId, data });
+      onSaved?.();
       onClose();
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to save quote');
@@ -183,7 +210,7 @@ export function QuoteModal({ isOpen, onClose, designId, designNumber, existingQu
             <h2 className="text-lg font-semibold text-gray-100">
               {existingQuote ? 'Edit Quote' : 'Create Quote'}
             </h2>
-            <p className="text-sm text-gray-400">Design #{designNumber}</p>
+            <p className="text-sm text-gray-400">Configure quote details</p>
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-200">
             <X className="w-5 h-5" />
@@ -273,18 +300,8 @@ export function QuoteModal({ isOpen, onClose, designId, designNumber, existingQu
 
 // Domestic Form Fields
 interface DomesticFormFieldsProps {
-  form: {
-    style_number: string;
-    quantity: number;
-    front_decoration: string | null;
-    left_decoration: string | null;
-    right_decoration: string | null;
-    back_decoration: string | null;
-    shipping_speed: string;
-    include_rope: boolean;
-    num_dst_files: number;
-  };
-  setForm: React.Dispatch<React.SetStateAction<typeof form>>;
+  form: DomesticFormState;
+  setForm: React.Dispatch<React.SetStateAction<DomesticFormState>>;
   options: QuoteOptions['domestic'];
 }
 
@@ -446,19 +463,8 @@ function DomesticFormFields({ form, setForm, options }: DomesticFormFieldsProps)
 
 // Overseas Form Fields
 interface OverseasFormFieldsProps {
-  form: {
-    hat_type: string;
-    quantity: number;
-    front_decoration: string | null;
-    left_decoration: string | null;
-    right_decoration: string | null;
-    back_decoration: string | null;
-    visor_decoration: string | null;
-    design_addons: string[];
-    accessories: string[];
-    shipping_method: string;
-  };
-  setForm: React.Dispatch<React.SetStateAction<typeof form>>;
+  form: OverseasFormState;
+  setForm: React.Dispatch<React.SetStateAction<OverseasFormState>>;
   options: QuoteOptions['overseas'];
   toggleDesignAddon: (addon: string) => void;
   toggleAccessory: (accessory: string) => void;
