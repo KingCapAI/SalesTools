@@ -6,7 +6,8 @@ import { DesignPreview } from '../components/design-generator/DesignPreview';
 import { VersionHistory } from '../components/design-generator/VersionHistory';
 import { RevisionChat } from '../components/design-generator/RevisionChat';
 import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign } from '../hooks/useDesigns';
-import { ArrowLeft, Plus, Share2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Share2, CheckCircle, XCircle, Clock, Mail } from 'lucide-react';
+import { uploadsApi } from '../api/uploads';
 import type { ApprovalStatus } from '../types/api';
 
 const approvalStatusConfig: Record<ApprovalStatus, { label: string; icon: typeof Clock; color: string; bgColor: string }> = {
@@ -95,6 +96,50 @@ export function DesignDetail() {
     refetch();
   };
 
+  const handleEmailDesign = async () => {
+    if (!selectedVersion?.image_path) {
+      alert('No design image available to share');
+      return;
+    }
+
+    const designName = `King Cap Design ${design.design_number}`;
+    const fileName = `${designName}.png`;
+
+    try {
+      // Download the image with the correct filename
+      const imageUrl = uploadsApi.getFileUrl(selectedVersion.image_path);
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      // Open Outlook with pre-filled email
+      const subject = encodeURIComponent(`${designName} - ${design.brand_name}`);
+      const body = encodeURIComponent(
+        `Please find attached ${designName} for ${design.brand_name}.\n\n` +
+        `Hat Style: ${design.hat_style.replace(/-/g, ' ')}\n` +
+        `Material: ${design.material.replace(/-/g, ' ')}\n` +
+        `Style: ${design.style_directions.join(', ')}\n\n` +
+        `Please attach the downloaded file "${fileName}" to this email.\n\n` +
+        `Best regards,\nKing Cap`
+      );
+
+      // Use mailto to open default email client (Outlook if set as default)
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    } catch (error) {
+      console.error('Error sharing design:', error);
+      alert('Failed to prepare design for sharing');
+    }
+  };
+
   const handleSetApprovalStatus = async (status: ApprovalStatus) => {
     if (!designId) return;
     await updateDesign.mutateAsync({
@@ -141,13 +186,22 @@ export function DesignDetail() {
           </div>
           <div className="flex items-center gap-2">
             <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEmailDesign}
+              disabled={!selectedVersion?.image_path}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Email
+            </Button>
+            <Button
               variant={design.shared_with_team ? 'secondary' : 'outline'}
               size="sm"
               onClick={handleToggleShare}
               disabled={updateDesign.isPending}
             >
               <Share2 className="w-4 h-4 mr-2" />
-              {design.shared_with_team ? 'Shared' : 'Share'}
+              {design.shared_with_team ? 'Shared' : 'Share with Team'}
             </Button>
             <Link to="/ai-design-generator/new">
               <Button>
