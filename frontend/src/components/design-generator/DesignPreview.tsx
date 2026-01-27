@@ -1,5 +1,4 @@
-import { Download, AlertCircle, Loader } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { AlertCircle, Loader } from 'lucide-react';
 import { uploadsApi } from '../../api/uploads';
 import type { DesignVersion } from '../../types/api';
 
@@ -10,18 +9,6 @@ interface DesignPreviewProps {
 }
 
 export function DesignPreview({ version, designNumber, isLoading }: DesignPreviewProps) {
-  const handleDownload = () => {
-    if (!version?.image_path) return;
-
-    const url = uploadsApi.getFileUrl(version.image_path);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Design_${designNumber}_v${version.version_number}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   if (isLoading) {
     return (
       <div className="bg-gray-50 rounded-xl p-8 flex flex-col items-center justify-center min-h-[400px]">
@@ -72,19 +59,13 @@ export function DesignPreview({ version, designNumber, isLoading }: DesignPrevie
 
   return (
     <div className="bg-gray-50 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-semibold text-gray-900">
-            Design #{designNumber}v{version.version_number}
-          </h3>
-          <p className="text-sm text-gray-500">
-            Generated {new Date(version.created_at).toLocaleString()}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={handleDownload}>
-          <Download className="w-4 h-4 mr-2" />
-          Download
-        </Button>
+      <div className="mb-4">
+        <h3 className="font-semibold text-gray-900">
+          Design #{designNumber}v{version.version_number}
+        </h3>
+        <p className="text-sm text-gray-500">
+          Generated {new Date(version.created_at).toLocaleString()}
+        </p>
       </div>
 
       {imageUrl ? (

@@ -6,7 +6,7 @@ import { DesignPreview } from '../components/design-generator/DesignPreview';
 import { VersionHistory } from '../components/design-generator/VersionHistory';
 import { RevisionChat } from '../components/design-generator/RevisionChat';
 import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign } from '../hooks/useDesigns';
-import { ArrowLeft, Plus, Share2, CheckCircle, XCircle, Clock, Mail } from 'lucide-react';
+import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
 import { uploadsApi } from '../api/uploads';
 import type { ApprovalStatus } from '../types/api';
 
@@ -87,18 +87,9 @@ export function DesignDetail() {
     }
   };
 
-  const handleToggleShare = async () => {
-    if (!designId) return;
-    await updateDesign.mutateAsync({
-      id: designId,
-      data: { shared_with_team: !design.shared_with_team },
-    });
-    refetch();
-  };
-
-  const handleEmailDesign = async () => {
+  const handleDownload = async () => {
     if (!selectedVersion?.image_path) {
-      alert('No design image available to share');
+      alert('No design image available to download');
       return;
     }
 
@@ -106,12 +97,17 @@ export function DesignDetail() {
     const fileName = `${designName}.png`;
 
     try {
-      // Download the image with the correct filename
       const imageUrl = uploadsApi.getFileUrl(selectedVersion.image_path);
-      const response = await fetch(imageUrl);
+      const response = await fetch(imageUrl, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+
       const blob = await response.blob();
 
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -120,23 +116,9 @@ export function DesignDetail() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-
-      // Open Outlook with pre-filled email
-      const subject = encodeURIComponent(`${designName} - ${design.brand_name}`);
-      const body = encodeURIComponent(
-        `Please find attached ${designName} for ${design.brand_name}.\n\n` +
-        `Hat Style: ${design.hat_style.replace(/-/g, ' ')}\n` +
-        `Material: ${design.material.replace(/-/g, ' ')}\n` +
-        `Style: ${design.style_directions.join(', ')}\n\n` +
-        `Please attach the downloaded file "${fileName}" to this email.\n\n` +
-        `Best regards,\nKing Cap`
-      );
-
-      // Use mailto to open default email client (Outlook if set as default)
-      window.location.href = `mailto:?subject=${subject}&body=${body}`;
     } catch (error) {
-      console.error('Error sharing design:', error);
-      alert('Failed to prepare design for sharing');
+      console.error('Error downloading design:', error);
+      alert('Failed to download design');
     }
   };
 
@@ -172,12 +154,6 @@ export function DesignDetail() {
                   <StatusIcon className="w-3 h-3" />
                   {statusConfig.label}
                 </span>
-                {design.shared_with_team && (
-                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-900/30 text-blue-400 flex items-center gap-1">
-                    <Share2 className="w-3 h-3" />
-                    Shared
-                  </span>
-                )}
               </div>
               <p className="text-gray-400">
                 {design.brand_name} • {design.style_directions.join(', ')} • {design.hat_style.replace(/-/g, ' ')}
@@ -188,20 +164,11 @@ export function DesignDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleEmailDesign}
+              onClick={handleDownload}
               disabled={!selectedVersion?.image_path}
             >
-              <Mail className="w-4 h-4 mr-2" />
-              Email
-            </Button>
-            <Button
-              variant={design.shared_with_team ? 'secondary' : 'outline'}
-              size="sm"
-              onClick={handleToggleShare}
-              disabled={updateDesign.isPending}
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              {design.shared_with_team ? 'Shared' : 'Share with Team'}
+              <Download className="w-4 h-4 mr-2" />
+              Download
             </Button>
             <Link to="/ai-design-generator/new">
               <Button>
