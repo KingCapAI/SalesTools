@@ -154,12 +154,15 @@ async def export_domestic_quote(request: DomesticQuoteRequest):
 
     # Quote details
     row = 3
-    details = [
+    details = []
+    if request.design_number:
+        details.append(("Design #:", request.design_number))
+    details.extend([
         ("Style:", f"{result['style_number']} - {result['style_name']}"),
         ("Collection:", result["collection"]),
         ("Quantity:", f"{result['quantity']:,}"),
         ("Shipping:", result["shipping_speed"]),
-    ]
+    ])
     for label, value in details:
         ws[f"A{row}"] = label
         ws[f"A{row}"].font = Font(bold=True)
@@ -228,7 +231,8 @@ async def export_domestic_quote(request: DomesticQuoteRequest):
     wb.save(output)
     output.seek(0)
 
-    filename = f"domestic_quote_{result['style_number']}_{result['quantity']}.xlsx"
+    design_part = f"_{request.design_number}" if request.design_number else ""
+    filename = f"domestic_quote{design_part}_{result['style_number']}_{result['quantity']}.xlsx"
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -267,10 +271,13 @@ async def export_overseas_quote(request: OverseasQuoteRequest):
 
     # Quote details
     row = 3
-    details = [
+    details = []
+    if request.design_number:
+        details.append(("Design #:", request.design_number))
+    details.extend([
         ("Hat Type:", result["hat_type"]),
         ("Shipping:", result["shipping_method"]),
-    ]
+    ])
 
     # Add decoration details
     def is_valid(val):
@@ -352,7 +359,8 @@ async def export_overseas_quote(request: OverseasQuoteRequest):
     wb.save(output)
     output.seek(0)
 
-    filename = f"overseas_quote_{result['hat_type'].lower().replace(' ', '_')}.xlsx"
+    design_part = f"_{request.design_number}" if request.design_number else ""
+    filename = f"overseas_quote{design_part}_{result['hat_type'].lower().replace(' ', '_')}.xlsx"
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
