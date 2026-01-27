@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from .config import get_settings
 from .database import init_db, SessionLocal
 from .models import Team
-from .routers import auth, customers, brands, designs, uploads, ai, users, quotes
+from .routers import auth, customers, brands, designs, uploads, ai, users, quotes, design_quotes
 from .routers.uploads import uploads_router
 
 settings = get_settings()
@@ -98,6 +98,7 @@ app.include_router(users.router, prefix="/api")
 app.include_router(customers.router, prefix="/api")
 app.include_router(brands.router, prefix="/api")
 app.include_router(designs.router, prefix="/api")
+app.include_router(design_quotes.router, prefix="/api")
 app.include_router(uploads.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(quotes.router, prefix="/api")

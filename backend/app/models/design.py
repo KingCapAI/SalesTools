@@ -30,6 +30,7 @@ class Design(Base):
     created_by = relationship("User", back_populates="designs")
     versions = relationship("DesignVersion", back_populates="design", cascade="all, delete-orphan")
     chats = relationship("DesignChat", back_populates="design", cascade="all, delete-orphan")
+    quote = relationship("DesignQuote", back_populates="design", uselist=False, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Design #{self.design_number} for {self.brand_name}>"
@@ -72,3 +73,51 @@ class DesignChat(Base):
 
     def __repr__(self):
         return f"<DesignChat {'user' if self.is_user else 'ai'} for design {self.design_id}>"
+
+
+class DesignQuote(Base):
+    """Quote associated with a design - stores quote parameters and calculated results."""
+    __tablename__ = "design_quotes"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    design_id = Column(String(36), ForeignKey("designs.id"), nullable=False, unique=True, index=True)
+
+    # Quote type
+    quote_type = Column(String(20), nullable=False)  # "domestic" or "overseas"
+
+    # Common fields
+    quantity = Column(Integer, nullable=False)
+    front_decoration = Column(String(100), nullable=True)
+    left_decoration = Column(String(100), nullable=True)
+    right_decoration = Column(String(100), nullable=True)
+    back_decoration = Column(String(100), nullable=True)
+
+    # Domestic-specific fields
+    style_number = Column(String(50), nullable=True)
+    shipping_speed = Column(String(100), nullable=True)
+    include_rope = Column(Boolean, nullable=True, default=False)
+    num_dst_files = Column(Integer, nullable=True, default=1)
+
+    # Overseas-specific fields
+    hat_type = Column(String(50), nullable=True)
+    visor_decoration = Column(String(100), nullable=True)
+    design_addons = Column(Text, nullable=True)  # JSON string of add-ons list
+    accessories = Column(Text, nullable=True)    # JSON string of accessories list
+    shipping_method = Column(String(100), nullable=True)
+
+    # Cached calculation results (for quick display)
+    cached_price_breaks = Column(Text, nullable=True)  # JSON string of price breaks
+    cached_total = Column(Integer, nullable=True)      # Total in cents
+    cached_per_piece = Column(Integer, nullable=True)  # Per-piece in cents
+
+    # Metadata
+    created_by_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    design = relationship("Design", back_populates="quote")
+    created_by = relationship("User")
+
+    def __repr__(self):
+        return f"<DesignQuote {self.quote_type} for design {self.design_id}>"

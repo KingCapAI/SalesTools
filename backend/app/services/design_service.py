@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 
-from ..models import Design, DesignVersion, DesignChat
+from ..models import Design, DesignVersion, DesignChat, DesignQuote
 from ..schemas.design import DesignCreate, DesignUpdate, RevisionCreate
 from .gemini_service import generate_design, generate_revision
 from .storage_service import save_generated_image
@@ -255,6 +255,19 @@ def get_design_with_versions(db: Session, design_id: str) -> Optional[Dict[str, 
     # Parse style_directions from comma-separated string to list
     style_directions = design.style_directions.split(",") if design.style_directions else []
 
+    # Get quote summary if exists
+    quote = db.query(DesignQuote).filter(DesignQuote.design_id == design_id).first()
+    quote_summary = None
+    if quote:
+        quote_summary = {
+            "id": quote.id,
+            "quote_type": quote.quote_type,
+            "quantity": quote.quantity,
+            "cached_total": quote.cached_total / 100 if quote.cached_total else None,
+            "cached_per_piece": quote.cached_per_piece / 100 if quote.cached_per_piece else None,
+            "updated_at": quote.updated_at,
+        }
+
     return {
         "id": design.id,
         "customer_name": design.customer_name,
@@ -274,6 +287,7 @@ def get_design_with_versions(db: Session, design_id: str) -> Optional[Dict[str, 
         "updated_at": design.updated_at,
         "versions": design.versions,
         "chats": design.chats,
+        "quote_summary": quote_summary,
     }
 
 
@@ -359,6 +373,19 @@ def search_designs(
         # Parse style_directions from comma-separated string to list
         style_directions = design.style_directions.split(",") if design.style_directions else []
 
+        # Get quote summary if exists
+        quote = db.query(DesignQuote).filter(DesignQuote.design_id == design.id).first()
+        quote_summary = None
+        if quote:
+            quote_summary = {
+                "id": quote.id,
+                "quote_type": quote.quote_type,
+                "quantity": quote.quantity,
+                "cached_total": quote.cached_total / 100 if quote.cached_total else None,
+                "cached_per_piece": quote.cached_per_piece / 100 if quote.cached_per_piece else None,
+                "updated_at": quote.updated_at,
+            }
+
         results.append({
             "id": design.id,
             "customer_name": design.customer_name,
@@ -375,6 +402,7 @@ def search_designs(
             "created_at": design.created_at,
             "updated_at": design.updated_at,
             "latest_image_path": latest_version.image_path if latest_version else None,
+            "quote_summary": quote_summary,
         })
 
     return results

@@ -105,6 +105,19 @@ class RevisionCreate(BaseModel):
     revision_notes: str
 
 
+class DesignQuoteSummaryResponse(BaseModel):
+    """Minimal quote info for design responses."""
+    id: str
+    quote_type: str
+    quantity: int
+    cached_total: Optional[float] = None
+    cached_per_piece: Optional[float] = None
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class DesignResponse(BaseModel):
     id: str
     customer_name: str
@@ -124,6 +137,7 @@ class DesignResponse(BaseModel):
     updated_at: datetime
     versions: List[DesignVersionResponse] = []
     chats: List[DesignChatResponse] = []
+    quote_summary: Optional[DesignQuoteSummaryResponse] = None
 
     class Config:
         from_attributes = True
@@ -145,6 +159,7 @@ class DesignListResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     latest_image_path: Optional[str] = None
+    quote_summary: Optional[DesignQuoteSummaryResponse] = None
 
     class Config:
         from_attributes = True

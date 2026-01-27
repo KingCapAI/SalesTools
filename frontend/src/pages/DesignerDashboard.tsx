@@ -15,6 +15,7 @@ import {
   XCircle,
   Clock,
   ArrowLeft,
+  Calculator,
 } from 'lucide-react';
 import type { DesignListItem, ApprovalStatus } from '../types/api';
 
@@ -238,6 +239,14 @@ function DesignCard({ design, onDelete, isDeleting }: DesignCardProps) {
           <StatusIcon className="w-3 h-3" />
           {statusConfig.label}
         </div>
+
+        {/* Quote Badge */}
+        {design.quote_summary?.cached_per_piece && (
+          <div className="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-primary-600/90 text-white">
+            <Calculator className="w-3 h-3" />
+            ${design.quote_summary.cached_per_piece.toFixed(2)}/pc
+          </div>
+        )}
       </div>
 
       {/* Content */}

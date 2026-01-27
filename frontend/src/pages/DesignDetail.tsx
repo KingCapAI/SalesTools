@@ -5,8 +5,11 @@ import { Button } from '../components/ui/Button';
 import { DesignPreview } from '../components/design-generator/DesignPreview';
 import { VersionHistory } from '../components/design-generator/VersionHistory';
 import { RevisionChat } from '../components/design-generator/RevisionChat';
+import { QuoteModal } from '../components/design-generator/QuoteModal';
+import { QuoteSummary } from '../components/design-generator/QuoteSummary';
 import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign } from '../hooks/useDesigns';
-import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
+import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
+import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download, Calculator } from 'lucide-react';
 import { uploadsApi } from '../api/uploads';
 import type { ApprovalStatus } from '../types/api';
 
@@ -24,7 +27,14 @@ export function DesignDetail() {
   const addChatMessage = useAddChatMessage();
   const updateDesign = useUpdateDesign();
 
+  // Quote hooks
+  const { data: designQuote, refetch: refetchQuote } = useDesignQuote(designId || '');
+  const deleteQuote = useDeleteDesignQuote();
+  const exportQuote = useExportDesignWithQuote();
+
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   if (isLoading) {
     return (
@@ -131,6 +141,34 @@ export function DesignDetail() {
     refetch();
   };
 
+  const handleDeleteQuote = async () => {
+    if (!designId) return;
+    if (!confirm('Are you sure you want to delete this quote?')) return;
+    await deleteQuote.mutateAsync(designId);
+    refetchQuote();
+  };
+
+  const handleExportQuote = async (format: 'xlsx' | 'pdf') => {
+    if (!designId) return;
+    setIsExporting(true);
+    try {
+      const blob = await exportQuote.mutateAsync({ designId, format });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `design_${design?.design_number}_quote.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting quote:', error);
+      alert('Failed to export quote');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black">
       <Header />
@@ -161,6 +199,14 @@ export function DesignDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setQuoteModalOpen(true)}
+            >
+              <Calculator className="w-4 h-4 mr-2" />
+              {designQuote ? 'Edit Quote' : 'Quote'}
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -228,6 +274,18 @@ export function DesignDetail() {
               </div>
             </div>
 
+            {/* Quote Summary */}
+            <div className="card">
+              <QuoteSummary
+                quote={designQuote || design.quote_summary || null}
+                onEdit={() => setQuoteModalOpen(true)}
+                onDelete={handleDeleteQuote}
+                onExport={handleExportQuote}
+                isDeleting={deleteQuote.isPending}
+                isExporting={isExporting}
+              />
+            </div>
+
             {/* Version History */}
             <div className="card">
               <VersionHistory
@@ -250,6 +308,20 @@ export function DesignDetail() {
           </div>
         </div>
       </main>
+
+      {/* Quote Modal */}
+      {designId && (
+        <QuoteModal
+          isOpen={quoteModalOpen}
+          onClose={() => setQuoteModalOpen(false)}
+          designId={designId}
+          existingQuote={designQuote || undefined}
+          onSaved={() => {
+            refetchQuote();
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 }

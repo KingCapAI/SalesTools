@@ -79,6 +79,15 @@ export interface BrandScrapedData {
   recommendations?: string;
 }
 
+export interface QuoteSummary {
+  id: string;
+  quote_type: 'domestic' | 'overseas';
+  quantity: number;
+  cached_total: number | null;
+  cached_per_piece: number | null;
+  updated_at: string;
+}
+
 export interface Design {
   id: string;
   customer_name: string;
@@ -98,6 +107,7 @@ export interface Design {
   updated_at: string;
   versions: DesignVersion[];
   chats: DesignChat[];
+  quote_summary?: QuoteSummary | null;
 }
 
 export interface DesignVersion {
@@ -138,6 +148,7 @@ export interface DesignListItem {
   created_at: string;
   updated_at: string;
   latest_image_path?: string;
+  quote_summary?: QuoteSummary | null;
 }
 
 // Request types
