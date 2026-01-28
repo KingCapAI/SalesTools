@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { quotesApi } from '../../api/quotes';
 import { useCreateDesignQuote, useUpdateDesignQuote } from '../../hooks/useDesignQuotes';
-import type { QuoteOptions } from '../../api/quotes';
+import type { QuoteOptions, DomesticQuoteResponse, OverseasQuoteResponse } from '../../api/quotes';
 import type { DesignQuote, DesignQuoteCreate } from '../../api/designQuotes';
 import clsx from 'clsx';
 
@@ -44,11 +44,26 @@ interface OverseasFormState {
 
 type QuoteType = 'domestic' | 'overseas';
 
+// Helper function to format currency with commas
+function formatCurrency(value: number): string {
+  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Helper to check if a decoration value is valid (not null, empty, or "0")
+function isValidDecoration(value: string | null | undefined): boolean {
+  return typeof value === 'string' && value.trim().length > 0 && value !== '0';
+}
+
 export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }: QuoteModalProps) {
   const [quoteType, setQuoteType] = useState<QuoteType>(existingQuote?.quote_type || 'domestic');
   const [options, setOptions] = useState<QuoteOptions | null>(null);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+  const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Quote results
+  const [domesticResult, setDomesticResult] = useState<DomesticQuoteResponse | null>(null);
+  const [overseasResult, setOverseasResult] = useState<OverseasQuoteResponse | null>(null);
 
   const createQuote = useCreateDesignQuote();
   const updateQuote = useUpdateDesignQuote();
@@ -69,7 +84,7 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }
   // Overseas form state
   const [overseasForm, setOverseasForm] = useState<OverseasFormState>({
     hat_type: existingQuote?.hat_type || 'Classic',
-    quantity: existingQuote?.quantity || 5040,
+    quantity: 5040, // Always use max to get all price breaks
     front_decoration: existingQuote?.front_decoration || null,
     left_decoration: existingQuote?.left_decoration || null,
     right_decoration: existingQuote?.right_decoration || null,
@@ -120,7 +135,7 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }
       } else {
         setOverseasForm({
           hat_type: existingQuote.hat_type || 'Classic',
-          quantity: existingQuote.quantity,
+          quantity: 5040, // Always use max to get all price breaks
           front_decoration: existingQuote.front_decoration,
           left_decoration: existingQuote.left_decoration,
           right_decoration: existingQuote.right_decoration,
@@ -133,6 +148,54 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }
       }
     }
   }, [existingQuote]);
+
+  // Clear results when switching quote type
+  useEffect(() => {
+    setDomesticResult(null);
+    setOverseasResult(null);
+  }, [quoteType]);
+
+  const handleCalculate = async () => {
+    setIsCalculating(true);
+    setError(null);
+
+    try {
+      if (quoteType === 'domestic') {
+        const result = await quotesApi.calculateDomestic({
+          style_number: domesticForm.style_number,
+          quantity: domesticForm.quantity,
+          front_decoration: domesticForm.front_decoration,
+          left_decoration: domesticForm.left_decoration,
+          right_decoration: domesticForm.right_decoration,
+          back_decoration: domesticForm.back_decoration,
+          shipping_speed: domesticForm.shipping_speed,
+          include_rope: domesticForm.include_rope,
+          num_dst_files: domesticForm.num_dst_files,
+        });
+        setDomesticResult(result);
+        setOverseasResult(null);
+      } else {
+        const result = await quotesApi.calculateOverseas({
+          hat_type: overseasForm.hat_type,
+          quantity: overseasForm.quantity,
+          front_decoration: overseasForm.front_decoration,
+          left_decoration: overseasForm.left_decoration,
+          right_decoration: overseasForm.right_decoration,
+          back_decoration: overseasForm.back_decoration,
+          visor_decoration: overseasForm.visor_decoration,
+          design_addons: overseasForm.design_addons,
+          accessories: overseasForm.accessories,
+          shipping_method: overseasForm.shipping_method,
+        });
+        setOverseasResult(result);
+        setDomesticResult(null);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to calculate quote');
+    } finally {
+      setIsCalculating(false);
+    }
+  };
 
   const handleSave = async () => {
     setError(null);
@@ -197,20 +260,22 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }
 
   if (!isOpen) return null;
 
+  const hasResults = domesticResult || overseasResult;
+
   return (
     <div className="fixed inset-0 z-50 flex">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/60" onClick={onClose} />
 
       {/* Modal */}
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-gray-900 shadow-xl overflow-y-auto">
+      <div className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-gray-900 shadow-xl overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between z-10">
           <div>
             <h2 className="text-lg font-semibold text-gray-100">
               {existingQuote ? 'Edit Quote' : 'Create Quote'}
             </h2>
-            <p className="text-sm text-gray-400">Configure quote details</p>
+            <p className="text-sm text-gray-400">Configure quote details and calculate pricing</p>
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-200">
             <X className="w-5 h-5" />
@@ -275,6 +340,22 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }
               ) : null}
 
               {error && <p className="text-red-500 text-sm">{error}</p>}
+
+              {/* Calculate Button */}
+              <Button
+                onClick={handleCalculate}
+                isLoading={isCalculating}
+                variant="secondary"
+                className="w-full"
+                size="lg"
+              >
+                <Calculator className="w-5 h-5 mr-2" />
+                Calculate Quote
+              </Button>
+
+              {/* Results Display */}
+              {domesticResult && <DomesticResults result={domesticResult} />}
+              {overseasResult && <OverseasResults result={overseasResult} />}
             </>
           )}
         </div>
@@ -287,6 +368,7 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }
           <Button
             onClick={handleSave}
             isLoading={createQuote.isPending || updateQuote.isPending}
+            disabled={!hasResults}
             className="flex-1"
           >
             <Calculator className="w-4 h-4 mr-2" />
@@ -356,7 +438,7 @@ function DomesticFormFields({ form, setForm, options }: DomesticFormFieldsProps)
           onChange={(e) => setForm((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 24 }))}
           min={24}
         />
-        <p className="text-xs text-gray-500 mt-1">Min: 24</p>
+        <p className="text-xs text-gray-500 mt-1">Min: 24. Quantity breaks: {options.quantity_breaks.join(', ')}</p>
       </div>
 
       {/* Decorations */}
@@ -364,7 +446,7 @@ function DomesticFormFields({ form, setForm, options }: DomesticFormFieldsProps)
         <label className="label mb-2">Decoration Methods</label>
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Front</label>
+            <label className="text-xs text-gray-400 mb-1 block">Front (Primary)</label>
             <select
               value={form.front_decoration || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, front_decoration: e.target.value || null }))}
@@ -377,7 +459,7 @@ function DomesticFormFields({ form, setForm, options }: DomesticFormFieldsProps)
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Left</label>
+            <label className="text-xs text-gray-400 mb-1 block">Left Side</label>
             <select
               value={form.left_decoration || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, left_decoration: e.target.value || null }))}
@@ -390,7 +472,7 @@ function DomesticFormFields({ form, setForm, options }: DomesticFormFieldsProps)
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Right</label>
+            <label className="text-xs text-gray-400 mb-1 block">Right Side</label>
             <select
               value={form.right_decoration || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, right_decoration: e.target.value || null }))}
@@ -420,7 +502,7 @@ function DomesticFormFields({ form, setForm, options }: DomesticFormFieldsProps)
 
       {/* Shipping & Add-ons */}
       <div>
-        <label className="label mb-2">Shipping & Add-ons</label>
+        <label className="label mb-2">Add-ons & Shipping</label>
         <div className="space-y-3">
           <div>
             <label className="text-xs text-gray-400 mb-1 block">Shipping Speed</label>
@@ -440,14 +522,14 @@ function DomesticFormFields({ form, setForm, options }: DomesticFormFieldsProps)
               id="include_rope"
               checked={form.include_rope}
               onChange={(e) => setForm((prev) => ({ ...prev, include_rope: e.target.checked }))}
-              className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-primary-500"
+              className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
             />
             <label htmlFor="include_rope" className="text-sm text-gray-300">
               Include Rope (+$1.00/piece)
             </label>
           </div>
           <div>
-            <label className="text-xs text-gray-400 mb-1 block"># DST Files</label>
+            <label className="text-xs text-gray-400 mb-1 block"># of DST Files (Digitizing)</label>
             <Input
               type="number"
               value={form.num_dst_files}
@@ -495,25 +577,13 @@ function OverseasFormFields({ form, setForm, options, toggleDesignAddon, toggleA
         </div>
       </div>
 
-      {/* Quantity */}
-      <div>
-        <label className="label mb-2">Quantity</label>
-        <Input
-          type="number"
-          value={form.quantity}
-          onChange={(e) => setForm((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 144 }))}
-          min={144}
-        />
-        <p className="text-xs text-gray-500 mt-1">Min: 144</p>
-      </div>
-
       {/* Decorations */}
       <div>
         <label className="label mb-2">Decoration Methods</label>
         <div className="space-y-3">
           {['front', 'left', 'right', 'back', 'visor'].map((pos) => (
             <div key={pos}>
-              <label className="text-xs text-gray-400 mb-1 block capitalize">{pos}</label>
+              <label className="text-xs text-gray-400 mb-1 block capitalize">{pos === 'visor' ? 'Visor' : `${pos.charAt(0).toUpperCase() + pos.slice(1)} Side`}</label>
               <select
                 value={(form as any)[`${pos}_decoration`] || ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, [`${pos}_decoration`]: e.target.value || null }))}
@@ -593,6 +663,291 @@ function OverseasFormFields({ form, setForm, options, toggleDesignAddon, toggleA
             </button>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Domestic Results Component - matches QuoteEstimator exactly
+function DomesticResults({ result }: { result: DomesticQuoteResponse }) {
+  // Get the applicable price break (the last one that applies to the quantity)
+  const pb = result.price_breaks[result.price_breaks.length - 1];
+
+  // Check for valid decoration values
+  const hasFront = isValidDecoration(result.front_decoration);
+  const hasLeft = isValidDecoration(result.left_decoration);
+  const hasRight = isValidDecoration(result.right_decoration);
+  const hasBack = isValidDecoration(result.back_decoration);
+  const hasRushFee = pb?.rush_fee && pb.rush_fee > 0;
+  const hasRope = result.include_rope && pb?.rope_price && pb.rope_price > 0;
+
+  if (!pb) return null;
+
+  return (
+    <div className="bg-gray-800 rounded-lg p-4">
+      <h3 className="text-lg font-semibold text-gray-100 mb-4">Quote Results - Domestic</h3>
+
+      <div className="mb-4 p-3 bg-gray-700/50 rounded-lg">
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <span className="text-gray-400">Style:</span>
+            <span className="text-gray-100 ml-2">
+              {result.style_number} - {result.style_name}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-400">Collection:</span>
+            <span className="text-gray-100 ml-2">{result.collection}</span>
+          </div>
+          <div>
+            <span className="text-gray-400">Quantity:</span>
+            <span className="text-gray-100 ml-2">{result.quantity.toLocaleString()}</span>
+          </div>
+          <div>
+            <span className="text-gray-400">Shipping:</span>
+            <span className="text-gray-100 ml-2">{result.shipping_speed}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-600">
+              <th className="text-left py-2 px-2 text-gray-400">Line Item</th>
+              <th className="text-right py-2 px-2 text-gray-400">Per Piece</th>
+              <th className="text-right py-2 px-2 text-gray-400">Qty</th>
+              <th className="text-right py-2 px-2 text-gray-400">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Blank Hat */}
+            <tr className="border-b border-gray-700">
+              <td className="py-2 px-2 text-gray-100">Blank Hat</td>
+              <td className="py-2 px-2 text-right text-gray-100">${formatCurrency(pb.blank_price || 0)}</td>
+              <td className="py-2 px-2 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
+              <td className="py-2 px-2 text-right text-gray-100">${formatCurrency((pb.blank_price || 0) * result.quantity)}</td>
+            </tr>
+
+            {/* Front Decoration */}
+            {hasFront && (
+              <tr className="border-b border-gray-700">
+                <td className="py-2 px-2 text-gray-100">
+                  <div>Front Decoration</div>
+                  <div className="text-xs text-gray-400">{result.front_decoration}</div>
+                </td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency(pb.front_decoration_price || 0)}</td>
+                <td className="py-2 px-2 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency((pb.front_decoration_price || 0) * result.quantity)}</td>
+              </tr>
+            )}
+
+            {/* Left Decoration */}
+            {hasLeft && (
+              <tr className="border-b border-gray-700">
+                <td className="py-2 px-2 text-gray-100">
+                  <div>Left Side Decoration</div>
+                  <div className="text-xs text-gray-400">{result.left_decoration}</div>
+                </td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency(pb.left_decoration_price || 0)}</td>
+                <td className="py-2 px-2 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency((pb.left_decoration_price || 0) * result.quantity)}</td>
+              </tr>
+            )}
+
+            {/* Right Decoration */}
+            {hasRight && (
+              <tr className="border-b border-gray-700">
+                <td className="py-2 px-2 text-gray-100">
+                  <div>Right Side Decoration</div>
+                  <div className="text-xs text-gray-400">{result.right_decoration}</div>
+                </td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency(pb.right_decoration_price || 0)}</td>
+                <td className="py-2 px-2 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency((pb.right_decoration_price || 0) * result.quantity)}</td>
+              </tr>
+            )}
+
+            {/* Back Decoration */}
+            {hasBack && (
+              <tr className="border-b border-gray-700">
+                <td className="py-2 px-2 text-gray-100">
+                  <div>Back Decoration</div>
+                  <div className="text-xs text-gray-400">{result.back_decoration}</div>
+                </td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency(pb.back_decoration_price || 0)}</td>
+                <td className="py-2 px-2 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency((pb.back_decoration_price || 0) * result.quantity)}</td>
+              </tr>
+            )}
+
+            {/* Rush Fee */}
+            {hasRushFee && (
+              <tr className="border-b border-gray-700">
+                <td className="py-2 px-2 text-gray-100">Rush Fee</td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency(pb.rush_fee || 0)}</td>
+                <td className="py-2 px-2 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency((pb.rush_fee || 0) * result.quantity)}</td>
+              </tr>
+            )}
+
+            {/* Rope */}
+            {hasRope && (
+              <tr className="border-b border-gray-700">
+                <td className="py-2 px-2 text-gray-100">Rope</td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency(pb.rope_price || 0)}</td>
+                <td className="py-2 px-2 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency((pb.rope_price || 0) * result.quantity)}</td>
+              </tr>
+            )}
+
+            {/* Digitizing Fee */}
+            {(pb.digitizing_fee ?? 0) > 0 && (
+              <tr className="border-b border-gray-700">
+                <td className="py-2 px-2 text-gray-100">Digitizing Fee</td>
+                <td className="py-2 px-2 text-right text-gray-400">-</td>
+                <td className="py-2 px-2 text-right text-gray-400">1</td>
+                <td className="py-2 px-2 text-right text-gray-100">${formatCurrency(pb.digitizing_fee ?? 0)}</td>
+              </tr>
+            )}
+
+            {/* Grand Total */}
+            <tr className="bg-gray-700/50">
+              <td className="py-2 px-2 text-gray-100 font-semibold">Total</td>
+              <td className="py-2 px-2 text-right text-gray-100 font-semibold">${formatCurrency(pb.per_piece_price || 0)}</td>
+              <td className="py-2 px-2 text-right text-gray-100 font-semibold">{result.quantity.toLocaleString()}</td>
+              <td className="py-2 px-2 text-right text-primary-400 font-semibold">${formatCurrency(pb.total || 0)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-3 p-2 bg-gray-700/30 rounded text-xs text-gray-400">
+        * Pricing based on {pb.quantity_break.toLocaleString()}+ quantity break. Digitizing fee is waived at 144+ quantity.
+      </div>
+    </div>
+  );
+}
+
+// Overseas Results Component - matches QuoteEstimator exactly
+function OverseasResults({ result }: { result: OverseasQuoteResponse }) {
+  if (!result.price_breaks || result.price_breaks.length === 0) return null;
+
+  // Build hat details list
+  const hatDetails: string[] = [];
+  hatDetails.push(result.hat_type);
+  if (isValidDecoration(result.front_decoration)) hatDetails.push(`Front: ${result.front_decoration}`);
+  if (isValidDecoration(result.left_decoration)) hatDetails.push(`Left: ${result.left_decoration}`);
+  if (isValidDecoration(result.right_decoration)) hatDetails.push(`Right: ${result.right_decoration}`);
+  if (isValidDecoration(result.back_decoration)) hatDetails.push(`Back: ${result.back_decoration}`);
+  if (isValidDecoration(result.visor_decoration)) hatDetails.push(`Visor: ${result.visor_decoration}`);
+  if (result.design_addons && result.design_addons.length > 0) {
+    hatDetails.push(`Add-ons: ${result.design_addons.join(', ')}`);
+  }
+  if (result.accessories && result.accessories.length > 0) {
+    hatDetails.push(`Accessories: ${result.accessories.join(', ')}`);
+  }
+
+  // Check if a price break meets MOQ (per_piece_price is not null)
+  const meetsMoq = (pb: typeof result.price_breaks[0]) => pb.per_piece_price !== null;
+
+  // Calculate hat cost per piece for each quantity break
+  const getHatCost = (pb: typeof result.price_breaks[0]) => {
+    if (!meetsMoq(pb)) return null;
+    return (
+      (pb.blank_price || 0) +
+      (pb.front_decoration_price || 0) +
+      (pb.left_decoration_price || 0) +
+      (pb.right_decoration_price || 0) +
+      (pb.back_decoration_price || 0) +
+      (pb.visor_decoration_price || 0) +
+      (pb.addons_price || 0) +
+      (pb.accessories_price || 0)
+    );
+  };
+
+  // Format price or show "Does not meet MOQ"
+  const formatPriceOrMoq = (value: number | null) => {
+    if (value === null) return 'Does not meet MOQ';
+    return `$${formatCurrency(value)}`;
+  };
+
+  return (
+    <div className="bg-gray-800 rounded-lg p-4">
+      <h3 className="text-lg font-semibold text-gray-100 mb-4">Quote Results - Overseas</h3>
+
+      <div className="mb-4 p-3 bg-gray-700/50 rounded-lg">
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <span className="text-gray-400">Hat Type:</span>
+            <span className="text-gray-100 ml-2">{result.hat_type}</span>
+          </div>
+          <div>
+            <span className="text-gray-400">Shipping:</span>
+            <span className="text-gray-100 ml-2">{result.shipping_method}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-600">
+              <th className="text-left py-2 px-2 text-gray-400">Line Item</th>
+              {result.price_breaks.map((pb) => (
+                <th key={pb.quantity_break} className="text-right py-2 px-2 text-gray-400">
+                  {pb.quantity_break.toLocaleString()}+
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {/* Hat (all non-shipping costs) */}
+            <tr className="border-b border-gray-700">
+              <td className="py-2 px-2 text-gray-100">
+                <div>Hat</div>
+                <div className="text-xs text-gray-400 max-w-[150px] truncate" title={hatDetails.join(' | ')}>
+                  {hatDetails.slice(0, 2).join(' | ')}
+                  {hatDetails.length > 2 && '...'}
+                </div>
+              </td>
+              {result.price_breaks.map((pb) => {
+                const hatCost = getHatCost(pb);
+                return (
+                  <td
+                    key={pb.quantity_break}
+                    className={`py-2 px-2 text-right ${hatCost === null ? 'text-gray-500 text-xs' : 'text-gray-100'}`}
+                  >
+                    {formatPriceOrMoq(hatCost)}
+                  </td>
+                );
+              })}
+            </tr>
+
+            {/* Shipping */}
+            <tr className="border-b border-gray-700">
+              <td className="py-2 px-2 text-gray-100">
+                <div>Shipping</div>
+                <div className="text-xs text-gray-400">{result.shipping_method}</div>
+              </td>
+              {result.price_breaks.map((pb) => {
+                const shippingCost = meetsMoq(pb) ? (pb.shipping_price || 0) : null;
+                return (
+                  <td
+                    key={pb.quantity_break}
+                    className={`py-2 px-2 text-right ${shippingCost === null ? 'text-gray-500 text-xs' : 'text-gray-100'}`}
+                  >
+                    {formatPriceOrMoq(shippingCost)}
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-3 p-2 bg-gray-700/30 rounded text-xs text-gray-400">
+        * All prices shown are per piece at each quantity break
       </div>
     </div>
   );

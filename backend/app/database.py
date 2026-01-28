@@ -35,7 +35,34 @@ def get_db():
         db.close()
 
 
+def run_migrations(engine):
+    """Run manual migrations for SQLite (add new columns if they don't exist)."""
+    from sqlalchemy import text, inspect
+
+    inspector = inspect(engine)
+
+    # Migration: Add design_type and reference_hat_path to designs table
+    if 'designs' in inspector.get_table_names():
+        columns = [col['name'] for col in inspector.get_columns('designs')]
+
+        with engine.connect() as conn:
+            if 'design_type' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE designs ADD COLUMN design_type VARCHAR(50) DEFAULT 'ai_generated' NOT NULL"
+                ))
+                conn.commit()
+                print("Migration: Added design_type column to designs table")
+
+            if 'reference_hat_path' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE designs ADD COLUMN reference_hat_path VARCHAR(500)"
+                ))
+                conn.commit()
+                print("Migration: Added reference_hat_path column to designs table")
+
+
 def init_db():
     """Initialize database tables."""
     from . import models  # Import models to register them
     Base.metadata.create_all(bind=engine)
+    run_migrations(engine)

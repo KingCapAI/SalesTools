@@ -15,6 +15,9 @@ import { DesignHistory } from './pages/DesignHistory';
 import { QuoteEstimator } from './pages/QuoteEstimator';
 import { MarketingTools } from './pages/MarketingTools';
 import { Policies } from './pages/Policies';
+import { CustomDesignDashboard } from './pages/CustomDesignDashboard';
+import { CustomDesignBuilder } from './pages/CustomDesignBuilder';
+import { CustomDesignDetail } from './pages/CustomDesignDetail';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,6 +78,31 @@ function App() {
               element={
                 <ProtectedRoute>
                   <DesignDetail />
+                </ProtectedRoute>
+              }
+            />
+            {/* Custom Design Builder routes */}
+            <Route
+              path="/custom-design-builder"
+              element={
+                <ProtectedRoute>
+                  <CustomDesignDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/custom-design-builder/new"
+              element={
+                <ProtectedRoute>
+                  <CustomDesignBuilder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/custom-design-builder/design/:designId"
+              element={
+                <ProtectedRoute>
+                  <CustomDesignDetail />
                 </ProtectedRoute>
               }
             />

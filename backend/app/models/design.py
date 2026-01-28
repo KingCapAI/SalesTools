@@ -22,6 +22,8 @@ class Design(Base):
     status = Column(String(50), nullable=False, default="active")
     approval_status = Column(String(50), nullable=False, default="pending")  # pending, approved, rejected
     shared_with_team = Column(Boolean, nullable=False, default=False)
+    design_type = Column(String(50), nullable=False, default="ai_generated")  # "ai_generated" or "custom"
+    reference_hat_path = Column(String(500), nullable=True)  # Path to reference hat image for custom designs
     created_by_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -31,6 +33,7 @@ class Design(Base):
     versions = relationship("DesignVersion", back_populates="design", cascade="all, delete-orphan")
     chats = relationship("DesignChat", back_populates="design", cascade="all, delete-orphan")
     quote = relationship("DesignQuote", back_populates="design", uselist=False, cascade="all, delete-orphan")
+    location_logos = relationship("DesignLocationLogo", back_populates="design", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Design #{self.design_number} for {self.brand_name}>"
@@ -121,3 +124,24 @@ class DesignQuote(Base):
 
     def __repr__(self):
         return f"<DesignQuote {self.quote_type} for design {self.design_id}>"
+
+
+class DesignLocationLogo(Base):
+    """Logo specification for a specific location on a custom design."""
+    __tablename__ = "design_location_logos"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    design_id = Column(String(36), ForeignKey("designs.id"), nullable=False, index=True)
+    location = Column(String(50), nullable=False)  # "front", "left", "right", "back", "visor"
+    logo_path = Column(String(500), nullable=False)  # Path to uploaded logo file
+    logo_filename = Column(String(255), nullable=False)  # Original filename
+    decoration_method = Column(String(100), nullable=False)  # embroidery, screen_print, patch, etc.
+    size = Column(String(50), nullable=False)  # "small", "medium", "large", or "custom"
+    size_details = Column(String(100), nullable=True)  # Optional: specific dimensions like "3x2 inches"
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    design = relationship("Design", back_populates="location_logos")
+
+    def __repr__(self):
+        return f"<DesignLocationLogo {self.location} for design {self.design_id}>"

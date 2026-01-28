@@ -12,6 +12,7 @@ import io
 
 from ..config import get_settings
 from ..utils.prompt_builder import build_design_prompt, build_revision_prompt
+from ..utils.custom_prompt_builder import build_custom_design_prompt, build_custom_revision_prompt
 
 settings = get_settings()
 
@@ -451,5 +452,182 @@ IMPORTANT: Keep everything else exactly the same. Only modify what is specifical
         return {
             "success": False,
             "prompt": revision_notes,
+            "error": str(e),
+        }
+
+
+async def generate_custom_design(
+    brand_name: str,
+    hat_style: str,
+    material: str,
+    location_logos: List[Dict[str, Any]],
+    reference_hat_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Generate a custom hat design with per-location logo specifications.
+
+    Args:
+        brand_name: The client/brand name
+        hat_style: The hat style code
+        material: The material code
+        location_logos: List of dicts with keys:
+            - location: front, left, right, back, visor
+            - logo_path: path to the logo file
+            - decoration_method: embroidery, screen_print, patch, etc.
+            - size: small, medium, large, custom
+            - size_details: optional custom size string
+        reference_hat_path: Optional path to reference hat image
+
+    Returns:
+        Dictionary with prompt, success status, and image data or error
+    """
+    try:
+        api_key = settings.google_gemini_api_key
+        if not api_key:
+            return {
+                "success": False,
+                "error": "Gemini API key not configured",
+            }
+
+        # Build the prompt
+        prompt = build_custom_design_prompt(
+            hat_style=hat_style,
+            material=material,
+            brand_name=brand_name,
+            location_logos=location_logos,
+            reference_hat_path=reference_hat_path,
+        )
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key={api_key}"
+
+        # Build parts list - include all location logos and reference hat
+        parts = []
+
+        # Add reference hat image if provided
+        if reference_hat_path:
+            try:
+                full_path = Path(settings.upload_dir) / reference_hat_path
+                if full_path.exists():
+                    with open(full_path, "rb") as f:
+                        image_bytes = f.read()
+                    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+                    mime_type = "image/png"
+                    if reference_hat_path.lower().endswith((".jpg", ".jpeg")):
+                        mime_type = "image/jpeg"
+
+                    # Add label text before the image
+                    parts.append({"text": "REFERENCE HAT IMAGE:"})
+                    parts.append({
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": image_base64
+                        }
+                    })
+            except Exception as e:
+                print(f"Warning: Could not load reference hat: {e}")
+
+        # Add each location logo
+        for logo_info in location_logos:
+            logo_path = logo_info.get("logo_path")
+            location = logo_info.get("location", "unknown")
+
+            if logo_path:
+                try:
+                    full_logo_path = Path(settings.upload_dir) / logo_path
+                    if full_logo_path.exists():
+                        with open(full_logo_path, "rb") as f:
+                            logo_bytes = f.read()
+                        logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
+
+                        mime_type = "image/png"
+                        if logo_path.lower().endswith((".jpg", ".jpeg")):
+                            mime_type = "image/jpeg"
+                        elif logo_path.lower().endswith(".svg"):
+                            mime_type = "image/svg+xml"
+
+                        # Add label text before the logo
+                        parts.append({"text": f"LOGO FOR {location.upper()} LOCATION:"})
+                        parts.append({
+                            "inlineData": {
+                                "mimeType": mime_type,
+                                "data": logo_base64
+                            }
+                        })
+                except Exception as e:
+                    print(f"Warning: Could not load {location} logo: {e}")
+
+        # Add the text prompt at the end
+        parts.append({"text": prompt})
+
+        payload = {
+            "contents": [{"parts": parts}],
+            "generationConfig": {
+                "responseModalities": ["IMAGE"]
+            }
+        }
+
+        async with httpx.AsyncClient(timeout=IMAGE_GENERATION_TIMEOUT) as client:
+            # Retry logic for 503 errors (model overloaded)
+            last_error = None
+            for attempt in range(MAX_RETRIES):
+                response = await client.post(
+                    url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                )
+
+                if response.status_code == 503:
+                    last_error = "The model is overloaded. Please try again."
+                    if attempt < MAX_RETRIES - 1:
+                        await asyncio.sleep(RETRY_DELAY_SECONDS * (attempt + 1))
+                        continue
+                    return {
+                        "success": False,
+                        "prompt": prompt,
+                        "error": f"API error 503: {last_error} (tried {MAX_RETRIES} times)",
+                    }
+
+                if response.status_code != 200:
+                    error_data = response.json() if response.headers.get("content-type", "").startswith("application/json") else {"error": response.text}
+                    return {
+                        "success": False,
+                        "prompt": prompt,
+                        "error": f"API error {response.status_code}: {error_data}",
+                    }
+
+                break  # Success, exit retry loop
+
+            result = response.json()
+
+            # Extract image from Gemini response
+            if "candidates" in result and len(result["candidates"]) > 0:
+                candidate = result["candidates"][0]
+                if "content" in candidate and "parts" in candidate["content"]:
+                    for part in candidate["content"]["parts"]:
+                        if "inlineData" in part:
+                            return {
+                                "success": True,
+                                "prompt": prompt,
+                                "image_data": part["inlineData"]["data"],
+                                "mime_type": part["inlineData"].get("mimeType", "image/png"),
+                            }
+
+            return {
+                "success": False,
+                "prompt": prompt,
+                "error": f"No image in response: {result}",
+            }
+
+    except httpx.TimeoutException:
+        return {
+            "success": False,
+            "prompt": prompt if 'prompt' in dir() else "Error building prompt",
+            "error": "Request timed out. Image generation may take longer than expected.",
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "prompt": prompt if 'prompt' in dir() else "Error building prompt",
             "error": str(e),
         }

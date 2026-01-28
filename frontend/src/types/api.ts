@@ -211,3 +211,108 @@ export type StyleDirection =
   | 'collegiate';
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+// Custom Design types
+export type DecorationLocation = 'front' | 'left' | 'right' | 'back' | 'visor';
+
+export type DecorationMethod =
+  | 'embroidery'
+  | 'screen_print'
+  | 'patch'
+  | '3d_puff'
+  | 'laser_cut'
+  | 'heat_transfer'
+  | 'sublimation';
+
+export type DecorationSize = 'small' | 'medium' | 'large' | 'custom';
+
+export interface LocationLogo {
+  id: string;
+  design_id: string;
+  location: DecorationLocation;
+  logo_path: string;
+  logo_filename: string;
+  decoration_method: DecorationMethod;
+  size: DecorationSize;
+  size_details?: string;
+  created_at: string;
+}
+
+export interface LocationLogoCreate {
+  location: DecorationLocation;
+  logo_path: string;
+  logo_filename: string;
+  decoration_method: DecorationMethod;
+  size: DecorationSize;
+  size_details?: string;
+}
+
+export interface CustomDesign {
+  id: string;
+  customer_name: string;
+  brand_name: string;
+  design_name?: string;
+  design_number: number;
+  current_version: number;
+  hat_style: string;
+  material: string;
+  design_type: 'custom';
+  reference_hat_path?: string;
+  status: string;
+  approval_status: ApprovalStatus;
+  shared_with_team: boolean;
+  created_by_id?: string;
+  created_at: string;
+  updated_at: string;
+  location_logos: LocationLogo[];
+  versions: DesignVersion[];
+  chats: DesignChat[];
+  quote_summary?: QuoteSummary | null;
+}
+
+export interface CustomDesignListItem {
+  id: string;
+  customer_name: string;
+  brand_name: string;
+  design_name?: string;
+  design_number: number;
+  current_version: number;
+  hat_style: string;
+  material: string;
+  design_type: 'custom';
+  reference_hat_path?: string;
+  status: string;
+  approval_status: ApprovalStatus;
+  shared_with_team: boolean;
+  created_at: string;
+  updated_at: string;
+  latest_image_path?: string;
+  location_logos: LocationLogo[];
+  quote_summary?: QuoteSummary | null;
+}
+
+export interface CustomDesignCreate {
+  customer_name: string;
+  brand_name: string;
+  design_name?: string;
+  hat_style: HatStyle;
+  material: Material;
+  reference_hat_path?: string;
+  location_logos: LocationLogoCreate[];
+}
+
+export interface CustomDesignUpdate {
+  design_name?: string;
+  approval_status?: ApprovalStatus;
+  shared_with_team?: boolean;
+}
+
+export interface LocationLogoUploadResponse {
+  logo_path: string;
+  logo_filename: string;
+}
+
+export interface ReferenceHatUploadResponse {
+  reference_hat_path: string;
+  filename: string;
+}

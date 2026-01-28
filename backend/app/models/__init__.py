@@ -3,7 +3,7 @@ from .user import User
 from .customer import Customer
 from .brand import Brand
 from .brand_asset import BrandAsset
-from .design import Design, DesignVersion, DesignChat, DesignQuote
+from .design import Design, DesignVersion, DesignChat, DesignQuote, DesignLocationLogo
 
 __all__ = [
     "Team",
@@ -15,4 +15,5 @@ __all__ = [
     "DesignVersion",
     "DesignChat",
     "DesignQuote",
+    "DesignLocationLogo",
 ]

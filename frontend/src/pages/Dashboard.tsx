@@ -1,7 +1,7 @@
 import { Header } from '../components/layout/Header';
 import { AppCard } from '../components/layout/AppCard';
 import { useAuth } from '../context/AuthContext';
-import { Palette, Calculator, Megaphone, FileText } from 'lucide-react';
+import { Palette, Calculator, Megaphone, FileText, Layers } from 'lucide-react';
 
 const apps = [
   {
@@ -10,6 +10,13 @@ const apps = [
     description: 'Create custom hat designs using AI. Upload logos, set brand guidelines, and generate professional product shots.',
     icon: Palette,
     to: '/ai-design-generator',
+  },
+  {
+    id: 'custom-design-builder',
+    title: 'Custom Design Builder',
+    description: 'Build hat designs with specific logo placements. Upload logos for each location and recreate reference hats.',
+    icon: Layers,
+    to: '/custom-design-builder',
   },
   {
     id: 'quote-estimator',

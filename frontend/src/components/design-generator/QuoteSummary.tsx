@@ -12,6 +12,24 @@ interface QuoteSummaryProps {
   isExporting?: boolean;
 }
 
+// Helper to check if a price break meets MOQ
+const meetsMoq = (pb: { per_piece_price: number | null }) => pb.per_piece_price !== null;
+
+// Calculate hat cost per piece (all costs except shipping)
+const getHatCost = (pb: Record<string, unknown>) => {
+  if (!meetsMoq(pb as { per_piece_price: number | null })) return null;
+  return (
+    ((pb.blank_price as number) || 0) +
+    ((pb.front_decoration_price as number) || 0) +
+    ((pb.left_decoration_price as number) || 0) +
+    ((pb.right_decoration_price as number) || 0) +
+    ((pb.back_decoration_price as number) || 0) +
+    ((pb.visor_decoration_price as number) || 0) +
+    ((pb.addons_price as number) || 0) +
+    ((pb.accessories_price as number) || 0)
+  );
+};
+
 export function QuoteSummary({ quote, onEdit, onDelete, onExport, isDeleting, isExporting }: QuoteSummaryProps) {
   if (!quote) {
     return (
@@ -39,6 +57,18 @@ export function QuoteSummary({ quote, onEdit, onDelete, onExport, isDeleting, is
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const formatPriceOrMoq = (value: number | null) => {
+    if (value === null) return <span className="text-gray-500 text-xs">No MOQ</span>;
+    return formatCurrency(value);
+  };
+
+  // Check if we have price breaks data for overseas display
+  const hasOverseasPriceBreaks =
+    quote.quote_type === 'overseas' &&
+    'cached_price_breaks' in quote &&
+    quote.cached_price_breaks &&
+    quote.cached_price_breaks.length > 0;
+
   return (
     <div>
       <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
@@ -55,26 +85,76 @@ export function QuoteSummary({ quote, onEdit, onDelete, onExport, isDeleting, is
         }`}>
           {quote.quote_type.charAt(0).toUpperCase() + quote.quote_type.slice(1)}
         </span>
-        <span className="text-sm text-gray-400">
-          {quote.quantity.toLocaleString()} pcs
-        </span>
+        {quote.quote_type === 'domestic' && (
+          <span className="text-sm text-gray-400">
+            {quote.quantity.toLocaleString()} pcs
+          </span>
+        )}
       </div>
 
-      {/* Pricing */}
-      <div className="bg-gray-800 rounded-lg p-4 mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm text-gray-400">Per Piece</span>
-          <span className="text-lg font-semibold text-gray-100">
-            {formatCurrency(quote.cached_per_piece)}
-          </span>
+      {/* Pricing - Different display for domestic vs overseas */}
+      {hasOverseasPriceBreaks ? (
+        // Overseas: Show price breaks table with Hat and Shipping separated
+        <div className="bg-gray-800 rounded-lg p-3 mb-4 overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-gray-700">
+                <th className="text-left py-2 px-1 text-gray-400">Item</th>
+                {quote.cached_price_breaks!.map((pb) => (
+                  <th key={pb.quantity_break} className="text-right py-2 px-1 text-gray-400">
+                    {pb.quantity_break.toLocaleString()}+
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Hat Cost Row */}
+              <tr className="border-b border-gray-700/50">
+                <td className="py-2 px-1 text-gray-300">Hat</td>
+                {quote.cached_price_breaks!.map((pb) => {
+                  const hatCost = getHatCost(pb as Record<string, unknown>);
+                  return (
+                    <td key={pb.quantity_break} className="py-2 px-1 text-right text-gray-100">
+                      {formatPriceOrMoq(hatCost)}
+                    </td>
+                  );
+                })}
+              </tr>
+              {/* Shipping Cost Row */}
+              <tr>
+                <td className="py-2 px-1 text-gray-300">Shipping</td>
+                {quote.cached_price_breaks!.map((pb) => {
+                  const shippingCost = meetsMoq(pb as { per_piece_price: number | null })
+                    ? ((pb as Record<string, unknown>).shipping_price as number || 0)
+                    : null;
+                  return (
+                    <td key={pb.quantity_break} className="py-2 px-1 text-right text-gray-100">
+                      {formatPriceOrMoq(shippingCost)}
+                    </td>
+                  );
+                })}
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-xs text-gray-500 mt-2">* Per piece at each quantity break</p>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-400">Total</span>
-          <span className="text-xl font-bold text-primary-400">
-            {formatCurrency(quote.cached_total)}
-          </span>
+      ) : (
+        // Domestic: Show per-piece and total
+        <div className="bg-gray-800 rounded-lg p-4 mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-400">Per Piece</span>
+            <span className="text-lg font-semibold text-gray-100">
+              {formatCurrency(quote.cached_per_piece)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-400">Total</span>
+            <span className="text-xl font-bold text-primary-400">
+              {formatCurrency(quote.cached_total)}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
