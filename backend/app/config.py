@@ -18,7 +18,8 @@ class Settings(BaseSettings):
     microsoft_tenant_id: str = ""
 
     # Gemini
-    google_gemini_api_key: str = ""
+    google_gemini_api_key: str = ""  # For AI Design Conceptor
+    google_gemini_api_key_mockup: str = ""  # For Mockup Builder (falls back to main key if not set)
 
     # App URLs
     frontend_url: str = "http://localhost:5173"

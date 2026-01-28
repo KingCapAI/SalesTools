@@ -486,11 +486,12 @@ async def generate_custom_design(
         Dictionary with prompt, success status, and image data or error
     """
     try:
-        api_key = settings.google_gemini_api_key
+        # Use mockup-specific API key if available, otherwise fall back to main key
+        api_key = settings.google_gemini_api_key_mockup or settings.google_gemini_api_key
         if not api_key:
             return {
                 "success": False,
-                "error": "Gemini API key not configured",
+                "error": "Gemini API key not configured. Set GOOGLE_GEMINI_API_KEY_MOCKUP or GOOGLE_GEMINI_API_KEY.",
             }
 
         # Build the prompt
