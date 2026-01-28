@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
-from .design import HatStyle, Material, ApprovalStatus, DesignVersionResponse, DesignChatResponse, DesignQuoteSummaryResponse
+from .design import HatStyle, Material, HatStructure, ClosureType, ApprovalStatus, DesignVersionResponse, DesignChatResponse, DesignQuoteSummaryResponse
 
 
 class DecorationLocation(str, Enum):
@@ -64,6 +64,8 @@ class CustomDesignCreate(BaseModel):
     design_name: Optional[str] = None
     hat_style: HatStyle
     material: Material
+    structure: HatStructure  # Mandatory for Mockup Builder
+    closure: ClosureType  # Mandatory for Mockup Builder
     crown_color: Optional[str] = "black"  # Color of the hat crown
     visor_color: Optional[str] = "black"  # Color of the visor
     reference_hat_path: Optional[str] = None  # Path to reference hat image
@@ -98,6 +100,8 @@ class CustomDesignResponse(BaseModel):
     current_version: int
     hat_style: str
     material: str
+    structure: Optional[str] = None
+    closure: Optional[str] = None
     crown_color: Optional[str] = None
     visor_color: Optional[str] = None
     design_type: str
@@ -127,6 +131,8 @@ class CustomDesignListResponse(BaseModel):
     current_version: int
     hat_style: str
     material: str
+    structure: Optional[str] = None
+    closure: Optional[str] = None
     crown_color: Optional[str] = None
     visor_color: Optional[str] = None
     design_type: str

@@ -9,7 +9,7 @@ import { LocationLogoUpload } from '../components/custom-design/LocationLogoUplo
 import { ReferenceHatUpload } from '../components/custom-design/ReferenceHatUpload';
 import { useCreateCustomDesign } from '../hooks/useCustomDesigns';
 import { ArrowLeft, Sparkles, Layers } from 'lucide-react';
-import type { HatStyle, Material, DecorationLocation, LocationLogoCreate } from '../types/api';
+import type { HatStyle, Material, HatStructure, ClosureType, DecorationLocation, LocationLogoCreate } from '../types/api';
 
 const LOCATIONS: DecorationLocation[] = ['front', 'left', 'right', 'back', 'visor'];
 
@@ -23,6 +23,8 @@ export function CustomDesignBuilder() {
   const [designName, setDesignName] = useState('');
   const [hatStyle, setHatStyle] = useState<HatStyle>('6-panel-hat');
   const [material, setMaterial] = useState<Material>('cotton-twill');
+  const [structure, setStructure] = useState<HatStructure>('structured');
+  const [closure, setClosure] = useState<ClosureType>('snapback');
   const [crownColor, setCrownColor] = useState('black');
   const [visorColor, setVisorColor] = useState('black');
   const [referenceHatPath, setReferenceHatPath] = useState<string | null>(null);
@@ -75,6 +77,8 @@ export function CustomDesignBuilder() {
         design_name: designName.trim() || undefined,
         hat_style: hatStyle,
         material: material,
+        structure: structure,
+        closure: closure,
         crown_color: crownColor,
         visor_color: visorColor === 'match-crown' ? crownColor : visorColor,
         reference_hat_path: referenceHatPath || undefined,
@@ -153,6 +157,35 @@ export function CustomDesignBuilder() {
             <div className="space-y-6">
               <HatStyleSelector value={hatStyle} onChange={setHatStyle} />
               <MaterialSelector value={material} onChange={setMaterial} />
+
+              {/* Structure & Closure Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Structure</label>
+                  <select
+                    value={structure}
+                    onChange={(e) => setStructure(e.target.value as HatStructure)}
+                    className="input w-full"
+                    required
+                  >
+                    <option value="structured">Structured (stiff front panels)</option>
+                    <option value="unstructured">Unstructured (soft, relaxed crown)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Closure</label>
+                  <select
+                    value={closure}
+                    onChange={(e) => setClosure(e.target.value as ClosureType)}
+                    className="input w-full"
+                    required
+                  >
+                    <option value="snapback">Snapback</option>
+                    <option value="metal_slider_buckle">Metal Slider Buckle</option>
+                    <option value="velcro_strap">Velcro Strap</option>
+                  </select>
+                </div>
+              </div>
 
               {/* Color Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

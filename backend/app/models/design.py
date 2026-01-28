@@ -19,6 +19,8 @@ class Design(Base):
     material = Column(String(100), nullable=False)
     crown_color = Column(String(100), nullable=True)  # Color of the hat crown
     visor_color = Column(String(100), nullable=True)  # Color of the visor
+    structure = Column(String(50), nullable=True)  # "structured" or "unstructured"
+    closure = Column(String(50), nullable=True)  # "snapback", "metal_slider_buckle", "velcro_strap"
     style_directions = Column(String(500), nullable=False)  # Comma-separated list (up to 3)
     custom_description = Column(Text, nullable=True)
     status = Column(String(50), nullable=False, default="active")

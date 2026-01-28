@@ -30,6 +30,17 @@ class StyleDirection(str, Enum):
     COLLEGIATE = "collegiate"
 
 
+class HatStructure(str, Enum):
+    STRUCTURED = "structured"
+    UNSTRUCTURED = "unstructured"
+
+
+class ClosureType(str, Enum):
+    SNAPBACK = "snapback"
+    METAL_SLIDER_BUCKLE = "metal_slider_buckle"
+    VELCRO_STRAP = "velcro_strap"
+
+
 class ApprovalStatus(str, Enum):
     PENDING = "pending"
     APPROVED = "approved"
@@ -81,6 +92,8 @@ class DesignCreate(BaseModel):
     design_name: Optional[str] = None
     hat_style: HatStyle
     material: Material
+    structure: Optional[HatStructure] = None  # Optional for AI Conceptor
+    closure: Optional[ClosureType] = None  # Optional for AI Conceptor
     style_directions: List[StyleDirection]  # Up to 3 style directions
     custom_description: Optional[str] = None
     logo_path: Optional[str] = None  # Path to uploaded logo file
@@ -127,6 +140,8 @@ class DesignResponse(BaseModel):
     current_version: int
     hat_style: str
     material: str
+    structure: Optional[str] = None
+    closure: Optional[str] = None
     style_directions: List[str]
     custom_description: Optional[str] = None
     status: str
@@ -152,6 +167,8 @@ class DesignListResponse(BaseModel):
     current_version: int
     hat_style: str
     material: str
+    structure: Optional[str] = None
+    closure: Optional[str] = None
     style_directions: List[str]
     status: str
     approval_status: str

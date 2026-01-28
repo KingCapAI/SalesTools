@@ -97,6 +97,8 @@ export interface Design {
   current_version: number;
   hat_style: string;
   material: string;
+  structure?: string;
+  closure?: string;
   style_directions: string[];
   custom_description?: string;
   status: string;
@@ -141,6 +143,8 @@ export interface DesignListItem {
   current_version: number;
   hat_style: string;
   material: string;
+  structure?: string;
+  closure?: string;
   style_directions: string[];
   status: string;
   approval_status: ApprovalStatus;
@@ -171,6 +175,8 @@ export interface DesignCreate {
   design_name?: string;
   hat_style: HatStyle;
   material: Material;
+  structure?: HatStructure;
+  closure?: ClosureType;
   style_directions: StyleDirection[];
   custom_description?: string;
   logo_path?: string;
@@ -211,6 +217,10 @@ export type StyleDirection =
   | 'collegiate';
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export type HatStructure = 'structured' | 'unstructured';
+
+export type ClosureType = 'snapback' | 'metal_slider_buckle' | 'velcro_strap';
 
 // Custom Design types
 export type DecorationLocation = 'front' | 'left' | 'right' | 'back' | 'visor';
@@ -256,6 +266,8 @@ export interface CustomDesign {
   current_version: number;
   hat_style: string;
   material: string;
+  structure: string;
+  closure: string;
   crown_color?: string;
   visor_color?: string;
   design_type: 'custom';
@@ -281,6 +293,8 @@ export interface CustomDesignListItem {
   current_version: number;
   hat_style: string;
   material: string;
+  structure: string;
+  closure: string;
   crown_color?: string;
   visor_color?: string;
   design_type: 'custom';
@@ -301,6 +315,8 @@ export interface CustomDesignCreate {
   design_name?: string;
   hat_style: HatStyle;
   material: Material;
+  structure: HatStructure;
+  closure: ClosureType;
   crown_color?: string;
   visor_color?: string;
   reference_hat_path?: string;

@@ -274,6 +274,8 @@ async def generate_design(
     material: str,
     style_direction: str,
     custom_description: Optional[str] = None,
+    structure: Optional[str] = None,
+    closure: Optional[str] = None,
     logo_path: Optional[str] = None,
     brand_assets: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
@@ -286,6 +288,8 @@ async def generate_design(
         material: The material code
         style_direction: The style direction code
         custom_description: Optional additional style description
+        structure: Optional hat structure (structured or unstructured)
+        closure: Optional closure type (snapback, metal_slider_buckle, velcro_strap)
         logo_path: Optional path to client logo
         brand_assets: Optional list of brand asset paths
 
@@ -299,6 +303,8 @@ async def generate_design(
         client_name=customer_name,
         style_direction=style_direction,
         custom_description=custom_description,
+        structure=structure,
+        closure=closure,
     )
 
     # Generate the image
@@ -461,6 +467,8 @@ async def generate_custom_design(
     hat_style: str,
     material: str,
     location_logos: List[Dict[str, Any]],
+    structure: Optional[str] = None,
+    closure: Optional[str] = None,
     crown_color: Optional[str] = None,
     visor_color: Optional[str] = None,
     reference_hat_path: Optional[str] = None,
@@ -478,6 +486,8 @@ async def generate_custom_design(
             - decoration_method: embroidery, screen_print, patch, etc.
             - size: small, medium, large, custom
             - size_details: optional custom size string
+        structure: Hat structure (structured or unstructured)
+        closure: Closure type (snapback, metal_slider_buckle, velcro_strap)
         crown_color: Color of the hat crown
         visor_color: Color of the visor
         reference_hat_path: Optional path to reference hat image
@@ -500,6 +510,8 @@ async def generate_custom_design(
             material=material,
             brand_name=brand_name,
             location_logos=location_logos,
+            structure=structure,
+            closure=closure,
             crown_color=crown_color,
             visor_color=visor_color,
             reference_hat_path=reference_hat_path,

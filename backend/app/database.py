@@ -74,6 +74,20 @@ def run_migrations(engine):
                 conn.commit()
                 print("Migration: Added visor_color column to designs table")
 
+            if 'structure' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE designs ADD COLUMN structure VARCHAR(50)"
+                ))
+                conn.commit()
+                print("Migration: Added structure column to designs table")
+
+            if 'closure' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE designs ADD COLUMN closure VARCHAR(50)"
+                ))
+                conn.commit()
+                print("Migration: Added closure column to designs table")
+
 
 def init_db():
     """Initialize database tables."""

@@ -31,6 +31,19 @@ LOCATION_NAMES = {
     "visor": "underneath the visor",
 }
 
+# Structure display names
+STRUCTURES = {
+    "structured": "structured (with front panel buckram stiffener)",
+    "unstructured": "unstructured (soft, relaxed crown)",
+}
+
+# Closure display names
+CLOSURES = {
+    "snapback": "plastic snapback closure",
+    "metal_slider_buckle": "metal slider buckle closure",
+    "velcro_strap": "velcro strap closure",
+}
+
 
 def format_decoration_method(method: str) -> str:
     """Convert decoration method code to display name."""
@@ -62,6 +75,20 @@ def format_color(color: Optional[str]) -> str:
     return color_map.get(color, color)
 
 
+def format_structure(structure: Optional[str]) -> str:
+    """Convert structure code to display name."""
+    if not structure:
+        return "structured"
+    return STRUCTURES.get(structure, structure)
+
+
+def format_closure(closure: Optional[str]) -> str:
+    """Convert closure code to display name."""
+    if not closure:
+        return "snapback"
+    return CLOSURES.get(closure, closure)
+
+
 def build_custom_design_prompt(
     hat_style: str,
     material: str,
@@ -69,6 +96,8 @@ def build_custom_design_prompt(
     location_logos: List[Dict],
     crown_color: Optional[str] = None,
     visor_color: Optional[str] = None,
+    structure: Optional[str] = None,
+    closure: Optional[str] = None,
     reference_hat_path: Optional[str] = None,
 ) -> str:
     """
@@ -85,6 +114,8 @@ def build_custom_design_prompt(
             - size_details: Optional custom size details
         crown_color: Color of the hat crown
         visor_color: Color of the visor
+        structure: Hat structure (structured or unstructured)
+        closure: Closure type (snapback, metal_slider_buckle, velcro_strap)
         reference_hat_path: Optional path to reference hat image
 
     Returns:
@@ -94,6 +125,8 @@ def build_custom_design_prompt(
     formatted_material = format_material(material)
     formatted_crown_color = format_color(crown_color)
     formatted_visor_color = format_color(visor_color)
+    formatted_structure = format_structure(structure)
+    formatted_closure = format_closure(closure)
 
     # Build decoration location descriptions
     decoration_descriptions = []
@@ -119,6 +152,8 @@ REFERENCE HAT: An image of a reference hat has been provided. Match the followin
 
 TARGET HAT SPECIFICATIONS:
 - Hat type: **{formatted_style}** made of **{formatted_material}**
+- Structure: **{formatted_structure}**
+- Closure: **{formatted_closure}**
 - Crown color: **{formatted_crown_color}**
 - Visor/brim color: **{formatted_visor_color}**
 - Brand: **{brand_name}**
@@ -130,8 +165,9 @@ CRITICAL INSTRUCTIONS:
 1. Use ONLY the provided logo images for each location - do NOT search for or use any other logos
 2. Match the reference hat's style and aesthetic as closely as possible
 3. Use the specified crown color ({formatted_crown_color}) and visor color ({formatted_visor_color})
-4. Maintain professional quality and clean execution
-5. Each logo should be clearly visible and properly sized for its location
+4. The hat must be **{formatted_structure}** with a **{formatted_closure}**
+5. Maintain professional quality and clean execution
+6. Each logo should be clearly visible and properly sized for its location
 
 The hat is viewed from the front, left, right, back, underneath the visor with the front end of the visor pointing down, and worn on a white male model.
 
@@ -141,6 +177,10 @@ Add the following legal language to the bottom of the image: {LEGAL_TEXT}"""
     else:
         # Standard custom design mode
         prompt = f"""Create a photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.
+
+HAT CONSTRUCTION:
+- Structure: **{formatted_structure}**
+- Closure: **{formatted_closure}**
 
 HAT COLORS:
 - Crown/panels: **{formatted_crown_color}**
@@ -155,11 +195,12 @@ CRITICAL INSTRUCTIONS:
 1. Use ONLY the provided logo images for each location - do NOT search for or use any other logos from the internet
 2. The hat crown/panels must be **{formatted_crown_color}** color
 3. The visor/brim must be **{formatted_visor_color}** color
-4. Place each logo exactly at its specified location
-5. Use the specified decoration method for each location (embroidery has texture and depth, patches are raised, screen print is flat, etc.)
-6. Size each decoration according to the specification
-7. Do NOT add any decorations at locations not specified above
-8. Keep the design clean and professional
+4. The hat must be **{formatted_structure}** with a **{formatted_closure}**
+5. Place each logo exactly at its specified location
+6. Use the specified decoration method for each location (embroidery has texture and depth, patches are raised, screen print is flat, etc.)
+7. Size each decoration according to the specification
+8. Do NOT add any decorations at locations not specified above
+9. Keep the design clean and professional
 
 The hat is viewed from the front, left, right, back, underneath the visor with the front end of the visor pointing down, and worn on a white male model.
 

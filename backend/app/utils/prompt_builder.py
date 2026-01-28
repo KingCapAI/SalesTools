@@ -34,6 +34,19 @@ STYLE_DIRECTIONS = {
     "collegiate": "Collegiate",
 }
 
+# Structure display names
+STRUCTURES = {
+    "structured": "structured (with front panel buckram stiffener)",
+    "unstructured": "unstructured (soft, relaxed crown)",
+}
+
+# Closure display names
+CLOSURES = {
+    "snapback": "plastic snapback closure",
+    "metal_slider_buckle": "metal slider buckle closure",
+    "velcro_strap": "velcro strap closure",
+}
+
 
 def format_hat_style(style: str) -> str:
     """Convert hat style code to display name."""
@@ -50,12 +63,28 @@ def format_style_direction(direction: str) -> str:
     return STYLE_DIRECTIONS.get(direction, direction)
 
 
+def format_structure(structure: Optional[str]) -> Optional[str]:
+    """Convert structure code to display name."""
+    if not structure:
+        return None
+    return STRUCTURES.get(structure, structure)
+
+
+def format_closure(closure: Optional[str]) -> Optional[str]:
+    """Convert closure code to display name."""
+    if not closure:
+        return None
+    return CLOSURES.get(closure, closure)
+
+
 def build_design_prompt(
     hat_style: str,
     material: str,
     client_name: str,
     style_direction: str,
     custom_description: Optional[str] = None,
+    structure: Optional[str] = None,
+    closure: Optional[str] = None,
 ) -> str:
     """
     Build the full prompt for Gemini image generation.
@@ -66,6 +95,8 @@ def build_design_prompt(
         client_name: The brand/client name
         style_direction: The style direction code (e.g., 'modern')
         custom_description: Optional additional style description
+        structure: Optional hat structure (structured or unstructured)
+        closure: Optional closure type (snapback, metal_slider_buckle, velcro_strap)
 
     Returns:
         The complete prompt string for image generation
@@ -73,14 +104,29 @@ def build_design_prompt(
     formatted_style = format_hat_style(hat_style)
     formatted_material = format_material(material)
     formatted_direction = format_style_direction(style_direction)
+    formatted_structure = format_structure(structure)
+    formatted_closure = format_closure(closure)
 
     # Combine style direction with custom description if provided
     style_desc = formatted_direction
     if custom_description:
         style_desc = f"{formatted_direction}. {custom_description}"
 
-    prompt = f"""A photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.
+    # Build construction details if provided
+    construction_details = ""
+    if formatted_structure or formatted_closure:
+        construction_parts = []
+        if formatted_structure:
+            construction_parts.append(f"Structure: **{formatted_structure}**")
+        if formatted_closure:
+            construction_parts.append(f"Closure: **{formatted_closure}**")
+        construction_details = f"""
 
+HAT CONSTRUCTION:
+{chr(10).join('- ' + part for part in construction_parts)}
+"""
+
+    prompt = f"""A photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.{construction_details}
 The hat is viewed from the front, left, right, back, underneath the visor with the front end of the visor pointing down, and worn on a white male model.
 
 The brand is **{client_name}**.

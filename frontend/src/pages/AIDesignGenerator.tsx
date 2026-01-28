@@ -10,7 +10,7 @@ import { HatStyleSelector } from '../components/design-generator/HatStyleSelecto
 import { MaterialSelector } from '../components/design-generator/MaterialSelector';
 import { useCreateDesign } from '../hooks/useDesigns';
 import { ArrowLeft, Sparkles } from 'lucide-react';
-import type { HatStyle, Material, StyleDirection, BrandScrapedData } from '../types/api';
+import type { HatStyle, Material, StyleDirection, BrandScrapedData, HatStructure, ClosureType } from '../types/api';
 
 interface UploadedAsset {
   id: string;
@@ -35,6 +35,8 @@ export function AIDesignGenerator() {
   const [styleDirections, setStyleDirections] = useState<StyleDirection[]>(['modern']);
   const [customDescription, setCustomDescription] = useState('');
   const [manualGuidelines, setManualGuidelines] = useState('');
+  const [structure, setStructure] = useState<HatStructure | ''>('');
+  const [closure, setClosure] = useState<ClosureType | ''>('');
 
   const handleAssetUpload = (asset: UploadedAsset) => {
     setUploadedAssets((prev) => [...prev, asset]);
@@ -74,6 +76,8 @@ export function AIDesignGenerator() {
         design_name: designName.trim() || undefined,
         hat_style: hatStyle,
         material: material,
+        structure: structure || undefined,
+        closure: closure || undefined,
         style_directions: styleDirections,
         custom_description: customDescription.trim() || undefined,
         logo_path: logoPath,
@@ -174,6 +178,35 @@ export function AIDesignGenerator() {
               <HatStyleSelector value={hatStyle} onChange={setHatStyle} />
 
               <MaterialSelector value={material} onChange={setMaterial} />
+
+              {/* Optional Structure & Closure */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Structure (Optional)</label>
+                  <select
+                    value={structure}
+                    onChange={(e) => setStructure(e.target.value as HatStructure | '')}
+                    className="input w-full"
+                  >
+                    <option value="">Let AI decide</option>
+                    <option value="structured">Structured (stiff front panels)</option>
+                    <option value="unstructured">Unstructured (soft, relaxed crown)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Closure (Optional)</label>
+                  <select
+                    value={closure}
+                    onChange={(e) => setClosure(e.target.value as ClosureType | '')}
+                    className="input w-full"
+                  >
+                    <option value="">Let AI decide</option>
+                    <option value="snapback">Snapback</option>
+                    <option value="metal_slider_buckle">Metal Slider Buckle</option>
+                    <option value="velcro_strap">Velcro Strap</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
