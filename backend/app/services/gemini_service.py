@@ -570,22 +570,33 @@ async def generate_custom_design(
         payload = {
             "contents": [{"parts": parts}],
             "generationConfig": {
-                "responseModalities": ["IMAGE"]
+                "responseModalities": ["TEXT", "IMAGE"]
             }
         }
+
+        print(f"[Mockup Builder] Making API request to Gemini...")
+        print(f"[Mockup Builder] Number of parts: {len(parts)}")
+        print(f"[Mockup Builder] API key present: {bool(api_key)}")
 
         async with httpx.AsyncClient(timeout=IMAGE_GENERATION_TIMEOUT) as client:
             # Retry logic for 503 errors (model overloaded)
             last_error = None
             for attempt in range(MAX_RETRIES):
-                response = await client.post(
-                    url,
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                )
+                print(f"[Mockup Builder] Attempt {attempt + 1}/{MAX_RETRIES}")
+                try:
+                    response = await client.post(
+                        url,
+                        json=payload,
+                        headers={"Content-Type": "application/json"},
+                    )
+                    print(f"[Mockup Builder] Response status: {response.status_code}")
+                except Exception as req_error:
+                    print(f"[Mockup Builder] Request error: {req_error}")
+                    raise
 
                 if response.status_code == 503:
                     last_error = "The model is overloaded. Please try again."
+                    print(f"[Mockup Builder] 503 error - model overloaded")
                     if attempt < MAX_RETRIES - 1:
                         await asyncio.sleep(RETRY_DELAY_SECONDS * (attempt + 1))
                         continue
@@ -596,7 +607,11 @@ async def generate_custom_design(
                     }
 
                 if response.status_code != 200:
-                    error_data = response.json() if response.headers.get("content-type", "").startswith("application/json") else {"error": response.text}
+                    try:
+                        error_data = response.json()
+                    except Exception:
+                        error_data = {"error": response.text[:500]}
+                    print(f"[Mockup Builder] API error {response.status_code}: {error_data}")
                     return {
                         "success": False,
                         "prompt": prompt,
@@ -606,6 +621,7 @@ async def generate_custom_design(
                 break  # Success, exit retry loop
 
             result = response.json()
+            print(f"[Mockup Builder] Got response with keys: {list(result.keys())}")
 
             # Extract image from Gemini response
             if "candidates" in result and len(result["candidates"]) > 0:
@@ -626,13 +642,17 @@ async def generate_custom_design(
                 "error": f"No image in response: {result}",
             }
 
-    except httpx.TimeoutException:
+    except httpx.TimeoutException as timeout_err:
+        print(f"[Mockup Builder] TIMEOUT after {IMAGE_GENERATION_TIMEOUT}s: {timeout_err}")
         return {
             "success": False,
             "prompt": prompt if 'prompt' in dir() else "Error building prompt",
             "error": "Request timed out. Image generation may take longer than expected.",
         }
     except Exception as e:
+        print(f"[Mockup Builder] EXCEPTION: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "success": False,
             "prompt": prompt if 'prompt' in dir() else "Error building prompt",
