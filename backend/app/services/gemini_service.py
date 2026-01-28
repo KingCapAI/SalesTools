@@ -461,6 +461,8 @@ async def generate_custom_design(
     hat_style: str,
     material: str,
     location_logos: List[Dict[str, Any]],
+    crown_color: Optional[str] = None,
+    visor_color: Optional[str] = None,
     reference_hat_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -476,6 +478,8 @@ async def generate_custom_design(
             - decoration_method: embroidery, screen_print, patch, etc.
             - size: small, medium, large, custom
             - size_details: optional custom size string
+        crown_color: Color of the hat crown
+        visor_color: Color of the visor
         reference_hat_path: Optional path to reference hat image
 
     Returns:
@@ -495,6 +499,8 @@ async def generate_custom_design(
             material=material,
             brand_name=brand_name,
             location_logos=location_logos,
+            crown_color=crown_color,
+            visor_color=visor_color,
             reference_hat_path=reference_hat_path,
         )
 

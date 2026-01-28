@@ -17,6 +17,8 @@ class Design(Base):
     current_version = Column(Integer, nullable=False, default=1)
     hat_style = Column(String(100), nullable=False)
     material = Column(String(100), nullable=False)
+    crown_color = Column(String(100), nullable=True)  # Color of the hat crown
+    visor_color = Column(String(100), nullable=True)  # Color of the visor
     style_directions = Column(String(500), nullable=False)  # Comma-separated list (up to 3)
     custom_description = Column(Text, nullable=True)
     status = Column(String(50), nullable=False, default="active")

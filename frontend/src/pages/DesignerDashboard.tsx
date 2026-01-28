@@ -80,8 +80,8 @@ export function DesignerDashboard() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-gray-100">Design Dashboard</h1>
-              <p className="text-gray-400">Manage and create hat designs</p>
+              <h1 className="text-2xl font-bold text-gray-100">AI Design Conceptor</h1>
+              <p className="text-gray-400">Manage and create AI hat design concepts</p>
             </div>
           </div>
           <Link to="/ai-design-generator/new">

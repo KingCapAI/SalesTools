@@ -60,6 +60,20 @@ def run_migrations(engine):
                 conn.commit()
                 print("Migration: Added reference_hat_path column to designs table")
 
+            if 'crown_color' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE designs ADD COLUMN crown_color VARCHAR(100)"
+                ))
+                conn.commit()
+                print("Migration: Added crown_color column to designs table")
+
+            if 'visor_color' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE designs ADD COLUMN visor_color VARCHAR(100)"
+                ))
+                conn.commit()
+                print("Migration: Added visor_color column to designs table")
+
 
 def init_db():
     """Initialize database tables."""

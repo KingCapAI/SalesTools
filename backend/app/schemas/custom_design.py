@@ -64,6 +64,8 @@ class CustomDesignCreate(BaseModel):
     design_name: Optional[str] = None
     hat_style: HatStyle
     material: Material
+    crown_color: Optional[str] = "black"  # Color of the hat crown
+    visor_color: Optional[str] = "black"  # Color of the visor
     reference_hat_path: Optional[str] = None  # Path to reference hat image
     location_logos: List[LocationLogoCreate]
 
@@ -96,6 +98,8 @@ class CustomDesignResponse(BaseModel):
     current_version: int
     hat_style: str
     material: str
+    crown_color: Optional[str] = None
+    visor_color: Optional[str] = None
     design_type: str
     reference_hat_path: Optional[str] = None
     status: str
@@ -123,6 +127,8 @@ class CustomDesignListResponse(BaseModel):
     current_version: int
     hat_style: str
     material: str
+    crown_color: Optional[str] = None
+    visor_color: Optional[str] = None
     design_type: str
     reference_hat_path: Optional[str] = None
     status: str

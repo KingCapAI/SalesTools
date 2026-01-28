@@ -256,6 +256,8 @@ export interface CustomDesign {
   current_version: number;
   hat_style: string;
   material: string;
+  crown_color?: string;
+  visor_color?: string;
   design_type: 'custom';
   reference_hat_path?: string;
   status: string;
@@ -279,6 +281,8 @@ export interface CustomDesignListItem {
   current_version: number;
   hat_style: string;
   material: string;
+  crown_color?: string;
+  visor_color?: string;
   design_type: 'custom';
   reference_hat_path?: string;
   status: string;
@@ -297,6 +301,8 @@ export interface CustomDesignCreate {
   design_name?: string;
   hat_style: HatStyle;
   material: Material;
+  crown_color?: string;
+  visor_color?: string;
   reference_hat_path?: string;
   location_logos: LocationLogoCreate[];
 }

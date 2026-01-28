@@ -23,6 +23,8 @@ export function CustomDesignBuilder() {
   const [designName, setDesignName] = useState('');
   const [hatStyle, setHatStyle] = useState<HatStyle>('6-panel-hat');
   const [material, setMaterial] = useState<Material>('cotton-twill');
+  const [crownColor, setCrownColor] = useState('black');
+  const [visorColor, setVisorColor] = useState('black');
   const [referenceHatPath, setReferenceHatPath] = useState<string | null>(null);
 
   // Location logos state - keyed by location
@@ -73,6 +75,8 @@ export function CustomDesignBuilder() {
         design_name: designName.trim() || undefined,
         hat_style: hatStyle,
         material: material,
+        crown_color: crownColor,
+        visor_color: visorColor === 'match-crown' ? crownColor : visorColor,
         reference_hat_path: referenceHatPath || undefined,
         location_logos: validLogos,
       });
@@ -103,8 +107,8 @@ export function CustomDesignBuilder() {
                 <Layers className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-100">Custom Design Builder</h1>
-                <p className="text-gray-400">Build a hat design with specific logos and placements</p>
+                <h1 className="text-2xl font-bold text-gray-100">Mockup Builder</h1>
+                <p className="text-gray-400">Build a hat mockup with specific logos and placements</p>
               </div>
             </div>
           </div>
@@ -149,6 +153,63 @@ export function CustomDesignBuilder() {
             <div className="space-y-6">
               <HatStyleSelector value={hatStyle} onChange={setHatStyle} />
               <MaterialSelector value={material} onChange={setMaterial} />
+
+              {/* Color Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Crown Color</label>
+                  <select
+                    value={crownColor}
+                    onChange={(e) => setCrownColor(e.target.value)}
+                    className="input w-full"
+                  >
+                    <option value="black">Black</option>
+                    <option value="white">White</option>
+                    <option value="navy">Navy Blue</option>
+                    <option value="royal-blue">Royal Blue</option>
+                    <option value="red">Red</option>
+                    <option value="burgundy">Burgundy</option>
+                    <option value="green">Green</option>
+                    <option value="forest-green">Forest Green</option>
+                    <option value="khaki">Khaki/Tan</option>
+                    <option value="brown">Brown</option>
+                    <option value="gray">Gray</option>
+                    <option value="charcoal">Charcoal</option>
+                    <option value="orange">Orange</option>
+                    <option value="yellow">Yellow</option>
+                    <option value="pink">Pink</option>
+                    <option value="purple">Purple</option>
+                    <option value="camo">Camo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Visor Color</label>
+                  <select
+                    value={visorColor}
+                    onChange={(e) => setVisorColor(e.target.value)}
+                    className="input w-full"
+                  >
+                    <option value="black">Black</option>
+                    <option value="white">White</option>
+                    <option value="navy">Navy Blue</option>
+                    <option value="royal-blue">Royal Blue</option>
+                    <option value="red">Red</option>
+                    <option value="burgundy">Burgundy</option>
+                    <option value="green">Green</option>
+                    <option value="forest-green">Forest Green</option>
+                    <option value="khaki">Khaki/Tan</option>
+                    <option value="brown">Brown</option>
+                    <option value="gray">Gray</option>
+                    <option value="charcoal">Charcoal</option>
+                    <option value="orange">Orange</option>
+                    <option value="yellow">Yellow</option>
+                    <option value="pink">Pink</option>
+                    <option value="purple">Purple</option>
+                    <option value="camo">Camo</option>
+                    <option value="match-crown">Match Crown Color</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 

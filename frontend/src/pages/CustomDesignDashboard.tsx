@@ -85,8 +85,8 @@ export function CustomDesignDashboard() {
                 <Layers className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-100">Custom Design Dashboard</h1>
-                <p className="text-gray-400">Manage custom hat designs with specific placements</p>
+                <h1 className="text-2xl font-bold text-gray-100">Mockup Builder</h1>
+                <p className="text-gray-400">Manage hat mockups with specific placements</p>
               </div>
             </div>
           </div>

@@ -6,15 +6,15 @@ import { Palette, Calculator, Megaphone, FileText, Layers } from 'lucide-react';
 const apps = [
   {
     id: 'ai-design-generator',
-    title: 'AI Design Generator',
-    description: 'Create custom hat designs using AI. Upload logos, set brand guidelines, and generate professional product shots.',
+    title: 'AI Design Conceptor',
+    description: 'Create custom hat design concepts using AI. Upload logos, set brand guidelines, and generate professional product shots.',
     icon: Palette,
     to: '/ai-design-generator',
   },
   {
     id: 'custom-design-builder',
-    title: 'Custom Design Builder',
-    description: 'Build hat designs with specific logo placements. Upload logos for each location and recreate reference hats.',
+    title: 'Mockup Builder',
+    description: 'Build hat mockups with specific logo placements. Upload logos for each location and recreate reference hats.',
     icon: Layers,
     to: '/custom-design-builder',
   },

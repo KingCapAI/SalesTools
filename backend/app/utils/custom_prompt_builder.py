@@ -49,11 +49,26 @@ def format_location(location: str) -> str:
     return LOCATION_NAMES.get(location, location)
 
 
+def format_color(color: Optional[str]) -> str:
+    """Convert color code to display name."""
+    if not color:
+        return "black"
+    # Map common codes to display names
+    color_map = {
+        "royal-blue": "royal blue",
+        "forest-green": "forest green",
+        "match-crown": None,  # Special case handled elsewhere
+    }
+    return color_map.get(color, color)
+
+
 def build_custom_design_prompt(
     hat_style: str,
     material: str,
     brand_name: str,
     location_logos: List[Dict],
+    crown_color: Optional[str] = None,
+    visor_color: Optional[str] = None,
     reference_hat_path: Optional[str] = None,
 ) -> str:
     """
@@ -68,6 +83,8 @@ def build_custom_design_prompt(
             - decoration_method: The decoration method code
             - size: The size code
             - size_details: Optional custom size details
+        crown_color: Color of the hat crown
+        visor_color: Color of the visor
         reference_hat_path: Optional path to reference hat image
 
     Returns:
@@ -75,6 +92,8 @@ def build_custom_design_prompt(
     """
     formatted_style = format_hat_style(hat_style)
     formatted_material = format_material(material)
+    formatted_crown_color = format_color(crown_color)
+    formatted_visor_color = format_color(visor_color)
 
     # Build decoration location descriptions
     decoration_descriptions = []
@@ -95,12 +114,13 @@ def build_custom_design_prompt(
 
 REFERENCE HAT: An image of a reference hat has been provided. Match the following aspects:
 - Overall hat shape and style
-- Color scheme and color blocking
 - Panel structure and construction details
 - Any distinctive design elements (stitching patterns, contrast elements, etc.)
 
 TARGET HAT SPECIFICATIONS:
 - Hat type: **{formatted_style}** made of **{formatted_material}**
+- Crown color: **{formatted_crown_color}**
+- Visor/brim color: **{formatted_visor_color}**
 - Brand: **{brand_name}**
 
 LOGO PLACEMENTS - Replace any existing logos/branding with the customer's provided logos at these specific locations:
@@ -109,8 +129,9 @@ LOGO PLACEMENTS - Replace any existing logos/branding with the customer's provid
 CRITICAL INSTRUCTIONS:
 1. Use ONLY the provided logo images for each location - do NOT search for or use any other logos
 2. Match the reference hat's style and aesthetic as closely as possible
-3. Maintain professional quality and clean execution
-4. Each logo should be clearly visible and properly sized for its location
+3. Use the specified crown color ({formatted_crown_color}) and visor color ({formatted_visor_color})
+4. Maintain professional quality and clean execution
+5. Each logo should be clearly visible and properly sized for its location
 
 The hat is viewed from the front, left, right, back, underneath the visor with the front end of the visor pointing down, and worn on a white male model.
 
@@ -121,6 +142,10 @@ Add the following legal language to the bottom of the image: {LEGAL_TEXT}"""
         # Standard custom design mode
         prompt = f"""Create a photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.
 
+HAT COLORS:
+- Crown/panels: **{formatted_crown_color}**
+- Visor/brim: **{formatted_visor_color}**
+
 BRAND: **{brand_name}**
 
 DECORATION SPECIFICATIONS - Place the provided logos at exactly these locations using the specified methods:
@@ -128,11 +153,13 @@ DECORATION SPECIFICATIONS - Place the provided logos at exactly these locations 
 
 CRITICAL INSTRUCTIONS:
 1. Use ONLY the provided logo images for each location - do NOT search for or use any other logos from the internet
-2. Place each logo exactly at its specified location
-3. Use the specified decoration method for each location (embroidery has texture and depth, patches are raised, screen print is flat, etc.)
-4. Size each decoration according to the specification
-5. Do NOT add any decorations at locations not specified above
-6. Keep the design clean and professional
+2. The hat crown/panels must be **{formatted_crown_color}** color
+3. The visor/brim must be **{formatted_visor_color}** color
+4. Place each logo exactly at its specified location
+5. Use the specified decoration method for each location (embroidery has texture and depth, patches are raised, screen print is flat, etc.)
+6. Size each decoration according to the specification
+7. Do NOT add any decorations at locations not specified above
+8. Keep the design clean and professional
 
 The hat is viewed from the front, left, right, back, underneath the visor with the front end of the visor pointing down, and worn on a white male model.
 
