@@ -52,9 +52,15 @@ def seed_default_data():
     """Seed default teams and data."""
     db = SessionLocal()
     try:
+        # First, ensure all existing teams have custom-design-builder
+        existing_teams = db.query(Team).all()
+        for team in existing_teams:
+            if team.allowed_apps and "custom-design-builder" not in team.allowed_apps:
+                team.allowed_apps = team.allowed_apps + ["custom-design-builder"]
+        db.commit()
+
         # Check if teams exist
-        existing_teams = db.query(Team).count()
-        if existing_teams == 0:
+        if len(existing_teams) == 0:
             # Create default teams
             teams = [
                 Team(
