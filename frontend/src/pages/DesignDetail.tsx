@@ -7,9 +7,9 @@ import { VersionHistory } from '../components/design-generator/VersionHistory';
 import { RevisionChat } from '../components/design-generator/RevisionChat';
 import { QuoteModal } from '../components/design-generator/QuoteModal';
 import { QuoteSummary } from '../components/design-generator/QuoteSummary';
-import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign } from '../hooks/useDesigns';
+import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign, useRegenerateDesign } from '../hooks/useDesigns';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
-import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download, Calculator } from 'lucide-react';
+import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download, Calculator, RefreshCw } from 'lucide-react';
 import { uploadsApi } from '../api/uploads';
 import type { ApprovalStatus } from '../types/api';
 
@@ -26,6 +26,7 @@ export function DesignDetail() {
   const createRevision = useCreateRevision();
   const addChatMessage = useAddChatMessage();
   const updateDesign = useUpdateDesign();
+  const regenerateDesign = useRegenerateDesign();
 
   // Quote hooks
   const { data: designQuote, refetch: refetchQuote } = useDesignQuote(designId || '');
@@ -92,6 +93,18 @@ export function DesignDetail() {
       setSelectedVersionId(newVersion.id);
     } else if (result.data?.versions?.length) {
       // Fallback: select the last version (highest version number)
+      const versions = result.data.versions;
+      setSelectedVersionId(versions[versions.length - 1].id);
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (!designId) return;
+    const newVersion = await regenerateDesign.mutateAsync(designId);
+    const result = await refetch();
+    if (newVersion?.id) {
+      setSelectedVersionId(newVersion.id);
+    } else if (result.data?.versions?.length) {
       const versions = result.data.versions;
       setSelectedVersionId(versions[versions.length - 1].id);
     }
@@ -202,6 +215,15 @@ export function DesignDetail() {
             <Button
               variant="outline"
               size="sm"
+              onClick={handleRegenerate}
+              isLoading={regenerateDesign.isPending}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setQuoteModalOpen(true)}
             >
               <Calculator className="w-4 h-4 mr-2" />
@@ -233,7 +255,7 @@ export function DesignDetail() {
               <DesignPreview
                 version={selectedVersion || null}
                 designNumber={design.design_number}
-                isLoading={createRevision.isPending}
+                isLoading={createRevision.isPending || regenerateDesign.isPending}
               />
             </div>
           </div>
@@ -302,7 +324,7 @@ export function DesignDetail() {
                 chats={design.chats || []}
                 onSendMessage={handleSendMessage}
                 onRequestRevision={handleRequestRevision}
-                isLoading={createRevision.isPending || addChatMessage.isPending}
+                isLoading={createRevision.isPending || addChatMessage.isPending || regenerateDesign.isPending}
               />
             </div>
           </div>

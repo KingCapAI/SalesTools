@@ -24,6 +24,8 @@ from ..services.design_service import (
     get_design_with_versions,
     search_designs,
 )
+from ..services.gemini_service import generate_design
+from ..services.storage_service import save_generated_image
 from ..utils.dependencies import require_auth, get_current_user
 
 router = APIRouter(prefix="/designs", tags=["Designs"])
@@ -120,6 +122,78 @@ async def delete_design(
     db.delete(design)
     db.commit()
     return {"message": "Design deleted successfully"}
+
+
+@router.post("/{design_id}/regenerate", response_model=DesignVersionResponse)
+async def regenerate_design(
+    design_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """Regenerate a design (create a new version with the same inputs)."""
+    design = db.query(Design).filter(Design.id == design_id).first()
+    if not design:
+        raise HTTPException(status_code=404, detail="Design not found")
+
+    # Don't regenerate custom designs through this endpoint
+    if design.design_type == "custom":
+        raise HTTPException(
+            status_code=400,
+            detail="Use the custom designs endpoint to regenerate custom designs"
+        )
+
+    # Reconstruct style directions from stored string
+    style_directions = design.style_directions.split(",") if design.style_directions else ["modern"]
+    style_description = " and ".join(style_directions)
+
+    # Generate new version
+    new_version_number = design.current_version + 1
+
+    try:
+        result = await generate_design(
+            customer_name=design.brand_name,
+            hat_style=design.hat_style,
+            material=design.material,
+            style_direction=style_description,
+            custom_description=design.custom_description,
+            structure=design.structure,
+            closure=design.closure,
+            logo_path=design.logo_path,
+            brand_assets=[],
+        )
+
+        # Create version record
+        version = DesignVersion(
+            design_id=design.id,
+            version_number=new_version_number,
+            prompt=result.get("prompt", ""),
+        )
+
+        if result.get("success") and result.get("image_data"):
+            image_path = await save_generated_image(
+                image_data=result["image_data"],
+                design_id=design.id,
+                version_number=new_version_number,
+            )
+            version.image_path = image_path
+            version.generation_status = "completed"
+        else:
+            version.generation_status = "failed"
+            version.error_message = result.get("error", "Unknown error")
+
+        db.add(version)
+
+        # Update design's current version
+        design.current_version = new_version_number
+        design.updated_at = datetime.utcnow()
+
+        db.commit()
+        db.refresh(version)
+
+        return version
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to regenerate design: {str(e)}")
 
 
 @router.get("/{design_id}/versions", response_model=List[DesignVersionResponse])

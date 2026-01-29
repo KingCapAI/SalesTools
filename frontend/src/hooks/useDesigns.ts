@@ -85,3 +85,15 @@ export function useAddChatMessage() {
     },
   });
 }
+
+export function useRegenerateDesign() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (designId: string) => designsApi.regenerate(designId),
+    onSuccess: (_, designId) => {
+      queryClient.invalidateQueries({ queryKey: ['design', designId] });
+      queryClient.invalidateQueries({ queryKey: ['designs'] });
+    },
+  });
+}

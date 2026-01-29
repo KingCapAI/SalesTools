@@ -23,6 +23,7 @@ class Design(Base):
     closure = Column(String(50), nullable=True)  # "snapback", "metal_slider_buckle", "velcro_strap"
     style_directions = Column(String(500), nullable=False)  # Comma-separated list (up to 3)
     custom_description = Column(Text, nullable=True)
+    logo_path = Column(String(500), nullable=True)  # Path to uploaded logo for AI-generated designs
     status = Column(String(50), nullable=False, default="active")
     approval_status = Column(String(50), nullable=False, default="pending")  # pending, approved, rejected
     shared_with_team = Column(Boolean, nullable=False, default=False)

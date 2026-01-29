@@ -57,4 +57,9 @@ export const designsApi = {
     const response = await api.post(`/designs/${designId}/chat`, { message });
     return response.data;
   },
+
+  regenerate: async (designId: string): Promise<DesignVersion> => {
+    const response = await api.post(`/designs/${designId}/regenerate`);
+    return response.data;
+  },
 };

@@ -53,6 +53,7 @@ async def create_design(
         closure=design_data.closure.value if design_data.closure else None,
         style_directions=style_directions_str,
         custom_description=design_data.custom_description,
+        logo_path=design_data.logo_path,
         created_by_id=user_id,
     )
     db.add(design)

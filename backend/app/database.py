@@ -88,6 +88,13 @@ def run_migrations(engine):
                 conn.commit()
                 print("Migration: Added closure column to designs table")
 
+            if 'logo_path' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE designs ADD COLUMN logo_path VARCHAR(500)"
+                ))
+                conn.commit()
+                print("Migration: Added logo_path column to designs table")
+
 
 def init_db():
     """Initialize database tables."""
