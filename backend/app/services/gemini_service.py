@@ -14,11 +14,14 @@ from ..config import get_settings
 from ..utils.prompt_builder import build_design_prompt, build_revision_prompt
 from ..utils.custom_prompt_builder import build_custom_design_prompt, build_custom_revision_prompt
 
+# Supported image formats for Gemini API
+SUPPORTED_IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
+
 settings = get_settings()
 
 # Retry configuration for 503 errors
-MAX_RETRIES = 3
-RETRY_DELAY_SECONDS = 2
+MAX_RETRIES = 5
+RETRY_DELAY_SECONDS = 5
 IMAGE_GENERATION_TIMEOUT = 300.0  # 5 minutes for image generation
 
 
@@ -146,23 +149,28 @@ async def generate_design_image(
             try:
                 full_logo_path = Path(settings.upload_dir) / logo_path
                 if full_logo_path.exists():
-                    with open(full_logo_path, "rb") as f:
-                        logo_bytes = f.read()
-                    logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
+                    # Check file extension - skip unsupported formats
+                    ext = Path(logo_path).suffix.lower()
+                    if ext not in SUPPORTED_IMAGE_EXTENSIONS:
+                        print(f"Warning: Skipping unsupported image format: {ext}. Only PNG, JPG, and WEBP are supported.")
+                    else:
+                        with open(full_logo_path, "rb") as f:
+                            logo_bytes = f.read()
+                        logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
 
-                    # Determine mime type
-                    mime_type = "image/png"
-                    if logo_path.lower().endswith((".jpg", ".jpeg")):
-                        mime_type = "image/jpeg"
-                    elif logo_path.lower().endswith(".svg"):
-                        mime_type = "image/svg+xml"
+                        # Determine mime type
+                        mime_type = "image/png"
+                        if ext in {'.jpg', '.jpeg'}:
+                            mime_type = "image/jpeg"
+                        elif ext == '.webp':
+                            mime_type = "image/webp"
 
-                    parts.append({
-                        "inlineData": {
-                            "mimeType": mime_type,
-                            "data": logo_base64
-                        }
-                    })
+                        parts.append({
+                            "inlineData": {
+                                "mimeType": mime_type,
+                                "data": logo_base64
+                            }
+                        })
             except Exception as e:
                 print(f"Warning: Could not load logo: {e}")
 
@@ -555,15 +563,22 @@ async def generate_custom_design(
                 try:
                     full_logo_path = Path(settings.upload_dir) / logo_path
                     if full_logo_path.exists():
+                        # Check file extension - skip unsupported formats
+                        ext = Path(logo_path).suffix.lower()
+                        if ext not in SUPPORTED_IMAGE_EXTENSIONS:
+                            print(f"Warning: Skipping {location} logo - unsupported format: {ext}. Only PNG, JPG, and WEBP are supported.")
+                            continue
+
                         with open(full_logo_path, "rb") as f:
                             logo_bytes = f.read()
                         logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
 
+                        # Determine mime type
                         mime_type = "image/png"
-                        if logo_path.lower().endswith((".jpg", ".jpeg")):
+                        if ext in {'.jpg', '.jpeg'}:
                             mime_type = "image/jpeg"
-                        elif logo_path.lower().endswith(".svg"):
-                            mime_type = "image/svg+xml"
+                        elif ext == '.webp':
+                            mime_type = "image/webp"
 
                         # Add label text before the logo
                         parts.append({"text": f"LOGO FOR {location.upper()} LOCATION:"})

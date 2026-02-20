@@ -78,7 +78,6 @@ export function LocationLogoUpload({
     accept: {
       'image/png': ['.png'],
       'image/jpeg': ['.jpg', '.jpeg'],
-      'image/svg+xml': ['.svg'],
       'image/webp': ['.webp'],
     },
     maxFiles: 1,

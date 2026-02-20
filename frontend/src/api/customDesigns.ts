@@ -48,8 +48,14 @@ export const customDesignsApi = {
     await api.delete(`/custom-designs/${id}`);
   },
 
-  regenerate: async (id: string): Promise<DesignVersion> => {
-    const response = await api.post(`/custom-designs/${id}/generate`);
+  regenerate: async (id: string, versionId?: string): Promise<DesignVersion> => {
+    const params = versionId ? { version_id: versionId } : {};
+    const response = await api.post(`/custom-designs/${id}/generate`, null, { params });
+    return response.data;
+  },
+
+  duplicate: async (id: string): Promise<CustomDesign> => {
+    const response = await api.post(`/custom-designs/${id}/duplicate`);
     return response.data;
   },
 

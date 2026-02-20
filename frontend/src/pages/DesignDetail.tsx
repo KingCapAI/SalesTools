@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
 import { DesignPreview } from '../components/design-generator/DesignPreview';
@@ -7,9 +7,9 @@ import { VersionHistory } from '../components/design-generator/VersionHistory';
 import { RevisionChat } from '../components/design-generator/RevisionChat';
 import { QuoteModal } from '../components/design-generator/QuoteModal';
 import { QuoteSummary } from '../components/design-generator/QuoteSummary';
-import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign, useRegenerateDesign } from '../hooks/useDesigns';
+import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign, useRegenerateDesign, useDuplicateDesign } from '../hooks/useDesigns';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
-import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download, Calculator, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download, Calculator, RefreshCw, Copy } from 'lucide-react';
 import { uploadsApi } from '../api/uploads';
 import type { ApprovalStatus } from '../types/api';
 
@@ -21,12 +21,14 @@ const approvalStatusConfig: Record<ApprovalStatus, { label: string; icon: typeof
 
 export function DesignDetail() {
   const { designId } = useParams<{ designId: string }>();
+  const navigate = useNavigate();
 
   const { data: design, isLoading, refetch } = useDesign(designId || '');
   const createRevision = useCreateRevision();
   const addChatMessage = useAddChatMessage();
   const updateDesign = useUpdateDesign();
   const regenerateDesign = useRegenerateDesign();
+  const duplicateDesign = useDuplicateDesign();
 
   // Quote hooks
   const { data: designQuote, refetch: refetchQuote } = useDesignQuote(designId || '');
@@ -99,14 +101,35 @@ export function DesignDetail() {
   };
 
   const handleRegenerate = async () => {
+    if (!designId || !selectedVersion) return;
+    try {
+      // Pass the selected version ID to retry that specific version
+      const newVersion = await regenerateDesign.mutateAsync({
+        designId,
+        versionId: selectedVersion.id,
+      });
+      const result = await refetch();
+      if (newVersion?.id) {
+        setSelectedVersionId(newVersion.id);
+      } else if (result.data?.versions?.length) {
+        const versions = result.data.versions;
+        setSelectedVersionId(versions[versions.length - 1].id);
+      }
+    } catch (error: any) {
+      console.error('Error regenerating design:', error);
+      alert(`Failed to regenerate design: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleDuplicate = async () => {
     if (!designId) return;
-    const newVersion = await regenerateDesign.mutateAsync(designId);
-    const result = await refetch();
-    if (newVersion?.id) {
-      setSelectedVersionId(newVersion.id);
-    } else if (result.data?.versions?.length) {
-      const versions = result.data.versions;
-      setSelectedVersionId(versions[versions.length - 1].id);
+    try {
+      const newDesign = await duplicateDesign.mutateAsync(designId);
+      // Navigate to the new design
+      navigate(`/ai-design-generator/design/${newDesign.id}`);
+    } catch (error: any) {
+      console.error('Error duplicating design:', error);
+      alert(`Failed to duplicate design: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
     }
   };
 
@@ -217,9 +240,20 @@ export function DesignDetail() {
               size="sm"
               onClick={handleRegenerate}
               isLoading={regenerateDesign.isPending}
+              title="Retry generating the selected version"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDuplicate}
+              isLoading={duplicateDesign.isPending}
+              title="Create a new design with the same inputs"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Duplicate
             </Button>
             <Button
               variant="outline"
@@ -255,7 +289,7 @@ export function DesignDetail() {
               <DesignPreview
                 version={selectedVersion || null}
                 designNumber={design.design_number}
-                isLoading={createRevision.isPending || regenerateDesign.isPending}
+                isLoading={createRevision.isPending || regenerateDesign.isPending || duplicateDesign.isPending}
               />
             </div>
           </div>

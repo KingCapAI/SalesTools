@@ -57,9 +57,21 @@ export function useRegenerateCustomDesign() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => customDesignsApi.regenerate(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ['custom-design', id] });
+    mutationFn: ({ designId, versionId }: { designId: string; versionId?: string }) =>
+      customDesignsApi.regenerate(designId, versionId),
+    onSuccess: (_, { designId }) => {
+      queryClient.invalidateQueries({ queryKey: ['custom-design', designId] });
+      queryClient.invalidateQueries({ queryKey: ['custom-designs'] });
+    },
+  });
+}
+
+export function useDuplicateCustomDesign() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (designId: string) => customDesignsApi.duplicate(designId),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['custom-designs'] });
     },
   });

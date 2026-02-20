@@ -14,12 +14,11 @@ from ..utils.dependencies import require_auth
 router = APIRouter(prefix="/upload", tags=["Uploads"])
 settings = get_settings()
 
-# Allowed MIME types
-LOGO_TYPES = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"]
+# Allowed MIME types (SVG not supported - Gemini API only accepts PNG/JPG/WEBP)
+LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"]
 BRAND_ASSET_TYPES = [
     "image/png",
     "image/jpeg",
-    "image/svg+xml",
     "image/webp",
     "application/pdf",
 ]

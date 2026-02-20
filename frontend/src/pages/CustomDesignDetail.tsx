@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
 import { DesignPreview } from '../components/design-generator/DesignPreview';
@@ -13,9 +13,10 @@ import {
   useAddCustomDesignChatMessage,
   useUpdateCustomDesign,
   useRegenerateCustomDesign,
+  useDuplicateCustomDesign,
 } from '../hooks/useCustomDesigns';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
-import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download, Calculator, RefreshCw, Layers } from 'lucide-react';
+import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download, Calculator, RefreshCw, Layers, Copy } from 'lucide-react';
 import { uploadsApi } from '../api/uploads';
 import type { ApprovalStatus } from '../types/api';
 
@@ -45,12 +46,14 @@ const DECORATION_METHOD_LABELS: Record<string, string> = {
 
 export function CustomDesignDetail() {
   const { designId } = useParams<{ designId: string }>();
+  const navigate = useNavigate();
 
   const { data: design, isLoading, refetch } = useCustomDesign(designId || '');
   const createRevision = useCreateCustomDesignRevision();
   const addChatMessage = useAddCustomDesignChatMessage();
   const updateDesign = useUpdateCustomDesign();
   const regenerateDesign = useRegenerateCustomDesign();
+  const duplicateDesign = useDuplicateCustomDesign();
 
   // Quote hooks
   const { data: designQuote, refetch: refetchQuote } = useDesignQuote(designId || '');
@@ -122,14 +125,35 @@ export function CustomDesignDetail() {
   };
 
   const handleRegenerate = async () => {
+    if (!designId || !selectedVersion) return;
+    try {
+      // Pass the selected version ID to retry that specific version
+      const newVersion = await regenerateDesign.mutateAsync({
+        designId,
+        versionId: selectedVersion.id,
+      });
+      const result = await refetch();
+      if (newVersion?.id) {
+        setSelectedVersionId(newVersion.id);
+      } else if (result.data?.versions?.length) {
+        const versions = result.data.versions;
+        setSelectedVersionId(versions[versions.length - 1].id);
+      }
+    } catch (error: any) {
+      console.error('Error regenerating design:', error);
+      alert(`Failed to regenerate design: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleDuplicate = async () => {
     if (!designId) return;
-    const newVersion = await regenerateDesign.mutateAsync(designId);
-    const result = await refetch();
-    if (newVersion?.id) {
-      setSelectedVersionId(newVersion.id);
-    } else if (result.data?.versions?.length) {
-      const versions = result.data.versions;
-      setSelectedVersionId(versions[versions.length - 1].id);
+    try {
+      const newDesign = await duplicateDesign.mutateAsync(designId);
+      // Navigate to the new design
+      navigate(`/custom-design-builder/design/${newDesign.id}`);
+    } catch (error: any) {
+      console.error('Error duplicating design:', error);
+      alert(`Failed to duplicate design: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
     }
   };
 
@@ -245,9 +269,20 @@ export function CustomDesignDetail() {
               size="sm"
               onClick={handleRegenerate}
               isLoading={regenerateDesign.isPending}
+              title="Retry generating the selected version"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Regenerate
+              Try Again
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDuplicate}
+              isLoading={duplicateDesign.isPending}
+              title="Create a new design with the same inputs"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Duplicate
             </Button>
             <Button
               variant="outline"
@@ -283,7 +318,7 @@ export function CustomDesignDetail() {
               <DesignPreview
                 version={selectedVersion || null}
                 designNumber={design.design_number}
-                isLoading={createRevision.isPending || regenerateDesign.isPending}
+                isLoading={createRevision.isPending || regenerateDesign.isPending || duplicateDesign.isPending}
               />
             </div>
           </div>

@@ -58,8 +58,14 @@ export const designsApi = {
     return response.data;
   },
 
-  regenerate: async (designId: string): Promise<DesignVersion> => {
-    const response = await api.post(`/designs/${designId}/regenerate`);
+  regenerate: async (designId: string, versionId?: string): Promise<DesignVersion> => {
+    const params = versionId ? { version_id: versionId } : {};
+    const response = await api.post(`/designs/${designId}/regenerate`, null, { params });
+    return response.data;
+  },
+
+  duplicate: async (designId: string): Promise<Design> => {
+    const response = await api.post(`/designs/${designId}/duplicate`);
     return response.data;
   },
 };

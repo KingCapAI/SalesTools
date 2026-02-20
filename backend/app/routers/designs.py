@@ -127,10 +127,18 @@ async def delete_design(
 @router.post("/{design_id}/regenerate", response_model=DesignVersionResponse)
 async def regenerate_design(
     design_id: str,
+    version_id: Optional[str] = Query(None, description="Specific version to retry. If not provided, retries using original inputs."),
     db: Session = Depends(get_db),
     user=Depends(require_auth),
 ):
-    """Regenerate a design (create a new version with the same inputs)."""
+    """
+    Retry generating a design version.
+
+    If version_id is provided, retries that specific version using its stored prompt.
+    If version_id is not provided, generates a fresh version using the original design inputs.
+    """
+    from ..services.gemini_service import generate_revision
+
     design = db.query(Design).filter(Design.id == design_id).first()
     if not design:
         raise HTTPException(status_code=404, detail="Design not found")
@@ -142,25 +150,66 @@ async def regenerate_design(
             detail="Use the custom designs endpoint to regenerate custom designs"
         )
 
-    # Reconstruct style directions from stored string
-    style_directions = design.style_directions.split(",") if design.style_directions else ["modern"]
-    style_description = " and ".join(style_directions)
-
-    # Generate new version
     new_version_number = design.current_version + 1
 
     try:
-        result = await generate_design(
-            customer_name=design.brand_name,
-            hat_style=design.hat_style,
-            material=design.material,
-            style_direction=style_description,
-            custom_description=design.custom_description,
-            structure=design.structure,
-            closure=design.closure,
-            logo_path=design.logo_path,
-            brand_assets=[],
-        )
+        # If a specific version is provided, retry that version's generation
+        if version_id:
+            target_version = db.query(DesignVersion).filter(
+                DesignVersion.id == version_id,
+                DesignVersion.design_id == design_id
+            ).first()
+
+            if not target_version:
+                raise HTTPException(status_code=404, detail="Version not found")
+
+            # For version 1, regenerate with original inputs
+            if target_version.version_number == 1:
+                style_directions = design.style_directions.split(",") if design.style_directions else ["modern"]
+                style_description = " and ".join(style_directions)
+
+                result = await generate_design(
+                    customer_name=design.brand_name,
+                    hat_style=design.hat_style,
+                    material=design.material,
+                    style_direction=style_description,
+                    custom_description=design.custom_description,
+                    structure=design.structure,
+                    closure=design.closure,
+                    logo_path=design.logo_path,
+                    brand_assets=[],
+                )
+            else:
+                # For revisions (v2+), we need to get the version before it for context
+                previous_version = db.query(DesignVersion).filter(
+                    DesignVersion.design_id == design_id,
+                    DesignVersion.version_number == target_version.version_number - 1
+                ).first()
+
+                # Re-run generation with the stored prompt and previous image
+                result = await generate_revision(
+                    original_prompt=target_version.prompt,
+                    revision_notes="",  # The prompt already contains the revision
+                    original_image_path=previous_version.image_path if previous_version else None,
+                    logo_path=design.logo_path,
+                    brand_assets=[],
+                )
+        else:
+            # No version specified - generate fresh with original inputs
+            style_directions = design.style_directions.split(",") if design.style_directions else ["modern"]
+            style_description = " and ".join(style_directions)
+
+            result = await generate_design(
+                customer_name=design.brand_name,
+                hat_style=design.hat_style,
+                material=design.material,
+                style_direction=style_description,
+                custom_description=design.custom_description,
+                structure=design.structure,
+                closure=design.closure,
+                logo_path=design.logo_path,
+                brand_assets=[],
+            )
 
         # Create version record
         version = DesignVersion(
@@ -194,6 +243,61 @@ async def regenerate_design(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to regenerate design: {str(e)}")
+
+
+@router.post("/{design_id}/duplicate", response_model=DesignResponse)
+async def duplicate_design(
+    design_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """
+    Create a new design with the same inputs as an existing design.
+
+    This creates a completely separate design entry with a fresh v1 generation.
+    """
+    from ..schemas.design import DesignCreate, HatStyle, Material, StyleDirection, HatStructure, ClosureType
+
+    design = db.query(Design).filter(Design.id == design_id).first()
+    if not design:
+        raise HTTPException(status_code=404, detail="Design not found")
+
+    # Don't duplicate custom designs through this endpoint
+    if design.design_type == "custom":
+        raise HTTPException(
+            status_code=400,
+            detail="Use the custom designs endpoint to duplicate custom designs"
+        )
+
+    try:
+        # Reconstruct style directions from stored string
+        style_directions_str = design.style_directions.split(",") if design.style_directions else ["modern"]
+        style_directions = [StyleDirection(sd) for sd in style_directions_str]
+
+        # Create the new design using the same inputs
+        design_data = DesignCreate(
+            customer_name=design.customer_name,
+            brand_name=design.brand_name,
+            design_name=design.design_name,
+            hat_style=HatStyle(design.hat_style),
+            material=Material(design.material),
+            structure=HatStructure(design.structure) if design.structure else None,
+            closure=ClosureType(design.closure) if design.closure else None,
+            style_directions=style_directions,
+            custom_description=design.custom_description,
+            logo_path=design.logo_path,
+        )
+
+        new_design = await create_design(
+            db=db,
+            design_data=design_data,
+            user_id=user.id,
+        )
+
+        return get_design_with_versions(db, new_design.id)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to duplicate design: {str(e)}")
 
 
 @router.get("/{design_id}/versions", response_model=List[DesignVersionResponse])

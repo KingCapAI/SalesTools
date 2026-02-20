@@ -38,7 +38,6 @@ export function LogoUpload({ logoPath, onUpload, disabled }: LogoUploadProps) {
     accept: {
       'image/png': ['.png'],
       'image/jpeg': ['.jpg', '.jpeg'],
-      'image/svg+xml': ['.svg'],
       'image/webp': ['.webp'],
     },
     maxFiles: 1,
@@ -96,7 +95,7 @@ export function LogoUpload({ logoPath, onUpload, disabled }: LogoUploadProps) {
                 ? 'Drop the logo here'
                 : 'Drag and drop a logo, or click to select'}
             </p>
-            <p className="text-xs text-gray-500 mt-1">PNG, JPG, SVG up to 10MB</p>
+            <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP up to 10MB</p>
           </div>
         )}
       </div>
