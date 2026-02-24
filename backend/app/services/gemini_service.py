@@ -233,7 +233,7 @@ async def generate_design_image(
                         continue
                     return {
                         "success": False,
-                        "error": f"API error 503: {last_error} (tried {MAX_RETRIES} times)",
+                        "error": "The AI image generator is currently busy. Please wait a moment and try again.",
                     }
 
                 if response.status_code != 200:
@@ -422,7 +422,7 @@ IMPORTANT: Keep everything else exactly the same. Only modify what is specifical
                     return {
                         "success": False,
                         "prompt": revision_notes,
-                        "error": f"API error 503: {last_error} (tried {MAX_RETRIES} times)",
+                        "error": "The AI image generator is currently busy. Please wait a moment and try again.",
                     }
 
                 if response.status_code != 200:
@@ -630,7 +630,7 @@ async def generate_custom_design(
                     return {
                         "success": False,
                         "prompt": prompt,
-                        "error": f"API error 503: {last_error} (tried {MAX_RETRIES} times)",
+                        "error": "The AI image generator is currently busy. Please wait a moment and try again.",
                     }
 
                 if response.status_code != 200:
