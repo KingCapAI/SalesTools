@@ -413,7 +413,6 @@ export function CustomDesignDetail() {
             <div className="card">
               <VersionHistory
                 versions={versions}
-                designNumber={design.design_number}
                 selectedVersionId={selectedVersion?.id || null}
                 onSelectVersion={setSelectedVersionId}
               />

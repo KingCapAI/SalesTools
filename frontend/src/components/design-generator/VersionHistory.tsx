@@ -1,17 +1,16 @@
 import { clsx } from 'clsx';
+import { CheckCircle2 } from 'lucide-react';
 import { uploadsApi } from '../../api/uploads';
 import type { DesignVersion } from '../../types/api';
 
 interface VersionHistoryProps {
   versions: DesignVersion[];
-  designNumber: number;
   selectedVersionId: string | null;
   onSelectVersion: (versionId: string) => void;
 }
 
 export function VersionHistory({
   versions,
-  designNumber,
   selectedVersionId,
   onSelectVersion,
 }: VersionHistoryProps) {
@@ -21,8 +20,11 @@ export function VersionHistory({
 
   return (
     <div>
-      <h3 className="font-semibold text-white mb-3">Version History</h3>
-      <div className="space-y-2">
+      <h3 className="font-semibold text-white mb-1">Version History</h3>
+      <p className="text-xs text-gray-500 mb-3">
+        Click any version to select it as the base for revisions.
+      </p>
+      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
         {versions.map((version) => {
           const imageUrl = version.image_path
             ? uploadsApi.getFileUrl(version.image_path)
@@ -33,12 +35,15 @@ export function VersionHistory({
           return (
             <button
               key={version.id}
-              onClick={() => onSelectVersion(version.id)}
+              onClick={() => isCompleted && onSelectVersion(version.id)}
+              disabled={!isCompleted}
               className={clsx(
                 'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
                 isSelected
                   ? 'border-primary-500 bg-primary-900/50 ring-2 ring-primary-500'
-                  : 'border-gray-700 hover:border-gray-600 bg-gray-800/50'
+                  : isCompleted
+                  ? 'border-gray-700 hover:border-gray-600 bg-gray-800/50 cursor-pointer'
+                  : 'border-gray-800 bg-gray-800/30 opacity-60 cursor-not-allowed'
               )}
             >
               {/* Thumbnail */}
@@ -64,8 +69,13 @@ export function VersionHistory({
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-100">
-                  Design #{designNumber}v{version.version_number}
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-gray-100">
+                    Option {version.version_number}
+                  </span>
+                  {isSelected && (
+                    <CheckCircle2 className="w-4 h-4 text-primary-400 flex-shrink-0" />
+                  )}
                 </div>
                 <div className="text-xs text-gray-400">
                   {new Date(version.created_at).toLocaleDateString()}

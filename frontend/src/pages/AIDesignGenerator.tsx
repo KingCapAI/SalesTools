@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -19,24 +19,43 @@ interface UploadedAsset {
   file_path: string;
 }
 
+interface PrefillData {
+  customerName?: string;
+  brandName?: string;
+  designName?: string;
+  hatStyle?: string;
+  material?: string;
+  structure?: string;
+  closure?: string;
+  styleDirections?: string[];
+  customDescription?: string;
+  logos?: DesignLogoCreate[];
+}
+
 export function AIDesignGenerator() {
   const navigate = useNavigate();
+  const location = useLocation();
   const createDesign = useCreateDesign();
 
-  // Form state - simplified to text fields
-  const [customerName, setCustomerName] = useState('');
-  const [brandName, setBrandName] = useState('');
-  const [designName, setDesignName] = useState('');
-  const [logos, setLogos] = useState<DesignLogoCreate[]>([]);
+  // Check for pre-filled data from "Copy & Edit"
+  const prefill: PrefillData | undefined = (location.state as any)?.prefill;
+
+  // Form state — initialized from prefill if available
+  const [customerName, setCustomerName] = useState(prefill?.customerName || '');
+  const [brandName, setBrandName] = useState(prefill?.brandName || '');
+  const [designName, setDesignName] = useState(prefill?.designName || '');
+  const [logos, setLogos] = useState<DesignLogoCreate[]>(prefill?.logos || []);
   const [uploadedAssets, setUploadedAssets] = useState<UploadedAsset[]>([]);
   const [scrapedData, setScrapedData] = useState<BrandScrapedData | null>(null);
-  const [hatStyle, setHatStyle] = useState<HatStyle>('6-panel-hat');
-  const [material, setMaterial] = useState<Material>('cotton-twill');
-  const [styleDirections, setStyleDirections] = useState<StyleDirection[]>(['modern']);
-  const [customDescription, setCustomDescription] = useState('');
+  const [hatStyle, setHatStyle] = useState<HatStyle>((prefill?.hatStyle as HatStyle) || '6-panel-hat');
+  const [material, setMaterial] = useState<Material>((prefill?.material as Material) || 'cotton-twill');
+  const [styleDirections, setStyleDirections] = useState<StyleDirection[]>(
+    (prefill?.styleDirections as StyleDirection[]) || ['modern']
+  );
+  const [customDescription, setCustomDescription] = useState(prefill?.customDescription || '');
   const [manualGuidelines, setManualGuidelines] = useState('');
-  const [structure, setStructure] = useState<HatStructure | ''>('');
-  const [closure, setClosure] = useState<ClosureType | ''>('');
+  const [structure, setStructure] = useState<HatStructure | ''>((prefill?.structure as HatStructure) || '');
+  const [closure, setClosure] = useState<ClosureType | ''>((prefill?.closure as ClosureType) || '');
 
   const handleAssetUpload = (asset: UploadedAsset) => {
     setUploadedAssets((prev) => [...prev, asset]);
@@ -105,8 +124,14 @@ export function AIDesignGenerator() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-gray-100">Create New Design</h1>
-              <p className="text-gray-400">Generate a custom hat design using AI</p>
+              <h1 className="text-2xl font-bold text-gray-100">
+                {prefill ? 'Edit & Resubmit Design' : 'Create New Design'}
+              </h1>
+              <p className="text-gray-400">
+                {prefill
+                  ? 'Modify any inputs below and generate a new design'
+                  : 'Generate a custom hat design using AI'}
+              </p>
             </div>
           </div>
         </div>
