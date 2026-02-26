@@ -95,6 +95,32 @@ def run_migrations(engine):
                 conn.commit()
                 print("Migration: Added logo_path column to designs table")
 
+            if 'selected_version_id' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE designs ADD COLUMN selected_version_id VARCHAR(36)"
+                ))
+                conn.commit()
+                print("Migration: Added selected_version_id column to designs table")
+
+    # Migration: Add batch_number and is_selected to design_versions table
+    if 'design_versions' in inspector.get_table_names():
+        columns = [col['name'] for col in inspector.get_columns('design_versions')]
+
+        with engine.connect() as conn:
+            if 'batch_number' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE design_versions ADD COLUMN batch_number INTEGER"
+                ))
+                conn.commit()
+                print("Migration: Added batch_number column to design_versions table")
+
+            if 'is_selected' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE design_versions ADD COLUMN is_selected BOOLEAN DEFAULT 0 NOT NULL"
+                ))
+                conn.commit()
+                print("Migration: Added is_selected column to design_versions table")
+
 
 def init_db():
     """Initialize database tables."""

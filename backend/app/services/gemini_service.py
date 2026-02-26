@@ -115,6 +115,7 @@ Respond in JSON format with the following structure:
 async def generate_design_image(
     prompt: str,
     logo_path: Optional[str] = None,
+    logos: Optional[List] = None,
     brand_assets: Optional[List[str]] = None,
     original_image_path: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -123,7 +124,8 @@ async def generate_design_image(
 
     Args:
         prompt: The design prompt
-        logo_path: Optional path to the client logo
+        logo_path: Optional path to the client logo (DEPRECATED: use logos)
+        logos: Optional list of logo objects/dicts with name, logo_path, location
         brand_assets: Optional list of paths to brand asset files
         original_image_path: Optional path to original image (for revisions/edits)
 
@@ -141,15 +143,61 @@ async def generate_design_image(
         # Use Gemini 3 Pro Image (Nano Banana Pro) for professional asset production
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key={api_key}"
 
-        # Build parts list - include logo and/or original image
+        # Build parts list - include logos and/or original image
         parts = []
 
-        # If we have a logo, include it first so the model uses it
-        if logo_path:
+        # Multi-logo support: add each logo with a label
+        if logos:
+            for logo in logos:
+                l_path = logo.logo_path if hasattr(logo, 'logo_path') else logo.get('logo_path')
+                l_name = logo.name if hasattr(logo, 'name') else logo.get('name', 'Logo')
+                l_location = logo.location if hasattr(logo, 'location') else logo.get('location')
+
+                if not l_path:
+                    continue
+
+                try:
+                    full_logo_path = Path(settings.upload_dir) / l_path
+                    if not full_logo_path.exists():
+                        print(f"Warning: Logo file not found: {l_path}")
+                        continue
+
+                    ext = Path(l_path).suffix.lower()
+                    if ext not in SUPPORTED_IMAGE_EXTENSIONS:
+                        print(f"Warning: Skipping unsupported image format for '{l_name}': {ext}")
+                        continue
+
+                    with open(full_logo_path, "rb") as f:
+                        logo_bytes = f.read()
+                    logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
+
+                    mime_type = "image/png"
+                    if ext in {'.jpg', '.jpeg'}:
+                        mime_type = "image/jpeg"
+                    elif ext == '.webp':
+                        mime_type = "image/webp"
+
+                    # Add label before the logo image
+                    label = f"LOGO '{l_name}'"
+                    if l_location:
+                        label += f" (for {l_location.upper()} of hat)"
+                    label += ":"
+
+                    parts.append({"text": label})
+                    parts.append({
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": logo_base64
+                        }
+                    })
+                except Exception as e:
+                    print(f"Warning: Could not load logo '{l_name}': {e}")
+
+        # Backward compat: single logo_path
+        elif logo_path:
             try:
                 full_logo_path = Path(settings.upload_dir) / logo_path
                 if full_logo_path.exists():
-                    # Check file extension - skip unsupported formats
                     ext = Path(logo_path).suffix.lower()
                     if ext not in SUPPORTED_IMAGE_EXTENSIONS:
                         print(f"Warning: Skipping unsupported image format: {ext}. Only PNG, JPG, and WEBP are supported.")
@@ -158,7 +206,6 @@ async def generate_design_image(
                             logo_bytes = f.read()
                         logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
 
-                        # Determine mime type
                         mime_type = "image/png"
                         if ext in {'.jpg', '.jpeg'}:
                             mime_type = "image/jpeg"
@@ -285,7 +332,10 @@ async def generate_design(
     structure: Optional[str] = None,
     closure: Optional[str] = None,
     logo_path: Optional[str] = None,
+    logos: Optional[List] = None,
+    logos_data: Optional[List[Dict[str, Any]]] = None,
     brand_assets: Optional[List[str]] = None,
+    variation_index: int = 0,
 ) -> Dict[str, Any]:
     """
     Generate a complete hat design.
@@ -298,8 +348,11 @@ async def generate_design(
         custom_description: Optional additional style description
         structure: Optional hat structure (structured or unstructured)
         closure: Optional closure type (snapback, metal_slider_buckle, velcro_strap)
-        logo_path: Optional path to client logo
+        logo_path: Optional path to client logo (DEPRECATED)
+        logos: Optional list of DesignLogo model objects
+        logos_data: Optional list of logo dicts for prompt building
         brand_assets: Optional list of brand asset paths
+        variation_index: Index for design variation (0, 1, or 2)
 
     Returns:
         Dictionary with prompt, success status, and image data or error
@@ -313,12 +366,15 @@ async def generate_design(
         custom_description=custom_description,
         structure=structure,
         closure=closure,
+        logos=logos_data,
+        variation_index=variation_index,
     )
 
     # Generate the image
     result = await generate_design_image(
         prompt=prompt,
         logo_path=logo_path,
+        logos=logos,
         brand_assets=brand_assets,
     )
 

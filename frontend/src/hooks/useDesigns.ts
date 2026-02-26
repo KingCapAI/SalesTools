@@ -90,11 +90,23 @@ export function useRegenerateDesign() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ designId, versionId }: { designId: string; versionId?: string }) =>
-      designsApi.regenerate(designId, versionId),
-    onSuccess: (_, { designId }) => {
+    mutationFn: (designId: string) =>
+      designsApi.regenerate(designId),
+    onSuccess: (_, designId) => {
       queryClient.invalidateQueries({ queryKey: ['design', designId] });
       queryClient.invalidateQueries({ queryKey: ['designs'] });
+    },
+  });
+}
+
+export function useSelectVersion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ designId, versionId }: { designId: string; versionId: string }) =>
+      designsApi.selectVersion(designId, versionId),
+    onSuccess: (_, { designId }) => {
+      queryClient.invalidateQueries({ queryKey: ['design', designId] });
     },
   });
 }

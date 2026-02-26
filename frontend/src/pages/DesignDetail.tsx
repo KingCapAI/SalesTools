@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
-import { DesignPreview } from '../components/design-generator/DesignPreview';
+import { VersionGallery } from '../components/design-generator/VersionGallery';
 import { VersionHistory } from '../components/design-generator/VersionHistory';
 import { RevisionChat } from '../components/design-generator/RevisionChat';
 import { QuoteModal } from '../components/design-generator/QuoteModal';
 import { QuoteSummary } from '../components/design-generator/QuoteSummary';
-import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign, useRegenerateDesign, useDuplicateDesign } from '../hooks/useDesigns';
+import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign, useRegenerateDesign, useDuplicateDesign, useSelectVersion } from '../hooks/useDesigns';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
 import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download, Calculator, RefreshCw, Copy } from 'lucide-react';
 import { uploadsApi } from '../api/uploads';
@@ -29,6 +29,7 @@ export function DesignDetail() {
   const updateDesign = useUpdateDesign();
   const regenerateDesign = useRegenerateDesign();
   const duplicateDesign = useDuplicateDesign();
+  const selectVersion = useSelectVersion();
 
   // Quote hooks
   const { data: designQuote, refetch: refetchQuote } = useDesignQuote(designId || '');
@@ -38,6 +39,13 @@ export function DesignDetail() {
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Sync selected version from server state
+  useEffect(() => {
+    if (design?.selected_version_id && !selectedVersionId) {
+      setSelectedVersionId(design.selected_version_id);
+    }
+  }, [design?.selected_version_id]);
 
   if (isLoading) {
     return (
@@ -72,10 +80,20 @@ export function DesignDetail() {
   const versions = design.versions || [];
   const selectedVersion = selectedVersionId
     ? versions.find((v) => v.id === selectedVersionId)
-    : versions[0];
+    : null;
 
   const statusConfig = approvalStatusConfig[design.approval_status];
   const StatusIcon = statusConfig.icon;
+
+  const handleSelectVersion = async (versionId: string) => {
+    if (!designId) return;
+    setSelectedVersionId(versionId);
+    try {
+      await selectVersion.mutateAsync({ designId, versionId });
+    } catch (error: any) {
+      console.error('Error selecting version:', error);
+    }
+  };
 
   const handleSendMessage = async (message: string) => {
     if (!designId) return;
@@ -90,31 +108,21 @@ export function DesignDetail() {
       data: { revision_notes: notes },
     });
     const result = await refetch();
-    // Auto-switch to the newest version
+    // Auto-switch to the newest version (revision auto-selects on backend)
     if (newVersion?.id) {
       setSelectedVersionId(newVersion.id);
     } else if (result.data?.versions?.length) {
-      // Fallback: select the last version (highest version number)
       const versions = result.data.versions;
       setSelectedVersionId(versions[versions.length - 1].id);
     }
   };
 
   const handleRegenerate = async () => {
-    if (!designId || !selectedVersion) return;
+    if (!designId) return;
     try {
-      // Pass the selected version ID to retry that specific version
-      const newVersion = await regenerateDesign.mutateAsync({
-        designId,
-        versionId: selectedVersion.id,
-      });
-      const result = await refetch();
-      if (newVersion?.id) {
-        setSelectedVersionId(newVersion.id);
-      } else if (result.data?.versions?.length) {
-        const versions = result.data.versions;
-        setSelectedVersionId(versions[versions.length - 1].id);
-      }
+      await regenerateDesign.mutateAsync(designId);
+      setSelectedVersionId(null); // Reset selection — user must pick from new batch
+      await refetch();
     } catch (error: any) {
       console.error('Error regenerating design:', error);
       alert(`Failed to regenerate design: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
@@ -125,7 +133,6 @@ export function DesignDetail() {
     if (!designId) return;
     try {
       const newDesign = await duplicateDesign.mutateAsync(designId);
-      // Navigate to the new design
       navigate(`/ai-design-generator/design/${newDesign.id}`);
     } catch (error: any) {
       console.error('Error duplicating design:', error);
@@ -240,7 +247,7 @@ export function DesignDetail() {
               size="sm"
               onClick={handleRegenerate}
               isLoading={regenerateDesign.isPending}
-              title="Retry generating the selected version"
+              title="Generate 3 new design options using the same inputs"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
@@ -283,13 +290,15 @@ export function DesignDetail() {
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Design Preview - Main Column */}
+          {/* Design Versions - Main Column */}
           <div className="lg:col-span-2">
             <div className="card">
-              <DesignPreview
-                version={selectedVersion || null}
+              <VersionGallery
+                versions={versions}
                 designNumber={design.design_number}
-                isLoading={createRevision.isPending || regenerateDesign.isPending || duplicateDesign.isPending}
+                selectedVersionId={selectedVersionId}
+                onSelectVersion={handleSelectVersion}
+                isLoading={regenerateDesign.isPending || duplicateDesign.isPending}
               />
             </div>
           </div>
@@ -347,19 +356,28 @@ export function DesignDetail() {
               <VersionHistory
                 versions={versions}
                 designNumber={design.design_number}
-                selectedVersionId={selectedVersion?.id || null}
-                onSelectVersion={setSelectedVersionId}
+                selectedVersionId={selectedVersionId}
+                onSelectVersion={handleSelectVersion}
               />
             </div>
 
             {/* Revision Chat */}
             <div className="card">
-              <RevisionChat
-                chats={design.chats || []}
-                onSendMessage={handleSendMessage}
-                onRequestRevision={handleRequestRevision}
-                isLoading={createRevision.isPending || addChatMessage.isPending || regenerateDesign.isPending}
-              />
+              {selectedVersionId ? (
+                <RevisionChat
+                  chats={design.chats || []}
+                  onSendMessage={handleSendMessage}
+                  onRequestRevision={handleRequestRevision}
+                  isLoading={createRevision.isPending || addChatMessage.isPending || regenerateDesign.isPending}
+                />
+              ) : (
+                <div>
+                  <h3 className="font-semibold text-white mb-3">Revisions & Chat</h3>
+                  <div className="text-center py-8 text-gray-500 text-sm">
+                    <p>Select a design option above to enable revisions.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

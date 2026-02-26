@@ -23,7 +23,8 @@ class Design(Base):
     closure = Column(String(50), nullable=True)  # "snapback", "metal_slider_buckle", "velcro_strap"
     style_directions = Column(String(500), nullable=False)  # Comma-separated list (up to 3)
     custom_description = Column(Text, nullable=True)
-    logo_path = Column(String(500), nullable=True)  # Path to uploaded logo for AI-generated designs
+    logo_path = Column(String(500), nullable=True)  # DEPRECATED: use design_logos table instead
+    selected_version_id = Column(String(36), nullable=True)  # ID of user's selected version
     status = Column(String(50), nullable=False, default="active")
     approval_status = Column(String(50), nullable=False, default="pending")  # pending, approved, rejected
     shared_with_team = Column(Boolean, nullable=False, default=False)
@@ -39,6 +40,7 @@ class Design(Base):
     chats = relationship("DesignChat", back_populates="design", cascade="all, delete-orphan")
     quote = relationship("DesignQuote", back_populates="design", uselist=False, cascade="all, delete-orphan")
     location_logos = relationship("DesignLocationLogo", back_populates="design", cascade="all, delete-orphan")
+    logos = relationship("DesignLogo", back_populates="design", cascade="all, delete-orphan", order_by="DesignLogo.sort_order")
 
     def __repr__(self):
         return f"<Design #{self.design_number} for {self.brand_name}>"
@@ -50,6 +52,8 @@ class DesignVersion(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     design_id = Column(String(36), ForeignKey("designs.id"), nullable=False, index=True)
     version_number = Column(Integer, nullable=False)
+    batch_number = Column(Integer, nullable=True)  # Groups versions generated together
+    is_selected = Column(Boolean, nullable=False, default=False)  # Whether user selected this version
     prompt = Column(Text, nullable=False)
     image_path = Column(String(500), nullable=True)
     image_url = Column(String(500), nullable=True)
@@ -150,3 +154,23 @@ class DesignLocationLogo(Base):
 
     def __repr__(self):
         return f"<DesignLocationLogo {self.location} for design {self.design_id}>"
+
+
+class DesignLogo(Base):
+    """Named logo for AI design generation with optional location assignment."""
+    __tablename__ = "design_logos"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    design_id = Column(String(36), ForeignKey("designs.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)  # "Main Logo", "Wordmark", etc.
+    logo_path = Column(String(500), nullable=False)
+    logo_filename = Column(String(255), nullable=False)
+    location = Column(String(50), nullable=True)  # "front", "left", "right", "back", "visor", or NULL = AI's choice
+    sort_order = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    design = relationship("Design", back_populates="logos")
+
+    def __repr__(self):
+        return f"<DesignLogo '{self.name}' for design {self.design_id}>"

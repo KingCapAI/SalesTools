@@ -3,14 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { LogoUpload } from '../components/design-generator/LogoUpload';
+import { MultiLogoUpload } from '../components/design-generator/MultiLogoUpload';
 import { BrandGuidelines } from '../components/design-generator/BrandGuidelines';
 import { StyleSelector } from '../components/design-generator/StyleSelector';
 import { HatStyleSelector } from '../components/design-generator/HatStyleSelector';
 import { MaterialSelector } from '../components/design-generator/MaterialSelector';
 import { useCreateDesign } from '../hooks/useDesigns';
 import { ArrowLeft, Sparkles } from 'lucide-react';
-import type { HatStyle, Material, StyleDirection, BrandScrapedData, HatStructure, ClosureType } from '../types/api';
+import type { HatStyle, Material, StyleDirection, BrandScrapedData, HatStructure, ClosureType, DesignLogoCreate } from '../types/api';
 
 interface UploadedAsset {
   id: string;
@@ -27,7 +27,7 @@ export function AIDesignGenerator() {
   const [customerName, setCustomerName] = useState('');
   const [brandName, setBrandName] = useState('');
   const [designName, setDesignName] = useState('');
-  const [logoPath, setLogoPath] = useState('');
+  const [logos, setLogos] = useState<DesignLogoCreate[]>([]);
   const [uploadedAssets, setUploadedAssets] = useState<UploadedAsset[]>([]);
   const [scrapedData, setScrapedData] = useState<BrandScrapedData | null>(null);
   const [hatStyle, setHatStyle] = useState<HatStyle>('6-panel-hat');
@@ -59,8 +59,8 @@ export function AIDesignGenerator() {
       return;
     }
 
-    if (!logoPath) {
-      alert('Please upload a brand logo');
+    if (logos.length === 0) {
+      alert('Please upload at least one brand logo');
       return;
     }
 
@@ -80,7 +80,7 @@ export function AIDesignGenerator() {
         closure: closure || undefined,
         style_directions: styleDirections,
         custom_description: customDescription.trim() || undefined,
-        logo_path: logoPath,
+        logos: logos,
       });
 
       // Navigate to design detail page
@@ -146,9 +146,9 @@ export function AIDesignGenerator() {
           <div className="card">
             <h2 className="text-lg font-semibold text-gray-100 mb-4">Brand Assets</h2>
             <div className="space-y-6">
-              <LogoUpload
-                logoPath={logoPath}
-                onUpload={setLogoPath}
+              <MultiLogoUpload
+                logos={logos}
+                onChange={setLogos}
               />
 
               <BrandGuidelines
@@ -216,7 +216,7 @@ export function AIDesignGenerator() {
               type="submit"
               size="lg"
               isLoading={createDesign.isPending}
-              disabled={!customerName.trim() || !brandName.trim() || !logoPath || styleDirections.length === 0}
+              disabled={!customerName.trim() || !brandName.trim() || logos.length === 0 || styleDirections.length === 0}
             >
               <Sparkles className="w-5 h-5 mr-2" />
               Generate Design

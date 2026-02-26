@@ -58,11 +58,34 @@ class DesignVersionResponse(BaseModel):
     id: str
     design_id: str
     version_number: int
+    batch_number: Optional[int] = None
+    is_selected: bool = False
     prompt: str
     image_path: Optional[str] = None
     image_url: Optional[str] = None
     generation_status: str
     error_message: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DesignLogoCreate(BaseModel):
+    name: str  # "Main Logo", "Wordmark", etc.
+    logo_path: str
+    logo_filename: str
+    location: Optional[str] = None  # "front", "left", "right", "back", "visor", or None = AI's choice
+
+
+class DesignLogoResponse(BaseModel):
+    id: str
+    design_id: str
+    name: str
+    logo_path: str
+    logo_filename: str
+    location: Optional[str] = None
+    sort_order: int
     created_at: datetime
 
     class Config:
@@ -96,7 +119,8 @@ class DesignCreate(BaseModel):
     closure: Optional[ClosureType] = None  # Optional for AI Conceptor
     style_directions: List[StyleDirection]  # Up to 3 style directions
     custom_description: Optional[str] = None
-    logo_path: Optional[str] = None  # Path to uploaded logo file
+    logo_path: Optional[str] = None  # DEPRECATED: use logos instead
+    logos: Optional[List[DesignLogoCreate]] = None  # Named logos with optional location
 
     @field_validator('style_directions')
     @classmethod
@@ -138,6 +162,7 @@ class DesignResponse(BaseModel):
     design_name: Optional[str] = None
     design_number: int
     current_version: int
+    selected_version_id: Optional[str] = None
     hat_style: str
     material: str
     structure: Optional[str] = None
@@ -152,6 +177,7 @@ class DesignResponse(BaseModel):
     updated_at: datetime
     versions: List[DesignVersionResponse] = []
     chats: List[DesignChatResponse] = []
+    logos: List[DesignLogoResponse] = []
     quote_summary: Optional[DesignQuoteSummaryResponse] = None
 
     class Config:

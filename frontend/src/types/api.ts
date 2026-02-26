@@ -88,6 +88,24 @@ export interface QuoteSummary {
   updated_at: string;
 }
 
+export interface DesignLogo {
+  id: string;
+  design_id: string;
+  name: string;
+  logo_path: string;
+  logo_filename: string;
+  location?: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface DesignLogoCreate {
+  name: string;
+  logo_path: string;
+  logo_filename: string;
+  location?: string | null;
+}
+
 export interface Design {
   id: string;
   customer_name: string;
@@ -101,6 +119,7 @@ export interface Design {
   closure?: string;
   style_directions: string[];
   custom_description?: string;
+  selected_version_id?: string | null;
   status: string;
   approval_status: ApprovalStatus;
   shared_with_team: boolean;
@@ -109,6 +128,7 @@ export interface Design {
   updated_at: string;
   versions: DesignVersion[];
   chats: DesignChat[];
+  logos: DesignLogo[];
   quote_summary?: QuoteSummary | null;
 }
 
@@ -116,6 +136,8 @@ export interface DesignVersion {
   id: string;
   design_id: string;
   version_number: number;
+  batch_number?: number | null;
+  is_selected: boolean;
   prompt: string;
   image_path?: string;
   image_url?: string;
@@ -180,6 +202,7 @@ export interface DesignCreate {
   style_directions: StyleDirection[];
   custom_description?: string;
   logo_path?: string;
+  logos?: DesignLogoCreate[];
 }
 
 export interface DesignUpdate {

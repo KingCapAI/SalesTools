@@ -1,12 +1,15 @@
 """Design management routes."""
 
+import asyncio
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from ..database import get_db
 from ..models import Design, DesignVersion, DesignChat
+from ..models.design import DesignLogo
 from ..schemas.design import (
     DesignCreate,
     DesignUpdate,
@@ -15,6 +18,7 @@ from ..schemas.design import (
     DesignVersionResponse,
     DesignChatCreate,
     DesignChatResponse,
+    DesignLogoCreate,
     RevisionCreate,
 )
 from ..services.design_service import (
@@ -23,6 +27,7 @@ from ..services.design_service import (
     create_revision,
     get_design_with_versions,
     search_designs,
+    VERSIONS_PER_BATCH,
 )
 from ..services.gemini_service import generate_design
 from ..services.storage_service import save_generated_image
@@ -66,14 +71,13 @@ async def create_new_design(
     db: Session = Depends(get_db),
     user=Depends(require_auth),
 ):
-    """Create a new design and generate the first version."""
+    """Create a new design and generate 3 version options."""
     try:
         design = await create_design(
             db=db,
             design_data=design_data,
             user_id=user.id,
         )
-        # Convert design to response format
         return get_design_with_versions(db, design.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -87,7 +91,7 @@ async def get_design(
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    """Get a design with all versions and chat history."""
+    """Get a design with all versions, logos, and chat history."""
     design = get_design_with_versions(db, design_id)
     if not design:
         raise HTTPException(status_code=404, detail="Design not found")
@@ -124,51 +128,54 @@ async def delete_design(
     return {"message": "Design deleted successfully"}
 
 
-@router.post("/{design_id}/regenerate", response_model=DesignVersionResponse)
-async def regenerate_design(
+@router.post("/{design_id}/regenerate", response_model=List[DesignVersionResponse])
+async def regenerate_design_endpoint(
     design_id: str,
-    version_id: Optional[str] = Query(None, description="Specific version to retry. If not provided, retries using original inputs."),
     db: Session = Depends(get_db),
     user=Depends(require_auth),
 ):
     """
-    Retry generating a design version.
-
-    If version_id is provided, retries that specific version using its stored prompt.
-    If version_id is not provided, generates a fresh version using the original design inputs.
+    Generate 3 new design versions using the original inputs.
+    Resets version selection so user must choose again.
     """
-    from ..services.gemini_service import generate_revision
-
     design = db.query(Design).filter(Design.id == design_id).first()
     if not design:
         raise HTTPException(status_code=404, detail="Design not found")
 
-    # Don't regenerate custom designs through this endpoint
     if design.design_type == "custom":
         raise HTTPException(
             status_code=400,
             detail="Use the custom designs endpoint to regenerate custom designs"
         )
 
-    new_version_number = design.current_version + 1
-
     try:
-        # If a specific version is provided, retry that version's generation
-        if version_id:
-            target_version = db.query(DesignVersion).filter(
-                DesignVersion.id == version_id,
-                DesignVersion.design_id == design_id
-            ).first()
+        # Get design's logos
+        design_logos = db.query(DesignLogo).filter(
+            DesignLogo.design_id == design_id
+        ).order_by(DesignLogo.sort_order).all()
 
-            if not target_version:
-                raise HTTPException(status_code=404, detail="Version not found")
+        logos_data = [
+            {"name": l.name, "logo_path": l.logo_path, "location": l.location}
+            for l in design_logos
+        ] if design_logos else None
 
-            # For version 1, regenerate with original inputs
-            if target_version.version_number == 1:
-                style_directions = design.style_directions.split(",") if design.style_directions else ["modern"]
-                style_description = " and ".join(style_directions)
+        # Build style description from stored directions
+        style_directions = design.style_directions.split(",") if design.style_directions else ["modern"]
+        style_description = " and ".join(style_directions)
 
-                result = await generate_design(
+        # Get next batch number
+        max_batch = db.query(func.max(DesignVersion.batch_number)).filter(
+            DesignVersion.design_id == design_id
+        ).scalar() or 0
+        new_batch = max_batch + 1
+
+        current_max_version = design.current_version
+
+        # Fire 3 parallel generations
+        tasks = []
+        for i in range(VERSIONS_PER_BATCH):
+            tasks.append(
+                generate_design(
                     customer_name=design.brand_name,
                     hat_style=design.hat_style,
                     material=design.material,
@@ -176,73 +183,103 @@ async def regenerate_design(
                     custom_description=design.custom_description,
                     structure=design.structure,
                     closure=design.closure,
-                    logo_path=design.logo_path,
+                    logos=design_logos if design_logos else None,
+                    logos_data=logos_data,
+                    logo_path=design.logo_path if not design_logos else None,
                     brand_assets=[],
+                    variation_index=i,
                 )
-            else:
-                # For revisions (v2+), we need to get the version before it for context
-                previous_version = db.query(DesignVersion).filter(
-                    DesignVersion.design_id == design_id,
-                    DesignVersion.version_number == target_version.version_number - 1
-                ).first()
-
-                # Re-run generation with the stored prompt and previous image
-                result = await generate_revision(
-                    original_prompt=target_version.prompt,
-                    revision_notes="",  # The prompt already contains the revision
-                    original_image_path=previous_version.image_path if previous_version else None,
-                    logo_path=design.logo_path,
-                    brand_assets=[],
-                )
-        else:
-            # No version specified - generate fresh with original inputs
-            style_directions = design.style_directions.split(",") if design.style_directions else ["modern"]
-            style_description = " and ".join(style_directions)
-
-            result = await generate_design(
-                customer_name=design.brand_name,
-                hat_style=design.hat_style,
-                material=design.material,
-                style_direction=style_description,
-                custom_description=design.custom_description,
-                structure=design.structure,
-                closure=design.closure,
-                logo_path=design.logo_path,
-                brand_assets=[],
             )
 
-        # Create version record
-        version = DesignVersion(
-            design_id=design.id,
-            version_number=new_version_number,
-            prompt=result.get("prompt", ""),
-        )
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        if result.get("success") and result.get("image_data"):
-            image_path = await save_generated_image(
-                image_data=result["image_data"],
+        versions = []
+        for i, result in enumerate(results):
+            v_num = current_max_version + i + 1
+            is_exception = isinstance(result, Exception)
+
+            version = DesignVersion(
                 design_id=design.id,
-                version_number=new_version_number,
+                version_number=v_num,
+                batch_number=new_batch,
+                prompt=result.get("prompt", "") if not is_exception else "",
             )
-            version.image_path = image_path
-            version.generation_status = "completed"
-        else:
-            version.generation_status = "failed"
-            version.error_message = result.get("error", "Unknown error")
 
-        db.add(version)
+            if not is_exception and result.get("success") and result.get("image_data"):
+                image_path = await save_generated_image(
+                    image_data=result["image_data"],
+                    design_id=design.id,
+                    version_number=v_num,
+                )
+                version.image_path = image_path
+                version.generation_status = "completed"
+            else:
+                version.generation_status = "failed"
+                if is_exception:
+                    version.error_message = str(result)
+                else:
+                    version.error_message = result.get("error", "Unknown error")
 
-        # Update design's current version
-        design.current_version = new_version_number
+            db.add(version)
+            versions.append(version)
+
+        # Update design
+        design.current_version = current_max_version + VERSIONS_PER_BATCH
+        design.selected_version_id = None  # Reset selection
         design.updated_at = datetime.utcnow()
 
-        db.commit()
-        db.refresh(version)
+        # Clear previous selections
+        db.query(DesignVersion).filter(
+            DesignVersion.design_id == design_id,
+            DesignVersion.is_selected == True
+        ).update({"is_selected": False})
 
-        return version
+        db.commit()
+        for v in versions:
+            db.refresh(v)
+
+        return versions
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to regenerate design: {str(e)}")
+
+
+@router.post("/{design_id}/versions/{version_id}/select")
+async def select_version(
+    design_id: str,
+    version_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """Select a version as the active design. Required before requesting revisions."""
+    design = db.query(Design).filter(Design.id == design_id).first()
+    if not design:
+        raise HTTPException(status_code=404, detail="Design not found")
+
+    version = db.query(DesignVersion).filter(
+        DesignVersion.id == version_id,
+        DesignVersion.design_id == design_id,
+    ).first()
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    if version.generation_status != "completed":
+        raise HTTPException(status_code=400, detail="Cannot select a failed version")
+
+    # Clear previous selections
+    db.query(DesignVersion).filter(
+        DesignVersion.design_id == design_id,
+        DesignVersion.is_selected == True
+    ).update({"is_selected": False})
+
+    # Set new selection
+    version.is_selected = True
+    design.selected_version_id = version_id
+    design.updated_at = datetime.utcnow()
+
+    db.commit()
+
+    return {"message": "Version selected", "version_id": version_id}
 
 
 @router.post("/{design_id}/duplicate", response_model=DesignResponse)
@@ -251,18 +288,13 @@ async def duplicate_design(
     db: Session = Depends(get_db),
     user=Depends(require_auth),
 ):
-    """
-    Create a new design with the same inputs as an existing design.
-
-    This creates a completely separate design entry with a fresh v1 generation.
-    """
-    from ..schemas.design import DesignCreate, HatStyle, Material, StyleDirection, HatStructure, ClosureType
+    """Create a new design with the same inputs and logos, generating 3 fresh versions."""
+    from ..schemas.design import HatStyle, Material, StyleDirection, HatStructure, ClosureType
 
     design = db.query(Design).filter(Design.id == design_id).first()
     if not design:
         raise HTTPException(status_code=404, detail="Design not found")
 
-    # Don't duplicate custom designs through this endpoint
     if design.design_type == "custom":
         raise HTTPException(
             status_code=400,
@@ -270,11 +302,25 @@ async def duplicate_design(
         )
 
     try:
-        # Reconstruct style directions from stored string
+        # Reconstruct style directions
         style_directions_str = design.style_directions.split(",") if design.style_directions else ["modern"]
         style_directions = [StyleDirection(sd) for sd in style_directions_str]
 
-        # Create the new design using the same inputs
+        # Copy logos
+        design_logos = db.query(DesignLogo).filter(
+            DesignLogo.design_id == design_id
+        ).order_by(DesignLogo.sort_order).all()
+
+        logos = [
+            DesignLogoCreate(
+                name=l.name,
+                logo_path=l.logo_path,
+                logo_filename=l.logo_filename,
+                location=l.location,
+            )
+            for l in design_logos
+        ] if design_logos else None
+
         design_data = DesignCreate(
             customer_name=design.customer_name,
             brand_name=design.brand_name,
@@ -285,7 +331,8 @@ async def duplicate_design(
             closure=ClosureType(design.closure) if design.closure else None,
             style_directions=style_directions,
             custom_description=design.custom_description,
-            logo_path=design.logo_path,
+            logo_path=design.logo_path if not logos else None,
+            logos=logos,
         )
 
         new_design = await create_design(
@@ -323,7 +370,18 @@ async def create_version(
     db: Session = Depends(get_db),
     user=Depends(require_auth),
 ):
-    """Create a new revision of a design."""
+    """Create a new revision of a design. Requires a version to be selected first."""
+    # Check that a version is selected
+    design = db.query(Design).filter(Design.id == design_id).first()
+    if not design:
+        raise HTTPException(status_code=404, detail="Design not found")
+
+    if not design.selected_version_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Please select a version before requesting revisions."
+        )
+
     try:
         version = await create_revision(
             db=db,
@@ -362,7 +420,6 @@ async def add_chat_message(
     user=Depends(require_auth),
 ):
     """Add a chat message to a design."""
-    # Verify design exists
     design = db.query(Design).filter(Design.id == design_id).first()
     if not design:
         raise HTTPException(status_code=404, detail="Design not found")

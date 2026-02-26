@@ -1,14 +1,19 @@
 """Design service for managing designs and versions."""
 
+import asyncio
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 
 from ..models import Design, DesignVersion, DesignChat, DesignQuote
+from ..models.design import DesignLogo
 from ..schemas.design import DesignCreate, DesignUpdate, RevisionCreate
 from .gemini_service import generate_design, generate_revision
 from .storage_service import save_generated_image
+
+# Number of parallel versions to generate per batch
+VERSIONS_PER_BATCH = 3
 
 
 def get_next_design_number(db: Session, brand_name: str) -> int:
@@ -27,20 +32,12 @@ async def create_design(
     user_id: Optional[str] = None,
 ) -> Design:
     """
-    Create a new design and generate the first version.
-
-    Args:
-        db: Database session
-        design_data: Design creation data
-        user_id: ID of the user creating the design
-
-    Returns:
-        The created Design object
+    Create a new design and generate 3 version options in parallel.
     """
     # Convert style directions list to comma-separated string
     style_directions_str = ",".join([sd.value for sd in design_data.style_directions])
 
-    # Create design record with text fields
+    # Create design record
     design_number = get_next_design_number(db, design_data.brand_name)
     design = Design(
         customer_name=design_data.customer_name,
@@ -53,50 +50,105 @@ async def create_design(
         closure=design_data.closure.value if design_data.closure else None,
         style_directions=style_directions_str,
         custom_description=design_data.custom_description,
-        logo_path=design_data.logo_path,
+        logo_path=design_data.logo_path,  # Keep for backward compat
         created_by_id=user_id,
     )
     db.add(design)
     db.commit()
     db.refresh(design)
 
-    # Generate the first version using the brand name
+    # Save DesignLogo records if multi-logo provided
+    design_logos = []
+    if design_data.logos:
+        for i, logo_data in enumerate(design_data.logos):
+            logo = DesignLogo(
+                design_id=design.id,
+                name=logo_data.name,
+                logo_path=logo_data.logo_path,
+                logo_filename=logo_data.logo_filename,
+                location=logo_data.location,
+                sort_order=i,
+            )
+            db.add(logo)
+            design_logos.append(logo)
+        db.commit()
+    elif design_data.logo_path:
+        # Backward compat: convert single logo_path to DesignLogo
+        logo = DesignLogo(
+            design_id=design.id,
+            name="Logo",
+            logo_path=design_data.logo_path,
+            logo_filename="logo",
+            location=None,
+            sort_order=0,
+        )
+        db.add(logo)
+        design_logos.append(logo)
+        db.commit()
+
+    # Build logos_data for prompt builder
+    logos_data = [
+        {"name": l.name, "logo_path": l.logo_path, "location": l.location}
+        for l in design_logos
+    ] if design_logos else None
+
     # Combine multiple style directions for the prompt
     style_description = " and ".join([sd.value for sd in design_data.style_directions])
 
-    result = await generate_design(
-        customer_name=design_data.brand_name,  # Use brand name for the design prompt
-        hat_style=design_data.hat_style.value,
-        material=design_data.material.value,
-        style_direction=style_description,  # Combined style directions
-        custom_description=design_data.custom_description,
-        structure=design_data.structure.value if design_data.structure else None,
-        closure=design_data.closure.value if design_data.closure else None,
-        logo_path=design_data.logo_path,  # Pass the uploaded logo
-        brand_assets=[],
-    )
-
-    # Create version record
-    version = DesignVersion(
-        design_id=design.id,
-        version_number=1,
-        prompt=result.get("prompt", ""),
-    )
-
-    if result.get("success") and result.get("image_data"):
-        # Save the generated image
-        image_path = await save_generated_image(
-            image_data=result["image_data"],
-            design_id=design.id,
-            version_number=1,
+    # Generate 3 versions in parallel
+    batch_number = 1
+    tasks = []
+    for i in range(VERSIONS_PER_BATCH):
+        tasks.append(
+            generate_design(
+                customer_name=design_data.brand_name,
+                hat_style=design_data.hat_style.value,
+                material=design_data.material.value,
+                style_direction=style_description,
+                custom_description=design_data.custom_description,
+                structure=design_data.structure.value if design_data.structure else None,
+                closure=design_data.closure.value if design_data.closure else None,
+                logos=design_logos if design_logos else None,
+                logos_data=logos_data,
+                logo_path=design_data.logo_path if not design_logos else None,
+                brand_assets=[],
+                variation_index=i,
+            )
         )
-        version.image_path = image_path
-        version.generation_status = "completed"
-    else:
-        version.generation_status = "failed"
-        version.error_message = result.get("error", "Unknown error")
 
-    db.add(version)
+    # Run all 3 generations in parallel
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Process results, creating 3 DesignVersion records
+    for i, result in enumerate(results):
+        version_number = i + 1
+        is_exception = isinstance(result, Exception)
+
+        version = DesignVersion(
+            design_id=design.id,
+            version_number=version_number,
+            batch_number=batch_number,
+            prompt=result.get("prompt", "") if not is_exception else "",
+        )
+
+        if not is_exception and result.get("success") and result.get("image_data"):
+            image_path = await save_generated_image(
+                image_data=result["image_data"],
+                design_id=design.id,
+                version_number=version_number,
+            )
+            version.image_path = image_path
+            version.generation_status = "completed"
+        else:
+            version.generation_status = "failed"
+            if is_exception:
+                version.error_message = str(result)
+            else:
+                version.error_message = result.get("error", "Unknown error")
+
+        db.add(version)
+
+    design.current_version = VERSIONS_PER_BATCH
     db.commit()
     db.refresh(design)
 
@@ -133,51 +185,31 @@ async def create_revision(
     user_id: Optional[str] = None,
 ) -> DesignVersion:
     """
-    Create a new revision of an existing design.
-
-    Args:
-        db: Database session
-        design_id: ID of the design to revise
-        revision_data: Revision data with notes
-        user_id: ID of the user requesting revision
-
-    Returns:
-        The created DesignVersion object
+    Create a new revision of an existing design based on the selected version.
     """
-    # Get design
     design = db.query(Design).filter(Design.id == design_id).first()
     if not design:
         raise ValueError("Design not found")
 
-    # Get all versions ordered by version number to build conversation history
-    all_versions = (
-        db.query(DesignVersion)
-        .filter(DesignVersion.design_id == design_id)
-        .order_by(DesignVersion.version_number.asc())
-        .all()
-    )
+    # Use selected version as the base for revision
+    if design.selected_version_id:
+        base_version = db.query(DesignVersion).filter(
+            DesignVersion.id == design.selected_version_id
+        ).first()
+    else:
+        # Fallback: use latest completed version
+        base_version = (
+            db.query(DesignVersion)
+            .filter(
+                DesignVersion.design_id == design_id,
+                DesignVersion.generation_status == "completed",
+            )
+            .order_by(DesignVersion.version_number.desc())
+            .first()
+        )
 
-    if not all_versions:
-        raise ValueError("No existing version found")
-
-    latest_version = all_versions[-1]
-
-    # Build conversation history from all versions
-    # Each version represents a turn: user prompt -> model image response
-    conversation_history = []
-    for version in all_versions:
-        # User turn: the prompt that was sent
-        if version.prompt:
-            conversation_history.append({
-                "role": "user",
-                "prompt": version.prompt,
-            })
-        # Model turn: the generated image
-        if version.image_path and version.generation_status == "completed":
-            conversation_history.append({
-                "role": "model",
-                "image_path": version.image_path,
-            })
+    if not base_version:
+        raise ValueError("No existing version found to revise")
 
     # Add chat message for the revision request
     chat_message = DesignChat(
@@ -188,26 +220,30 @@ async def create_revision(
     )
     db.add(chat_message)
 
-    # Generate revision with full conversation history
+    # Generate revision based on selected version
     new_version_number = design.current_version + 1
     result = await generate_revision(
-        original_prompt=latest_version.prompt,
+        original_prompt=base_version.prompt,
         revision_notes=revision_data.revision_notes,
-        original_image_path=latest_version.image_path,
+        original_image_path=base_version.image_path,
         logo_path=None,
         brand_assets=[],
-        conversation_history=conversation_history,
     )
+
+    # Get next batch number
+    max_batch = db.query(func.max(DesignVersion.batch_number)).filter(
+        DesignVersion.design_id == design_id
+    ).scalar() or 0
 
     # Create new version record
     version = DesignVersion(
         design_id=design.id,
         version_number=new_version_number,
+        batch_number=max_batch + 1,
         prompt=result.get("prompt", ""),
     )
 
     if result.get("success") and result.get("image_data"):
-        # Save the generated image
         image_path = await save_generated_image(
             image_data=result["image_data"],
             design_id=design.id,
@@ -216,7 +252,6 @@ async def create_revision(
         version.image_path = image_path
         version.generation_status = "completed"
 
-        # Add AI response to chat
         ai_response = DesignChat(
             design_id=design_id,
             version_id=version.id,
@@ -228,7 +263,6 @@ async def create_revision(
         version.generation_status = "failed"
         version.error_message = result.get("error", "Unknown error")
 
-        # Add AI error response to chat
         ai_response = DesignChat(
             design_id=design_id,
             message=f"Failed to generate revision: {result.get('error', 'Unknown error')}",
@@ -238,11 +272,14 @@ async def create_revision(
 
     db.add(version)
 
-    # Update design's current version
+    # Update design
     design.current_version = new_version_number
+    design.selected_version_id = version.id  # Auto-select the revision
     design.updated_at = datetime.utcnow()
 
-    # Update chat message with version link
+    # Mark revision as selected
+    version.is_selected = True
+
     chat_message.version_id = version.id
 
     db.commit()
@@ -252,7 +289,7 @@ async def create_revision(
 
 
 def get_design_with_versions(db: Session, design_id: str) -> Optional[Dict[str, Any]]:
-    """Get a design with all its versions and chat history."""
+    """Get a design with all its versions, logos, and chat history."""
     design = db.query(Design).filter(Design.id == design_id).first()
     if not design:
         return None
@@ -280,6 +317,7 @@ def get_design_with_versions(db: Session, design_id: str) -> Optional[Dict[str, 
         "design_name": design.design_name,
         "design_number": design.design_number,
         "current_version": design.current_version,
+        "selected_version_id": design.selected_version_id,
         "hat_style": design.hat_style,
         "material": design.material,
         "structure": design.structure,
@@ -294,6 +332,7 @@ def get_design_with_versions(db: Session, design_id: str) -> Optional[Dict[str, 
         "updated_at": design.updated_at,
         "versions": design.versions,
         "chats": design.chats,
+        "logos": design.logos,
         "quote_summary": quote_summary,
     }
 
@@ -327,20 +366,12 @@ def search_designs(
     skip: int = 0,
     limit: int = 50,
 ) -> List[Dict[str, Any]]:
-    """
-    Search designs with filters.
-
-    Shows only designs created by the user, unless include_shared is True,
-    in which case designs shared with the team are also included.
-
-    Returns list of designs with brand name, customer name, and latest image path.
-    """
+    """Search designs with filters."""
     query = db.query(Design)
 
-    # Filter by user - show only user's designs, optionally include shared
+    # Filter by user
     if user_id:
         if include_shared:
-            # Show user's designs OR designs shared with team
             query = query.filter(
                 or_(
                     Design.created_by_id == user_id,
@@ -348,7 +379,6 @@ def search_designs(
                 )
             )
         else:
-            # Show only user's designs
             query = query.filter(Design.created_by_id == user_id)
 
     if brand_name:
@@ -366,21 +396,30 @@ def search_designs(
 
     results = []
     for design in designs:
-        # Get latest version image
-        latest_version = (
-            db.query(DesignVersion)
-            .filter(
-                DesignVersion.design_id == design.id,
+        # Prefer selected version image, fallback to latest completed
+        if design.selected_version_id:
+            selected_version = db.query(DesignVersion).filter(
+                DesignVersion.id == design.selected_version_id,
                 DesignVersion.generation_status == "completed",
-            )
-            .order_by(DesignVersion.version_number.desc())
-            .first()
-        )
+            ).first()
+            latest_image_path = selected_version.image_path if selected_version else None
+        else:
+            latest_image_path = None
 
-        # Parse style_directions from comma-separated string to list
+        if not latest_image_path:
+            latest_version = (
+                db.query(DesignVersion)
+                .filter(
+                    DesignVersion.design_id == design.id,
+                    DesignVersion.generation_status == "completed",
+                )
+                .order_by(DesignVersion.version_number.desc())
+                .first()
+            )
+            latest_image_path = latest_version.image_path if latest_version else None
+
         style_directions = design.style_directions.split(",") if design.style_directions else []
 
-        # Get quote summary if exists
         quote = db.query(DesignQuote).filter(DesignQuote.design_id == design.id).first()
         quote_summary = None
         if quote:
@@ -410,7 +449,7 @@ def search_designs(
             "shared_with_team": design.shared_with_team,
             "created_at": design.created_at,
             "updated_at": design.updated_at,
-            "latest_image_path": latest_version.image_path if latest_version else None,
+            "latest_image_path": latest_image_path,
             "quote_summary": quote_summary,
         })
 
