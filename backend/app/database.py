@@ -116,7 +116,7 @@ def run_migrations(engine):
 
             if 'is_selected' not in columns:
                 conn.execute(text(
-                    "ALTER TABLE design_versions ADD COLUMN is_selected BOOLEAN DEFAULT 0 NOT NULL"
+                    "ALTER TABLE design_versions ADD COLUMN is_selected BOOLEAN DEFAULT FALSE NOT NULL"
                 ))
                 conn.commit()
                 print("Migration: Added is_selected column to design_versions table")
