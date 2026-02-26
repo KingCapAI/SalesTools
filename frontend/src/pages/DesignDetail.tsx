@@ -247,10 +247,10 @@ export function DesignDetail() {
               size="sm"
               onClick={handleRegenerate}
               isLoading={regenerateDesign.isPending}
-              title="Generate 3 new design options using the same inputs"
+              title="Generate 3 new design options from scratch using the same inputs"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Try Again
+              Start Over
             </Button>
             <Button
               variant="outline"
