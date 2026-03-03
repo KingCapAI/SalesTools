@@ -141,7 +141,7 @@ async def generate_design_image(
             }
 
         # Use Gemini 3 Pro Image (Nano Banana Pro) for professional asset production
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key={api_key}"
 
         # Build parts list - include logos and/or original image
         parts = []
@@ -417,7 +417,7 @@ async def generate_revision(
                 "error": "Gemini API key not configured",
             }
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key={api_key}"
 
         # Build parts - include the latest image first, then the edit instruction
         parts = []
@@ -581,7 +581,7 @@ async def generate_custom_design(
             reference_hat_path=reference_hat_path,
         )
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key={api_key}"
 
         # Build parts list - include all location logos and reference hat
         parts = []
