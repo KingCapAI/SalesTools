@@ -169,6 +169,9 @@ CRITICAL INSTRUCTIONS:
 5. Maintain professional quality and clean execution
 6. Each logo should be clearly visible and properly sized for its location
 
+DECORATION METHOD CALLOUTS:
+For each view that shows a decoration, add a small, clean text label near that decoration identifying the exact decoration method specified above. Format: a thin line or arrow pointing from the label to the decoration. Use a clean sans-serif font, black text on a small white background pill/tag so it is legible. The label text must exactly match the decoration method specified for that location (e.g. "Flat Embroidery", "3D Puff Embroidery", "PVC Patch", "Woven Patch", "Sublimated Print", etc.). Only label decorations visible in that particular view. Do NOT label views with no decoration visible.
+
 IMAGE LAYOUT — EXACTLY 6 VIEWS (no more, no less, no duplicates):
 The generated image must contain exactly 6 views of the SAME hat design arranged in a grid. Each view shows the hat from a different angle. Every view must show the SAME design — do NOT vary the decorations, colors, or logos between views.
 1. **FRONT VIEW** — the hat facing the camera straight-on, showing the front panel
@@ -210,6 +213,9 @@ CRITICAL INSTRUCTIONS:
 7. Size each decoration according to the specification
 8. Do NOT add any decorations at locations not specified above
 9. Keep the design clean and professional
+
+DECORATION METHOD CALLOUTS:
+For each view that shows a decoration, add a small, clean text label near that decoration identifying the exact decoration method specified above. Format: a thin line or arrow pointing from the label to the decoration. Use a clean sans-serif font, black text on a small white background pill/tag so it is legible. The label text must exactly match the decoration method specified for that location (e.g. "Flat Embroidery", "3D Puff Embroidery", "PVC Patch", "Woven Patch", "Sublimated Print", etc.). Only label decorations visible in that particular view. Do NOT label views with no decoration visible.
 
 IMAGE LAYOUT — EXACTLY 6 VIEWS (no more, no less, no duplicates):
 The generated image must contain exactly 6 views of the SAME hat design arranged in a grid. Each view shows the hat from a different angle. Every view must show the SAME design — do NOT vary the decorations, colors, or logos between views.

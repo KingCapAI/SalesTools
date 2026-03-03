@@ -192,6 +192,9 @@ The overall design vibe is **{style_desc}**.
 
 {logo_section}
 
+DECORATION METHOD CALLOUTS:
+For each view that shows a decoration (logo, patch, embroidery, etc.), add a small, clean text label near that decoration identifying the method used. Format: a thin line or arrow pointing from the label to the decoration. The label text should read the exact decoration method, e.g. "Flat Embroidery", "3D Puff Embroidery", "PVC Patch", "Woven Patch", "Sublimated Print", etc. Use a clean sans-serif font, black text on a small white background pill/tag so it is legible against any background. Only label decorations that are visible in that particular view. Do NOT label views that have no decoration visible. The labels must be accurate — the text must match the actual decoration method depicted.
+
 IMAGE LAYOUT — EXACTLY 6 VIEWS (no more, no less, no duplicates):
 The generated image must contain exactly 6 views of the SAME hat design arranged in a grid. Each view shows the hat from a different angle. Every view must show the SAME design — do NOT vary the decorations, colors, or logos between views.
 1. **FRONT VIEW** — the hat facing the camera straight-on, showing the front panel
