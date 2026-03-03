@@ -185,13 +185,23 @@ Do NOT add more than 3 decoration locations. Keep the design clean and professio
     variation_hint = VARIATION_HINTS[variation_index % len(VARIATION_HINTS)]
 
     prompt = f"""A photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.{construction_details}
-The hat is viewed from the front, left, right, back, underneath the visor with the front end of the visor pointing down, and worn on a white male model.
 
 The brand is **{client_name}**.
 
 The overall design vibe is **{style_desc}**.
 
 {logo_section}
+
+IMAGE LAYOUT — EXACTLY 6 VIEWS (no more, no less, no duplicates):
+The generated image must contain exactly 6 views of the SAME hat design arranged in a grid. Each view shows the hat from a different angle. Every view must show the SAME design — do NOT vary the decorations, colors, or logos between views.
+1. **FRONT VIEW** — the hat facing the camera straight-on, showing the front panel
+2. **LEFT SIDE VIEW** — the hat rotated 90° to show the left side panel
+3. **RIGHT SIDE VIEW** — the hat rotated 90° to show the right side panel
+4. **BACK VIEW** — the hat rotated 180° to show the back panel and closure
+5. **UNDERBILL VIEW** — the hat flipped to show the inside of the visor/brim, with the front end of the visor pointing downward
+6. **MODEL VIEW** — the hat worn on a white male model, straight-on portrait angle
+
+CRITICAL: Do NOT duplicate any angle. Do NOT show two versions of the same side. Every view must be a DIFFERENT angle of the SAME hat. The design, colors, logos, and decorations must be IDENTICAL across all 6 views.
 
 Professional studio lighting, white background, 4k resolution.
 

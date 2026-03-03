@@ -39,9 +39,14 @@ export function VersionGallery({
     );
   }
 
-  // Get the latest batch of versions
-  const maxBatch = Math.max(...versions.map((v) => v.batch_number || 0));
-  const latestBatchVersions = versions.filter((v) => (v.batch_number || 0) === maxBatch);
+  // Group versions by batch number, sorted newest first
+  const batchMap = new Map<number, DesignVersion[]>();
+  for (const v of versions) {
+    const batch = v.batch_number || 0;
+    if (!batchMap.has(batch)) batchMap.set(batch, []);
+    batchMap.get(batch)!.push(v);
+  }
+  const batches = Array.from(batchMap.entries()).sort((a, b) => b[0] - a[0]);
 
   // Find the selected version (from any batch)
   const selectedVersion = selectedVersionId
@@ -57,73 +62,86 @@ export function VersionGallery({
         </div>
       )}
 
-      {/* Version grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {latestBatchVersions.map((version) => {
-          const imageUrl = version.image_path
-            ? uploadsApi.getFileUrl(version.image_path)
-            : version.image_url;
-          const isSelected = selectedVersionId === version.id;
-          const isCompleted = version.generation_status === 'completed';
-          const isFailed = version.generation_status === 'failed';
+      {/* Render each batch */}
+      {batches.map(([batchNumber, batchVersions], batchIndex) => (
+        <div key={batchNumber}>
+          {batches.length > 1 && (
+            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+              {batchIndex === 0 ? 'Latest Generation' : `Generation ${batchNumber}`}
+            </h4>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {batchVersions.map((version) => {
+              const imageUrl = version.image_path
+                ? uploadsApi.getFileUrl(version.image_path)
+                : version.image_url;
+              const isSelected = selectedVersionId === version.id;
+              const isCompleted = version.generation_status === 'completed';
+              const isFailed = version.generation_status === 'failed';
 
-          return (
-            <button
-              key={version.id}
-              onClick={() => isCompleted && onSelectVersion(version.id)}
-              disabled={!isCompleted}
-              className={clsx(
-                'relative rounded-xl border-2 overflow-hidden transition-all text-left',
-                isSelected
-                  ? 'border-primary-500 ring-2 ring-primary-500/50 shadow-lg shadow-primary-500/20'
-                  : isCompleted
-                  ? 'border-gray-700 hover:border-gray-500 cursor-pointer'
-                  : 'border-gray-800 opacity-75 cursor-not-allowed'
-              )}
-            >
-              {/* Image or status */}
-              <div className="aspect-square bg-gray-900 relative">
-                {isCompleted && imageUrl ? (
-                  <img
-                    src={imageUrl}
-                    alt={`Option ${version.version_number}`}
-                    className="w-full h-full object-cover"
-                  />
-                ) : isFailed ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                    <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
-                    <p className="text-xs text-red-400 text-center">
-                      {version.error_message || 'Generation failed'}
+              return (
+                <button
+                  key={version.id}
+                  onClick={() => isCompleted && onSelectVersion(version.id)}
+                  disabled={!isCompleted}
+                  className={clsx(
+                    'relative rounded-xl border-2 overflow-hidden transition-all text-left',
+                    isSelected
+                      ? 'border-primary-500 ring-2 ring-primary-500/50 shadow-lg shadow-primary-500/20'
+                      : isCompleted
+                      ? 'border-gray-700 hover:border-gray-500 cursor-pointer'
+                      : 'border-gray-800 opacity-75 cursor-not-allowed'
+                  )}
+                >
+                  {/* Image or status */}
+                  <div className="aspect-square bg-gray-900 relative">
+                    {isCompleted && imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={`Option ${version.version_number}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : isFailed ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                        <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
+                        <p className="text-xs text-red-400 text-center">
+                          {version.error_message || 'Generation failed'}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center">
+                        <Loader className="w-8 h-8 text-primary-500 animate-spin mb-2" />
+                        <p className="text-xs text-gray-500">Generating...</p>
+                      </div>
+                    )}
+
+                    {/* Selected badge */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 bg-primary-500 rounded-full p-1">
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Label */}
+                  <div className="p-3 bg-gray-800/80">
+                    <p className="text-sm font-medium text-gray-200">
+                      Option {version.version_number}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {isCompleted ? 'Click to select' : isFailed ? 'Failed' : 'Generating...'}
                     </p>
                   </div>
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center">
-                    <Loader className="w-8 h-8 text-primary-500 animate-spin mb-2" />
-                    <p className="text-xs text-gray-500">Generating...</p>
-                  </div>
-                )}
-
-                {/* Selected badge */}
-                {isSelected && (
-                  <div className="absolute top-2 right-2 bg-primary-500 rounded-full p-1">
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                  </div>
-                )}
-              </div>
-
-              {/* Label */}
-              <div className="p-3 bg-gray-800/80">
-                <p className="text-sm font-medium text-gray-200">
-                  Option {version.version_number}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {isCompleted ? 'Click to select' : isFailed ? 'Failed' : 'Generating...'}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                </button>
+              );
+            })}
+          </div>
+          {/* Divider between batches */}
+          {batchIndex < batches.length - 1 && (
+            <div className="border-t border-gray-800 mt-6" />
+          )}
+        </div>
+      ))}
 
       {/* Enlarged selected version */}
       {selectedVersion && selectedVersion.generation_status === 'completed' && (
