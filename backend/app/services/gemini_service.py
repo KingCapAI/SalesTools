@@ -1,6 +1,7 @@
 """Gemini AI service for brand scraping and image generation."""
 
 import base64
+import json
 import httpx
 import asyncio
 from typing import Optional, Dict, Any, List
@@ -23,6 +24,78 @@ settings = get_settings()
 MAX_RETRIES = 5
 RETRY_DELAY_SECONDS = 5
 IMAGE_GENERATION_TIMEOUT = 300.0  # 5 minutes for image generation
+
+# --- Vertex AI auth helpers ---
+
+_vertex_credentials = None
+_vertex_token_expiry = 0
+
+
+def _get_vertex_credentials():
+    """Load service account credentials from the JSON env var."""
+    global _vertex_credentials
+    if _vertex_credentials is not None:
+        return _vertex_credentials
+
+    creds_json = settings.google_application_credentials_json
+    if not creds_json:
+        return None
+
+    try:
+        from google.oauth2 import service_account
+        info = json.loads(creds_json)
+        _vertex_credentials = service_account.Credentials.from_service_account_info(
+            info,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        )
+        return _vertex_credentials
+    except Exception as e:
+        print(f"Warning: Failed to load Vertex AI credentials: {e}")
+        return None
+
+
+def _get_vertex_access_token() -> Optional[str]:
+    """Get a valid access token, refreshing if needed."""
+    creds = _get_vertex_credentials()
+    if creds is None:
+        return None
+
+    import google.auth.transport.requests
+    if not creds.valid:
+        creds.refresh(google.auth.transport.requests.Request())
+
+    return creds.token
+
+
+def _use_vertex_ai() -> bool:
+    """Check if Vertex AI is configured and should be used."""
+    return bool(settings.google_cloud_project and settings.google_application_credentials_json)
+
+
+def _get_image_gen_url(api_key: Optional[str] = None) -> tuple[str, dict]:
+    """
+    Return (url, headers) for image generation.
+    Prefers Vertex AI if configured, falls back to direct Gemini API.
+    """
+    if _use_vertex_ai():
+        token = _get_vertex_access_token()
+        if token:
+            project = settings.google_cloud_project
+            url = (
+                f"https://aiplatform.googleapis.com/v1/projects/{project}"
+                f"/locations/global/publishers/google/models/gemini-3.1-flash-image-preview:generateContent"
+            )
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            }
+            return url, headers
+
+    # Fallback to direct Gemini API
+    key = api_key or settings.google_gemini_api_key
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key={key}"
+    headers = {"Content-Type": "application/json"}
+    return url, headers
 
 
 def init_gemini():
@@ -133,15 +206,13 @@ async def generate_design_image(
         Dictionary with 'success', 'image_data' (base64), or 'error'
     """
     try:
-        api_key = settings.google_gemini_api_key
-        if not api_key:
+        if not _use_vertex_ai() and not settings.google_gemini_api_key:
             return {
                 "success": False,
-                "error": "Gemini API key not configured",
+                "error": "No image generation API configured. Set Vertex AI credentials or Gemini API key.",
             }
 
-        # Use Gemini 3 Pro Image (Nano Banana Pro) for professional asset production
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key={api_key}"
+        url, auth_headers = _get_image_gen_url()
 
         # Build parts list - include logos and/or original image
         parts = []
@@ -259,7 +330,7 @@ async def generate_design_image(
                 }
             ],
             "generationConfig": {
-                "responseModalities": ["IMAGE"]
+                "responseModalities": ["TEXT", "IMAGE"]
             }
         }
 
@@ -270,7 +341,7 @@ async def generate_design_image(
                 response = await client.post(
                     url,
                     json=payload,
-                    headers={"Content-Type": "application/json"},
+                    headers=auth_headers,
                 )
 
                 if response.status_code == 503:
@@ -410,14 +481,13 @@ async def generate_revision(
         Dictionary with prompt, success status, and image data or error
     """
     try:
-        api_key = settings.google_gemini_api_key
-        if not api_key:
+        if not _use_vertex_ai() and not settings.google_gemini_api_key:
             return {
                 "success": False,
-                "error": "Gemini API key not configured",
+                "error": "No image generation API configured. Set Vertex AI credentials or Gemini API key.",
             }
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key={api_key}"
+        url, auth_headers = _get_image_gen_url()
 
         # Build parts - include the latest image first, then the edit instruction
         parts = []
@@ -456,7 +526,7 @@ IMPORTANT: Keep everything else exactly the same. Only modify what is specifical
         payload = {
             "contents": [{"parts": parts}],
             "generationConfig": {
-                "responseModalities": ["IMAGE"]
+                "responseModalities": ["TEXT", "IMAGE"]
             }
         }
 
@@ -464,10 +534,14 @@ IMPORTANT: Keep everything else exactly the same. Only modify what is specifical
             # Retry logic for 503 errors (model overloaded)
             last_error = None
             for attempt in range(MAX_RETRIES):
+                # Refresh token on retries in case it expired
+                if attempt > 0 and _use_vertex_ai():
+                    url, auth_headers = _get_image_gen_url()
+
                 response = await client.post(
                     url,
                     json=payload,
-                    headers={"Content-Type": "application/json"},
+                    headers=auth_headers,
                 )
 
                 if response.status_code == 503:
@@ -493,7 +567,7 @@ IMPORTANT: Keep everything else exactly the same. Only modify what is specifical
 
             result = response.json()
 
-            # Extract image from Gemini response
+            # Extract image from response
             if "candidates" in result and len(result["candidates"]) > 0:
                 candidate = result["candidates"][0]
                 if "content" in candidate and "parts" in candidate["content"]:
@@ -560,12 +634,10 @@ async def generate_custom_design(
         Dictionary with prompt, success status, and image data or error
     """
     try:
-        # Use mockup-specific API key if available, otherwise fall back to main key
-        api_key = settings.google_gemini_api_key_mockup or settings.google_gemini_api_key
-        if not api_key:
+        if not _use_vertex_ai() and not (settings.google_gemini_api_key_mockup or settings.google_gemini_api_key):
             return {
                 "success": False,
-                "error": "Gemini API key not configured. Set GOOGLE_GEMINI_API_KEY_MOCKUP or GOOGLE_GEMINI_API_KEY.",
+                "error": "No image generation API configured. Set Vertex AI credentials or Gemini API key.",
             }
 
         # Build the prompt
@@ -581,7 +653,9 @@ async def generate_custom_design(
             reference_hat_path=reference_hat_path,
         )
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key={api_key}"
+        # Use mockup-specific API key for fallback if Vertex AI not configured
+        fallback_key = settings.google_gemini_api_key_mockup or settings.google_gemini_api_key
+        url, auth_headers = _get_image_gen_url(api_key=fallback_key)
 
         # Build parts list - include all location logos and reference hat
         parts = []
@@ -657,20 +731,22 @@ async def generate_custom_design(
             }
         }
 
-        print(f"[Mockup Builder] Making API request to Gemini...")
+        print(f"[Mockup Builder] Making API request ({'Vertex AI' if _use_vertex_ai() else 'direct Gemini'})...")
         print(f"[Mockup Builder] Number of parts: {len(parts)}")
-        print(f"[Mockup Builder] API key present: {bool(api_key)}")
 
         async with httpx.AsyncClient(timeout=IMAGE_GENERATION_TIMEOUT) as client:
             # Retry logic for 503 errors (model overloaded)
             last_error = None
             for attempt in range(MAX_RETRIES):
                 print(f"[Mockup Builder] Attempt {attempt + 1}/{MAX_RETRIES}")
+                # Refresh token on retries in case it expired
+                if attempt > 0 and _use_vertex_ai():
+                    url, auth_headers = _get_image_gen_url(api_key=fallback_key)
                 try:
                     response = await client.post(
                         url,
                         json=payload,
-                        headers={"Content-Type": "application/json"},
+                        headers=auth_headers,
                     )
                     print(f"[Mockup Builder] Response status: {response.status_code}")
                 except Exception as req_error:
