@@ -170,18 +170,28 @@ CRITICAL INSTRUCTIONS:
 6. Each logo should be clearly visible and properly sized for its location
 
 DECORATION METHOD CALLOUTS:
-For each view that shows a decoration, add a small, clean text label near that decoration identifying the exact decoration method specified above. Format: a thin line or arrow pointing from the label to the decoration. Use a clean sans-serif font, black text on a small white background pill/tag so it is legible. The label text must exactly match the decoration method specified for that location (e.g. "Flat Embroidery", "3D Puff Embroidery", "PVC Patch", "Woven Patch", "Sublimated Print", etc.). Only label decorations visible in that particular view. Do NOT label views with no decoration visible.
+For each decoration visible in a view, add ONE small text label identifying the method. Rules:
+- ONE label per decoration — never duplicate a label for the same decoration in the same view.
+- Format: thin line or arrow from label to the decoration it identifies.
+- Label text = exact method name, e.g. "Flat Embroidery", "3D Puff Embroidery", "PVC Patch", "Woven Patch", "Sublimated Print".
+- Style: clean sans-serif font, black text on a small white pill/tag background.
+- Only label decorations VISIBLE in that specific view. If a view shows no decoration, show NO labels.
+- If a view shows 2 decorations (e.g. front logo + side logo), show exactly 2 labels — one per decoration.
 
-IMAGE LAYOUT — EXACTLY 6 VIEWS (no more, no less, no duplicates):
-The generated image must contain exactly 6 views of the SAME hat design arranged in a grid. Each view shows the hat from a different angle. Every view must show the SAME design — do NOT vary the decorations, colors, or logos between views.
-1. **FRONT VIEW** — the hat facing the camera straight-on, showing the front panel
-2. **LEFT SIDE VIEW** — the hat rotated 90° to show the left side panel
-3. **RIGHT SIDE VIEW** — the hat rotated 90° to show the right side panel
-4. **BACK VIEW** — the hat rotated 180° to show the back panel and closure
-5. **UNDERBILL VIEW** — the hat flipped to show the inside of the visor/brim, with the front end of the visor pointing downward
-6. **MODEL VIEW** — the hat worn on a white male model, straight-on portrait angle
+IMAGE LAYOUT — EXACTLY 6 UNIQUE VIEWS in a 3×2 grid:
+Each view shows the SAME hat from a DIFFERENT angle. Same design, same colors, same logos, same decorations in every view.
+1. **FRONT VIEW** (top-left) — hat facing camera straight-on, showing front panel
+2. **LEFT SIDE VIEW** (top-center) — hat rotated 90° showing left side panel only
+3. **RIGHT SIDE VIEW** (top-right) — hat rotated 90° showing right side panel only
+4. **BACK VIEW** (bottom-left) — hat rotated 180° showing back panel and closure
+5. **UNDERBILL VIEW** (bottom-center) — hat flipped to show inside of visor/brim
+6. **MODEL VIEW** (bottom-right) — hat worn on a white male model, portrait angle
 
-CRITICAL: Do NOT duplicate any angle. Do NOT show two versions of the same side. Every view must be a DIFFERENT angle of the SAME hat. The design, colors, logos, and decorations must be IDENTICAL across all 6 views.
+STRICT RULES:
+- Exactly 6 views. Not 4, not 5, not 7, not 8. Exactly 6.
+- Every view must be a DIFFERENT angle. No two views may show the same side of the hat.
+- LEFT SIDE and RIGHT SIDE are mirror images — they must NOT look the same. Left shows the left panel, right shows the right panel.
+- The design must be IDENTICAL across all views — do not change decorations, colors, or logos between views.
 
 Professional studio lighting, white background, 4k resolution.
 
@@ -215,18 +225,28 @@ CRITICAL INSTRUCTIONS:
 9. Keep the design clean and professional
 
 DECORATION METHOD CALLOUTS:
-For each view that shows a decoration, add a small, clean text label near that decoration identifying the exact decoration method specified above. Format: a thin line or arrow pointing from the label to the decoration. Use a clean sans-serif font, black text on a small white background pill/tag so it is legible. The label text must exactly match the decoration method specified for that location (e.g. "Flat Embroidery", "3D Puff Embroidery", "PVC Patch", "Woven Patch", "Sublimated Print", etc.). Only label decorations visible in that particular view. Do NOT label views with no decoration visible.
+For each decoration visible in a view, add ONE small text label identifying the method. Rules:
+- ONE label per decoration — never duplicate a label for the same decoration in the same view.
+- Format: thin line or arrow from label to the decoration it identifies.
+- Label text = exact method name, e.g. "Flat Embroidery", "3D Puff Embroidery", "PVC Patch", "Woven Patch", "Sublimated Print".
+- Style: clean sans-serif font, black text on a small white pill/tag background.
+- Only label decorations VISIBLE in that specific view. If a view shows no decoration, show NO labels.
+- If a view shows 2 decorations (e.g. front logo + side logo), show exactly 2 labels — one per decoration.
 
-IMAGE LAYOUT — EXACTLY 6 VIEWS (no more, no less, no duplicates):
-The generated image must contain exactly 6 views of the SAME hat design arranged in a grid. Each view shows the hat from a different angle. Every view must show the SAME design — do NOT vary the decorations, colors, or logos between views.
-1. **FRONT VIEW** — the hat facing the camera straight-on, showing the front panel
-2. **LEFT SIDE VIEW** — the hat rotated 90° to show the left side panel
-3. **RIGHT SIDE VIEW** — the hat rotated 90° to show the right side panel
-4. **BACK VIEW** — the hat rotated 180° to show the back panel and closure
-5. **UNDERBILL VIEW** — the hat flipped to show the inside of the visor/brim, with the front end of the visor pointing downward
-6. **MODEL VIEW** — the hat worn on a white male model, straight-on portrait angle
+IMAGE LAYOUT — EXACTLY 6 UNIQUE VIEWS in a 3×2 grid:
+Each view shows the SAME hat from a DIFFERENT angle. Same design, same colors, same logos, same decorations in every view.
+1. **FRONT VIEW** (top-left) — hat facing camera straight-on, showing front panel
+2. **LEFT SIDE VIEW** (top-center) — hat rotated 90° showing left side panel only
+3. **RIGHT SIDE VIEW** (top-right) — hat rotated 90° showing right side panel only
+4. **BACK VIEW** (bottom-left) — hat rotated 180° showing back panel and closure
+5. **UNDERBILL VIEW** (bottom-center) — hat flipped to show inside of visor/brim
+6. **MODEL VIEW** (bottom-right) — hat worn on a white male model, portrait angle
 
-CRITICAL: Do NOT duplicate any angle. Do NOT show two versions of the same side. Every view must be a DIFFERENT angle of the SAME hat. The design, colors, logos, and decorations must be IDENTICAL across all 6 views.
+STRICT RULES:
+- Exactly 6 views. Not 4, not 5, not 7, not 8. Exactly 6.
+- Every view must be a DIFFERENT angle. No two views may show the same side of the hat.
+- LEFT SIDE and RIGHT SIDE are mirror images — they must NOT look the same. Left shows the left panel, right shows the right panel.
+- The design must be IDENTICAL across all views — do not change decorations, colors, or logos between views.
 
 Professional studio lighting, white background, 4k resolution.
 
