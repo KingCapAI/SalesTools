@@ -78,23 +78,30 @@ def _get_image_gen_url(api_key: Optional[str] = None) -> tuple[str, dict]:
     Prefers Vertex AI if configured, falls back to direct Gemini API.
     """
     if _use_vertex_ai():
-        token = _get_vertex_access_token()
-        if token:
-            project = settings.google_cloud_project
-            url = (
-                f"https://aiplatform.googleapis.com/v1/projects/{project}"
-                f"/locations/global/publishers/google/models/gemini-3.1-flash-image-preview:generateContent"
-            )
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {token}",
-            }
-            return url, headers
+        try:
+            token = _get_vertex_access_token()
+            if token:
+                project = settings.google_cloud_project
+                url = (
+                    f"https://aiplatform.googleapis.com/v1/projects/{project}"
+                    f"/locations/global/publishers/google/models/gemini-3.1-flash-image-preview:generateContent"
+                )
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {token}",
+                }
+                print(f"[ImageGen] Using Vertex AI (project: {project})")
+                return url, headers
+            else:
+                print("[ImageGen] WARNING: Vertex AI configured but failed to get access token, falling back to direct API")
+        except Exception as e:
+            print(f"[ImageGen] WARNING: Vertex AI auth error: {e}, falling back to direct API")
 
     # Fallback to direct Gemini API
     key = api_key or settings.google_gemini_api_key
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key={key}"
     headers = {"Content-Type": "application/json"}
+    print(f"[ImageGen] Using direct Gemini API (key present: {bool(key)})")
     return url, headers
 
 
@@ -334,20 +341,26 @@ async def generate_design_image(
             }
         }
 
+        import time as _time
         async with httpx.AsyncClient(timeout=IMAGE_GENERATION_TIMEOUT) as client:
             # Retry logic for 503 errors (model overloaded)
             last_error = None
+            _start = _time.time()
             for attempt in range(MAX_RETRIES):
+                print(f"[ImageGen] Attempt {attempt + 1}/{MAX_RETRIES}...")
                 response = await client.post(
                     url,
                     json=payload,
                     headers=auth_headers,
                 )
+                print(f"[ImageGen] Response: {response.status_code} ({_time.time() - _start:.1f}s elapsed)")
 
                 if response.status_code == 503:
                     last_error = "The model is overloaded. Please try again."
                     if attempt < MAX_RETRIES - 1:
-                        await asyncio.sleep(RETRY_DELAY_SECONDS * (attempt + 1))
+                        wait = RETRY_DELAY_SECONDS * (attempt + 1)
+                        print(f"[ImageGen] 503 - retrying in {wait}s...")
+                        await asyncio.sleep(wait)
                         continue
                     return {
                         "success": False,
@@ -356,6 +369,7 @@ async def generate_design_image(
 
                 if response.status_code != 200:
                     error_data = response.json() if response.headers.get("content-type", "").startswith("application/json") else {"error": response.text}
+                    print(f"[ImageGen] Error: {response.status_code} - {str(error_data)[:200]}")
                     return {
                         "success": False,
                         "error": f"API error {response.status_code}: {error_data}",
@@ -363,9 +377,10 @@ async def generate_design_image(
 
                 break  # Success, exit retry loop
 
+            print(f"[ImageGen] Success in {_time.time() - _start:.1f}s")
             result = response.json()
 
-            # Extract image from Gemini response
+            # Extract image from response
             if "candidates" in result and len(result["candidates"]) > 0:
                 candidate = result["candidates"][0]
                 if "content" in candidate and "parts" in candidate["content"]:
