@@ -295,6 +295,7 @@ export interface CustomDesign {
   visor_color?: string;
   design_type: 'custom';
   reference_hat_path?: string;
+  selected_version_id?: string | null;
   status: string;
   approval_status: ApprovalStatus;
   shared_with_team: boolean;
