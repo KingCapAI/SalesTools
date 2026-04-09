@@ -818,19 +818,12 @@ async def upload_location_logo(
             detail="Invalid file type. Only PNG, JPG, and WEBP images are accepted. SVG files are not supported."
         )
 
-    # Create unique filename
-    ext = os.path.splitext(file.filename)[1] if file.filename else ".png"
-    unique_filename = f"{uuid.uuid4()}{ext}"
-    relative_path = f"location_logos/{unique_filename}"
-    full_path = os.path.join(settings.upload_dir, relative_path)
-
-    # Ensure directory exists
-    os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
     # Save file
+    from ..services.storage_service import save_file_bytes, generate_unique_filename
+    ext = os.path.splitext(file.filename)[1] if file.filename else ".png"
+    unique_filename = generate_unique_filename(f"upload{ext}")
     contents = await file.read()
-    with open(full_path, "wb") as f:
-        f.write(contents)
+    relative_path = await save_file_bytes(contents, "location_logos", unique_filename, file.content_type or "image/png")
 
     return {
         "logo_path": relative_path,
@@ -853,19 +846,12 @@ async def upload_reference_hat(
             detail=f"Invalid file type. Allowed: {', '.join(allowed_types)}"
         )
 
-    # Create unique filename
-    ext = os.path.splitext(file.filename)[1] if file.filename else ".png"
-    unique_filename = f"{uuid.uuid4()}{ext}"
-    relative_path = f"reference_hats/{unique_filename}"
-    full_path = os.path.join(settings.upload_dir, relative_path)
-
-    # Ensure directory exists
-    os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
     # Save file
+    from ..services.storage_service import save_file_bytes, generate_unique_filename
+    ext = os.path.splitext(file.filename)[1] if file.filename else ".png"
+    unique_filename = generate_unique_filename(f"upload{ext}")
     contents = await file.read()
-    with open(full_path, "wb") as f:
-        f.write(contents)
+    relative_path = await save_file_bytes(contents, "reference_hats", unique_filename, file.content_type or "image/png")
 
     return {
         "reference_hat_path": relative_path,

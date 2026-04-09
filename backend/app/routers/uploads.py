@@ -1,7 +1,7 @@
 """File upload routes."""
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
 
@@ -225,9 +225,14 @@ uploads_router = APIRouter(prefix="/uploads", tags=["File Serving"])
 
 @uploads_router.get("/{file_path:path}")
 async def serve_file(file_path: str):
-    """Serve uploaded files."""
+    """Serve uploaded files — redirects to R2 if configured, otherwise serves from local disk."""
+    from ..services.r2_service import _use_r2, get_public_url
+
+    if _use_r2():
+        return RedirectResponse(url=get_public_url(file_path), status_code=302)
+
+    # Local fallback
     full_path = Path(settings.upload_dir) / file_path
     if not full_path.exists():
         raise HTTPException(status_code=404, detail="File not found")
-
     return FileResponse(full_path)

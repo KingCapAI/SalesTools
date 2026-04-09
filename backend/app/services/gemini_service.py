@@ -14,6 +14,7 @@ import io
 from ..config import get_settings
 from ..utils.prompt_builder import build_design_prompt, build_revision_prompt
 from ..utils.custom_prompt_builder import build_custom_design_prompt, build_custom_revision_prompt
+from .storage_service import read_file_bytes
 
 # Supported image formats for Gemini API
 SUPPORTED_IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
@@ -235,18 +236,15 @@ async def generate_design_image(
                     continue
 
                 try:
-                    full_logo_path = Path(settings.upload_dir) / l_path
-                    if not full_logo_path.exists():
-                        print(f"Warning: Logo file not found: {l_path}")
-                        continue
-
                     ext = Path(l_path).suffix.lower()
                     if ext not in SUPPORTED_IMAGE_EXTENSIONS:
                         print(f"Warning: Skipping unsupported image format for '{l_name}': {ext}")
                         continue
 
-                    with open(full_logo_path, "rb") as f:
-                        logo_bytes = f.read()
+                    logo_bytes = await read_file_bytes(l_path)
+                    if not logo_bytes:
+                        print(f"Warning: Logo file not found: {l_path}")
+                        continue
                     logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
 
                     mime_type = "image/png"
@@ -274,14 +272,12 @@ async def generate_design_image(
         # Backward compat: single logo_path
         elif logo_path:
             try:
-                full_logo_path = Path(settings.upload_dir) / logo_path
-                if full_logo_path.exists():
-                    ext = Path(logo_path).suffix.lower()
-                    if ext not in SUPPORTED_IMAGE_EXTENSIONS:
-                        print(f"Warning: Skipping unsupported image format: {ext}. Only PNG, JPG, and WEBP are supported.")
-                    else:
-                        with open(full_logo_path, "rb") as f:
-                            logo_bytes = f.read()
+                ext = Path(logo_path).suffix.lower()
+                if ext not in SUPPORTED_IMAGE_EXTENSIONS:
+                    print(f"Warning: Skipping unsupported image format: {ext}. Only PNG, JPG, and WEBP are supported.")
+                else:
+                    logo_bytes = await read_file_bytes(logo_path)
+                    if logo_bytes:
                         logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
 
                         mime_type = "image/png"
@@ -302,21 +298,12 @@ async def generate_design_image(
         # If we have an original image (revision mode), include it
         if original_image_path:
             try:
-                # Load the original image and convert to base64
-                from ..config import get_settings
-                settings_local = get_settings()
-                full_path = Path(settings_local.upload_dir) / original_image_path
-
-                if full_path.exists():
-                    with open(full_path, "rb") as f:
-                        image_bytes = f.read()
+                image_bytes = await read_file_bytes(original_image_path)
+                if image_bytes:
                     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-
-                    # Determine mime type
                     mime_type = "image/png"
                     if original_image_path.endswith(".jpg") or original_image_path.endswith(".jpeg"):
                         mime_type = "image/jpeg"
-
                     parts.append({
                         "inlineData": {
                             "mimeType": mime_type,
@@ -324,7 +311,6 @@ async def generate_design_image(
                         }
                     })
             except Exception as e:
-                # Log error but continue without the image
                 print(f"Warning: Could not load original image: {e}")
 
         # Add the text prompt
@@ -510,16 +496,12 @@ async def generate_revision(
         # Load and include the latest generated image
         if original_image_path:
             try:
-                full_path = Path(settings.upload_dir) / original_image_path
-                if full_path.exists():
-                    with open(full_path, "rb") as f:
-                        image_bytes = f.read()
+                image_bytes = await read_file_bytes(original_image_path)
+                if image_bytes:
                     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-
                     mime_type = "image/png"
                     if original_image_path.endswith((".jpg", ".jpeg")):
                         mime_type = "image/jpeg"
-
                     parts.append({
                         "inlineData": {
                             "mimeType": mime_type,
@@ -678,17 +660,12 @@ async def generate_custom_design(
         # Add reference hat image if provided
         if reference_hat_path:
             try:
-                full_path = Path(settings.upload_dir) / reference_hat_path
-                if full_path.exists():
-                    with open(full_path, "rb") as f:
-                        image_bytes = f.read()
+                image_bytes = await read_file_bytes(reference_hat_path)
+                if image_bytes:
                     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-
                     mime_type = "image/png"
                     if reference_hat_path.lower().endswith((".jpg", ".jpeg")):
                         mime_type = "image/jpeg"
-
-                    # Add label text before the image
                     parts.append({"text": "REFERENCE HAT IMAGE:"})
                     parts.append({
                         "inlineData": {
@@ -706,33 +683,30 @@ async def generate_custom_design(
 
             if logo_path:
                 try:
-                    full_logo_path = Path(settings.upload_dir) / logo_path
-                    if full_logo_path.exists():
-                        # Check file extension - skip unsupported formats
-                        ext = Path(logo_path).suffix.lower()
-                        if ext not in SUPPORTED_IMAGE_EXTENSIONS:
-                            print(f"Warning: Skipping {location} logo - unsupported format: {ext}. Only PNG, JPG, and WEBP are supported.")
-                            continue
+                    ext = Path(logo_path).suffix.lower()
+                    if ext not in SUPPORTED_IMAGE_EXTENSIONS:
+                        print(f"Warning: Skipping {location} logo - unsupported format: {ext}. Only PNG, JPG, and WEBP are supported.")
+                        continue
 
-                        with open(full_logo_path, "rb") as f:
-                            logo_bytes = f.read()
-                        logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
+                    logo_bytes = await read_file_bytes(logo_path)
+                    if not logo_bytes:
+                        print(f"Warning: {location} logo not found: {logo_path}")
+                        continue
+                    logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
 
-                        # Determine mime type
-                        mime_type = "image/png"
-                        if ext in {'.jpg', '.jpeg'}:
-                            mime_type = "image/jpeg"
-                        elif ext == '.webp':
-                            mime_type = "image/webp"
+                    mime_type = "image/png"
+                    if ext in {'.jpg', '.jpeg'}:
+                        mime_type = "image/jpeg"
+                    elif ext == '.webp':
+                        mime_type = "image/webp"
 
-                        # Add label text before the logo
-                        parts.append({"text": f"LOGO FOR {location.upper()} LOCATION:"})
-                        parts.append({
-                            "inlineData": {
-                                "mimeType": mime_type,
-                                "data": logo_base64
-                            }
-                        })
+                    parts.append({"text": f"LOGO FOR {location.upper()} LOCATION:"})
+                    parts.append({
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": logo_base64
+                        }
+                    })
                 except Exception as e:
                     print(f"Warning: Could not load {location} logo: {e}")
 

@@ -1,24 +1,18 @@
-"""File storage service for handling uploads."""
+"""File storage service for handling uploads — uses Cloudflare R2 when configured, local disk as fallback."""
 
 import os
 import uuid
 import base64
-import aiofiles
+import mimetypes
 from pathlib import Path
 from typing import Optional, Tuple, Union
+
 from fastapi import UploadFile
 
 from ..config import get_settings
+from . import r2_service
 
 settings = get_settings()
-
-
-def get_upload_path(subdir: str) -> Path:
-    """Get the full path for an upload subdirectory."""
-    base_path = Path(settings.upload_dir)
-    full_path = base_path / subdir
-    full_path.mkdir(parents=True, exist_ok=True)
-    return full_path
 
 
 def generate_unique_filename(original_filename: str) -> str:
@@ -28,6 +22,17 @@ def generate_unique_filename(original_filename: str) -> str:
     return f"{unique_id}{ext}"
 
 
+def _normalize_key(path: str) -> str:
+    """Normalize a stored path to a clean R2 key (no leading slash or 'uploads/' prefix)."""
+    clean = path.lstrip("/")
+    if clean.startswith("uploads/"):
+        clean = clean[len("uploads/"):]
+    return clean
+
+
+# --- Public API ---
+
+
 async def save_upload_file(
     file: UploadFile,
     subdir: str,
@@ -35,44 +40,52 @@ async def save_upload_file(
     max_size_mb: Optional[int] = None,
 ) -> Tuple[str, str, int]:
     """
-    Save an uploaded file to the specified subdirectory.
-
-    Args:
-        file: The uploaded file
-        subdir: Subdirectory within uploads (e.g., 'logos', 'brand_assets')
-        allowed_types: List of allowed MIME types (e.g., ['image/png', 'image/jpeg'])
-        max_size_mb: Maximum file size in MB
+    Save an uploaded file.
 
     Returns:
-        Tuple of (file_path, mime_type, file_size)
-
-    Raises:
-        ValueError: If file type or size is invalid
+        Tuple of (relative_path, mime_type, file_size)
     """
-    # Validate file type
     if allowed_types and file.content_type not in allowed_types:
         raise ValueError(f"File type {file.content_type} not allowed. Allowed types: {allowed_types}")
 
-    # Read file content
     content = await file.read()
     file_size = len(content)
 
-    # Validate file size
     max_size = (max_size_mb or settings.max_file_size_mb) * 1024 * 1024
     if file_size > max_size:
         raise ValueError(f"File size exceeds maximum allowed ({max_size_mb or settings.max_file_size_mb}MB)")
 
-    # Generate unique filename and save
-    upload_path = get_upload_path(subdir)
     filename = generate_unique_filename(file.filename or "upload")
-    file_path = upload_path / filename
-
-    async with aiofiles.open(file_path, "wb") as f:
-        await f.write(content)
-
-    # Return relative path from uploads directory
     relative_path = f"{subdir}/{filename}"
+
+    if r2_service._use_r2():
+        await r2_service.upload_bytes(relative_path, content, file.content_type or "application/octet-stream")
+    else:
+        _save_local(relative_path, content)
+
     return relative_path, file.content_type, file_size
+
+
+async def save_file_bytes(
+    data: bytes,
+    subdir: str,
+    filename: str,
+    content_type: str = "application/octet-stream",
+) -> str:
+    """
+    Save raw bytes to storage.
+
+    Returns:
+        The relative path (e.g. 'location_logos/uuid.png')
+    """
+    relative_path = f"{subdir}/{filename}"
+
+    if r2_service._use_r2():
+        await r2_service.upload_bytes(relative_path, data, content_type)
+    else:
+        _save_local(relative_path, data)
+
+    return relative_path
 
 
 async def save_generated_image(
@@ -80,59 +93,66 @@ async def save_generated_image(
     design_id: str,
     version_number: int,
 ) -> str:
-    """
-    Save a generated design image.
-
-    Args:
-        image_data: The image bytes or base64-encoded string
-        design_id: The design ID
-        version_number: The version number
-
-    Returns:
-        The relative file path
-    """
-    upload_path = get_upload_path("generated_designs")
+    """Save a generated design image. Returns the relative file path."""
     filename = f"{design_id}_v{version_number}.png"
-    file_path = upload_path / filename
+    relative_path = f"generated_designs/{filename}"
 
-    # Decode base64 if it's a string
     if isinstance(image_data, str):
         image_data = base64.b64decode(image_data)
 
-    async with aiofiles.open(file_path, "wb") as f:
-        await f.write(image_data)
+    if r2_service._use_r2():
+        await r2_service.upload_bytes(relative_path, image_data, "image/png")
+    else:
+        _save_local(relative_path, image_data)
 
-    return f"generated_designs/{filename}"
+    return relative_path
+
+
+async def read_file_bytes(relative_path: str) -> Optional[bytes]:
+    """Read a file's bytes from storage. Returns None if not found."""
+    key = _normalize_key(relative_path)
+
+    if r2_service._use_r2():
+        return await r2_service.download_bytes(key)
+    else:
+        full_path = Path(settings.upload_dir) / key
+        if full_path.exists():
+            return full_path.read_bytes()
+        return None
 
 
 def delete_file(relative_path: str) -> bool:
-    """
-    Delete a file from the uploads directory.
+    """Delete a file from storage."""
+    key = _normalize_key(relative_path)
 
-    Args:
-        relative_path: The relative path from uploads directory
-
-    Returns:
-        True if deleted successfully, False otherwise
-    """
-    try:
-        full_path = Path(settings.upload_dir) / relative_path
-        if full_path.exists():
-            full_path.unlink()
-            return True
-    except Exception:
-        pass
-    return False
+    if r2_service._use_r2():
+        return r2_service.delete_object(key)
+    else:
+        try:
+            full_path = Path(settings.upload_dir) / key
+            if full_path.exists():
+                full_path.unlink()
+                return True
+        except Exception:
+            pass
+        return False
 
 
 def get_file_url(relative_path: str) -> str:
-    """
-    Get the URL for accessing an uploaded file.
+    """Get the public URL for a file."""
+    key = _normalize_key(relative_path)
 
-    Args:
-        relative_path: The relative path from uploads directory
+    if r2_service._use_r2():
+        return r2_service.get_public_url(key)
+    else:
+        return f"{settings.backend_url}/api/uploads/{key}"
 
-    Returns:
-        The full URL to access the file
-    """
-    return f"{settings.backend_url}/api/uploads/{relative_path}"
+
+# --- Local filesystem fallback ---
+
+
+def _save_local(relative_path: str, data: bytes):
+    """Save bytes to local filesystem."""
+    full_path = Path(settings.upload_dir) / relative_path
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    full_path.write_bytes(data)

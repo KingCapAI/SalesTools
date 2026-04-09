@@ -68,8 +68,15 @@ class Settings(BaseSettings):
     backend_url: str = "http://localhost:8000"
     store_frontend_url: str = "http://localhost:5174"
 
+    # Cloudflare R2 Storage
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket_name: str = "kingcap-uploads"
+    r2_public_url: str = ""  # e.g. "https://pub-xxxx.r2.dev"
+
     # Upload settings
-    upload_dir: str = "uploads"
+    upload_dir: str = "uploads"  # Legacy local path, used as fallback if R2 not configured
     max_file_size_mb: int = 25
 
     class Config:
