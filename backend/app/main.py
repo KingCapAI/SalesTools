@@ -244,7 +244,7 @@ if not use_r2:
     app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 
-@app.post("/api/admin/migrate-to-r2")
+@app.get("/api/admin/migrate-to-r2")
 async def migrate_uploads_to_r2():
     """One-time migration: copy all local uploads to R2. Does NOT delete local files."""
     from .services.r2_service import _use_r2, get_r2_client
