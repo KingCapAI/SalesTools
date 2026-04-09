@@ -168,12 +168,21 @@ CRITICAL INSTRUCTIONS:
 4. The hat must be **{formatted_structure}** with a **{formatted_closure}**
 5. Maintain professional quality and clean execution
 6. Each logo should be clearly visible and properly sized for its location
+7. MAXIMUM 3 decoration locations total
+
+ALLOWED DECORATION METHODS PER LOCATION:
+- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
+- LEFT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
+- RIGHT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
+- BACK: flat embroidery ONLY.
+- UNDERBILL (inside visor): sublimated print ONLY.
+Do NOT use decoration methods not listed for a given location.
 
 DECORATION METHOD CALLOUTS:
 For each decoration visible in a view, add ONE small text label identifying the method. Rules:
 - ONE label per decoration — never duplicate a label for the same decoration in the same view.
 - Format: thin line or arrow from label to the decoration it identifies.
-- Label text = exact method name, e.g. "Flat Embroidery", "3D Puff Embroidery", "PVC Patch", "Woven Patch", "Sublimated Print".
+- Label text = exact method name, e.g. "Flat Embroidery", "3D Embroidery", "PVC Patch", "Woven Patch", "Sublimated Patch", "Sublimated Print".
 - Style: clean sans-serif font, black text on a small white pill/tag background.
 - Only label decorations VISIBLE in that specific view. If a view shows no decoration, show NO labels.
 - If a view shows 2 decorations (e.g. front logo + side logo), show exactly 2 labels — one per decoration.
@@ -223,12 +232,21 @@ CRITICAL INSTRUCTIONS:
 7. Size each decoration according to the specification
 8. Do NOT add any decorations at locations not specified above
 9. Keep the design clean and professional
+10. MAXIMUM 3 decoration locations total
+
+ALLOWED DECORATION METHODS PER LOCATION:
+- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
+- LEFT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
+- RIGHT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
+- BACK: flat embroidery ONLY.
+- UNDERBILL (inside visor): sublimated print ONLY.
+Do NOT use decoration methods not listed for a given location.
 
 DECORATION METHOD CALLOUTS:
 For each decoration visible in a view, add ONE small text label identifying the method. Rules:
 - ONE label per decoration — never duplicate a label for the same decoration in the same view.
 - Format: thin line or arrow from label to the decoration it identifies.
-- Label text = exact method name, e.g. "Flat Embroidery", "3D Puff Embroidery", "PVC Patch", "Woven Patch", "Sublimated Print".
+- Label text = exact method name, e.g. "Flat Embroidery", "3D Embroidery", "PVC Patch", "Woven Patch", "Sublimated Patch", "Sublimated Print".
 - Style: clean sans-serif font, black text on a small white pill/tag background.
 - Only label decorations VISIBLE in that specific view. If a view shows no decoration, show NO labels.
 - If a view shows 2 decorations (e.g. front logo + side logo), show exactly 2 labels — one per decoration.

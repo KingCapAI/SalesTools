@@ -109,8 +109,16 @@ def build_logo_placement_instructions(logos: List[Dict[str, Any]]) -> str:
         names = ", ".join(f"'{n}'" for n in unassigned_logos)
         lines.append(f"\nFor logos marked as AI's choice ({names}), place them at appropriate locations that complement the overall design. Choose from: front, left side, right side, back, or underbrim.")
 
-    lines.append("\nUse exactly 3 decoration locations total. Methods: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.")
-    lines.append("Do NOT add more than 3 decoration locations. Keep the design clean and professional.")
+    lines.append("""
+DECORATION RULES — MAXIMUM 3 LOCATIONS:
+Use no more than 3 decoration locations total. Keep the design clean and professional.
+Allowed methods per location:
+- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
+- LEFT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
+- RIGHT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
+- BACK: flat embroidery ONLY.
+- UNDERBILL (inside visor): sublimated print ONLY.
+Do NOT use decoration methods not listed for a given location.""")
 
     return "\n".join(lines)
 
@@ -174,12 +182,13 @@ HAT CONSTRUCTION:
     else:
         logo_section = """IMPORTANT - LOGO USAGE: If a logo image has been provided with this prompt, you MUST use that exact logo in your design. Do NOT search for or use any other logos from the internet. Use ONLY the submitted logo artwork. If no logo is provided, create a simple text-based design using the brand name.
 
-DECORATION LOCATIONS - Use exactly 3 decoration locations:
-1. FRONT (required): Always include a decoration on the front of the hat. Methods: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
-2. SIDE (choose ONE): Decorate EITHER the left side OR right side (not both). Methods: flat embroidery or woven patch.
-3. BACK OR UNDERBRIM (choose ONE): Decorate EITHER the back of the hat OR underneath the visor bill (not both). Back methods: flat embroidery or woven patch. Underbrim: sublimated design.
+DECORATION LOCATIONS — MAXIMUM 3 locations. Choose up to 3 from the following:
+1. FRONT: Always include a decoration on the front. Methods: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
+2. SIDE (choose ONE — left or right, not both): Methods: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
+3. BACK: Method: flat embroidery ONLY.
+4. UNDERBILL (inside visor): Method: sublimated print ONLY.
 
-Do NOT add more than 3 decoration locations. Keep the design clean and professional."""
+STRICT: Do NOT use more than 3 decoration locations. Do NOT use decoration methods not listed for a given location. Keep the design clean and professional."""
 
     # Get variation hint
     variation_hint = VARIATION_HINTS[variation_index % len(VARIATION_HINTS)]
@@ -196,7 +205,7 @@ DECORATION METHOD CALLOUTS:
 For each decoration visible in a view, add ONE small text label identifying the method. Rules:
 - ONE label per decoration — never duplicate a label for the same decoration in the same view.
 - Format: thin line or arrow from label to the decoration it identifies.
-- Label text = exact method name, e.g. "Flat Embroidery", "3D Puff Embroidery", "PVC Patch", "Woven Patch", "Sublimated Print".
+- Label text = exact method name, e.g. "Flat Embroidery", "3D Embroidery", "PVC Patch", "Woven Patch", "Sublimated Patch", "Sublimated Print".
 - Style: clean sans-serif font, black text on a small white pill/tag background.
 - Only label decorations VISIBLE in that specific view. If a view shows no decoration, show NO labels.
 - If a view shows 2 decorations (e.g. front logo + side logo), show exactly 2 labels — one per decoration.
