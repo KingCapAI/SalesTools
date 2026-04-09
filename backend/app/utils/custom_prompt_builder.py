@@ -168,7 +168,6 @@ CRITICAL INSTRUCTIONS:
 4. The hat must be **{formatted_structure}** with a **{formatted_closure}**
 5. Maintain professional quality and clean execution
 6. Each logo should be clearly visible and properly sized for its location
-7. MAXIMUM 3 decoration locations total
 
 ALLOWED DECORATION METHODS PER LOCATION:
 - FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
@@ -232,7 +231,6 @@ CRITICAL INSTRUCTIONS:
 7. Size each decoration according to the specification
 8. Do NOT add any decorations at locations not specified above
 9. Keep the design clean and professional
-10. MAXIMUM 3 decoration locations total
 
 ALLOWED DECORATION METHODS PER LOCATION:
 - FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.

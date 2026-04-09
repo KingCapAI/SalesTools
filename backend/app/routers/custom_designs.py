@@ -20,8 +20,11 @@ from ..schemas.custom_design import (
     ReferenceHatUploadResponse,
 )
 from ..schemas.design import DesignVersionResponse, DesignChatCreate, DesignChatResponse, RevisionCreate
-from ..services.gemini_service import generate_custom_design
+import asyncio
+from ..services.gemini_service import generate_custom_design, generate_revision
 from ..services.storage_service import save_generated_image
+
+VERSIONS_PER_BATCH = 3
 from ..utils.dependencies import require_auth, get_current_user
 from ..config import get_settings
 
@@ -239,40 +242,54 @@ async def create_custom_design(
 
         db.commit()
 
-        # Generate the first version
-        result = await generate_custom_design(
-            brand_name=design_data.brand_name,
-            hat_style=design_data.hat_style.value,
-            material=design_data.material.value,
-            structure=design_data.structure.value,
-            closure=design_data.closure.value,
-            crown_color=design_data.crown_color,
-            visor_color=design_data.visor_color,
-            location_logos=location_logos_data,
-            reference_hat_path=design_data.reference_hat_path,
-        )
-
-        # Create version record
-        version = DesignVersion(
-            design_id=design.id,
-            version_number=1,
-            prompt=result.get("prompt", ""),
-        )
-
-        if result.get("success") and result.get("image_data"):
-            # Save the generated image
-            image_path = await save_generated_image(
-                image_data=result["image_data"],
-                design_id=design.id,
-                version_number=1,
+        # Generate 3 versions in parallel
+        tasks = []
+        for i in range(VERSIONS_PER_BATCH):
+            tasks.append(
+                generate_custom_design(
+                    brand_name=design_data.brand_name,
+                    hat_style=design_data.hat_style.value,
+                    material=design_data.material.value,
+                    structure=design_data.structure.value,
+                    closure=design_data.closure.value,
+                    crown_color=design_data.crown_color,
+                    visor_color=design_data.visor_color,
+                    location_logos=location_logos_data,
+                    reference_hat_path=design_data.reference_hat_path,
+                )
             )
-            version.image_path = image_path
-            version.generation_status = "completed"
-        else:
-            version.generation_status = "failed"
-            version.error_message = result.get("error", "Unknown error")
 
-        db.add(version)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for i, result in enumerate(results):
+            v_num = i + 1
+            is_exception = isinstance(result, Exception)
+
+            version = DesignVersion(
+                design_id=design.id,
+                version_number=v_num,
+                batch_number=1,
+                prompt=result.get("prompt", "") if not is_exception else "",
+            )
+
+            if not is_exception and result.get("success") and result.get("image_data"):
+                image_path = await save_generated_image(
+                    image_data=result["image_data"],
+                    design_id=design.id,
+                    version_number=v_num,
+                )
+                version.image_path = image_path
+                version.generation_status = "completed"
+            else:
+                version.generation_status = "failed"
+                if is_exception:
+                    version.error_message = str(result)
+                else:
+                    version.error_message = result.get("error", "Unknown error")
+
+            db.add(version)
+
+        design.current_version = VERSIONS_PER_BATCH
         db.commit()
         db.refresh(design)
 
@@ -347,21 +364,16 @@ async def delete_custom_design(
     return {"message": "Custom design deleted successfully"}
 
 
-@router.post("/{design_id}/generate", response_model=DesignVersionResponse)
+@router.post("/{design_id}/generate", response_model=List[DesignVersionResponse])
 async def regenerate_custom_design(
     design_id: str,
-    version_id: Optional[str] = Query(None, description="Specific version to retry. If not provided, retries using original inputs."),
     db: Session = Depends(get_db),
     user=Depends(require_auth),
 ):
     """
-    Retry generating a custom design version.
-
-    If version_id is provided, retries that specific version using its stored prompt.
-    If version_id is not provided, generates a fresh version using the original design inputs.
+    Generate 3 new custom design versions using the original inputs.
+    Resets version selection so user must choose again.
     """
-    from ..services.gemini_service import generate_revision
-
     design = db.query(Design).filter(
         Design.id == design_id,
         Design.design_type == "custom"
@@ -370,33 +382,31 @@ async def regenerate_custom_design(
     if not design:
         raise HTTPException(status_code=404, detail="Custom design not found")
 
-    new_version_number = design.current_version + 1
-
     try:
-        # If a specific version is provided, retry that version's generation
-        if version_id:
-            target_version = db.query(DesignVersion).filter(
-                DesignVersion.id == version_id,
-                DesignVersion.design_id == design_id
-            ).first()
+        # Build location logos data from existing records
+        location_logos_data = []
+        for logo in design.location_logos:
+            location_logos_data.append({
+                "location": logo.location,
+                "logo_path": logo.logo_path,
+                "decoration_method": logo.decoration_method,
+                "size": logo.size,
+                "size_details": logo.size_details,
+            })
 
-            if not target_version:
-                raise HTTPException(status_code=404, detail="Version not found")
+        # Get next batch number
+        max_batch = db.query(func.max(DesignVersion.batch_number)).filter(
+            DesignVersion.design_id == design_id
+        ).scalar() or 0
+        new_batch = max_batch + 1
 
-            # For version 1, regenerate with original inputs
-            if target_version.version_number == 1:
-                # Build location logos data from existing records
-                location_logos_data = []
-                for logo in design.location_logos:
-                    location_logos_data.append({
-                        "location": logo.location,
-                        "logo_path": logo.logo_path,
-                        "decoration_method": logo.decoration_method,
-                        "size": logo.size,
-                        "size_details": logo.size_details,
-                    })
+        current_max_version = design.current_version
 
-                result = await generate_custom_design(
+        # Fire 3 parallel generations
+        tasks = []
+        for i in range(VERSIONS_PER_BATCH):
+            tasks.append(
+                generate_custom_design(
                     brand_name=design.brand_name,
                     hat_style=design.hat_style,
                     material=design.material,
@@ -407,75 +417,100 @@ async def regenerate_custom_design(
                     location_logos=location_logos_data,
                     reference_hat_path=design.reference_hat_path,
                 )
-            else:
-                # For revisions (v2+), we need to get the version before it for context
-                previous_version = db.query(DesignVersion).filter(
-                    DesignVersion.design_id == design_id,
-                    DesignVersion.version_number == target_version.version_number - 1
-                ).first()
-
-                # Re-run generation with the stored prompt and previous image
-                result = await generate_revision(
-                    original_prompt=target_version.prompt,
-                    revision_notes="",  # The prompt already contains the revision
-                    original_image_path=previous_version.image_path if previous_version else None,
-                )
-        else:
-            # No version specified - generate fresh with original inputs
-            location_logos_data = []
-            for logo in design.location_logos:
-                location_logos_data.append({
-                    "location": logo.location,
-                    "logo_path": logo.logo_path,
-                    "decoration_method": logo.decoration_method,
-                    "size": logo.size,
-                    "size_details": logo.size_details,
-                })
-
-            result = await generate_custom_design(
-                brand_name=design.brand_name,
-                hat_style=design.hat_style,
-                material=design.material,
-                structure=design.structure,
-                closure=design.closure,
-                crown_color=design.crown_color,
-                visor_color=design.visor_color,
-                location_logos=location_logos_data,
-                reference_hat_path=design.reference_hat_path,
             )
 
-        # Create version record
-        version = DesignVersion(
-            design_id=design.id,
-            version_number=new_version_number,
-            prompt=result.get("prompt", ""),
-        )
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        if result.get("success") and result.get("image_data"):
-            image_path = await save_generated_image(
-                image_data=result["image_data"],
+        versions = []
+        for i, result in enumerate(results):
+            v_num = current_max_version + i + 1
+            is_exception = isinstance(result, Exception)
+
+            version = DesignVersion(
                 design_id=design.id,
-                version_number=new_version_number,
+                version_number=v_num,
+                batch_number=new_batch,
+                prompt=result.get("prompt", "") if not is_exception else "",
             )
-            version.image_path = image_path
-            version.generation_status = "completed"
-        else:
-            version.generation_status = "failed"
-            version.error_message = result.get("error", "Unknown error")
 
-        db.add(version)
+            if not is_exception and result.get("success") and result.get("image_data"):
+                image_path = await save_generated_image(
+                    image_data=result["image_data"],
+                    design_id=design.id,
+                    version_number=v_num,
+                )
+                version.image_path = image_path
+                version.generation_status = "completed"
+            else:
+                version.generation_status = "failed"
+                if is_exception:
+                    version.error_message = str(result)
+                else:
+                    version.error_message = result.get("error", "Unknown error")
 
-        # Update design's current version
-        design.current_version = new_version_number
+            db.add(version)
+            versions.append(version)
+
+        # Update design
+        design.current_version = current_max_version + VERSIONS_PER_BATCH
+        design.selected_version_id = None  # Reset selection
         design.updated_at = datetime.utcnow()
 
-        db.commit()
-        db.refresh(version)
+        # Clear previous selections
+        db.query(DesignVersion).filter(
+            DesignVersion.design_id == design_id,
+            DesignVersion.is_selected == True
+        ).update({"is_selected": False})
 
-        return version
+        db.commit()
+        for v in versions:
+            db.refresh(v)
+
+        return versions
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to regenerate custom design: {str(e)}")
+
+
+@router.post("/{design_id}/versions/{version_id}/select")
+async def select_custom_design_version(
+    design_id: str,
+    version_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """Select a specific version as the active/base version for revisions."""
+    design = db.query(Design).filter(
+        Design.id == design_id,
+        Design.design_type == "custom"
+    ).first()
+    if not design:
+        raise HTTPException(status_code=404, detail="Custom design not found")
+
+    version = db.query(DesignVersion).filter(
+        DesignVersion.id == version_id,
+        DesignVersion.design_id == design_id,
+    ).first()
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    if version.generation_status != "completed":
+        raise HTTPException(status_code=400, detail="Cannot select a failed version")
+
+    # Clear previous selections
+    db.query(DesignVersion).filter(
+        DesignVersion.design_id == design_id,
+        DesignVersion.is_selected == True
+    ).update({"is_selected": False})
+
+    # Set new selection
+    version.is_selected = True
+    design.selected_version_id = version_id
+    design.updated_at = datetime.utcnow()
+
+    db.commit()
+
+    return {"message": "Version selected", "version_id": version_id}
 
 
 @router.post("/{design_id}/duplicate", response_model=CustomDesignResponse)
