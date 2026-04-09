@@ -235,8 +235,12 @@ app.include_router(social_media.router, prefix="/api")
 # Serve uploaded files (local fallback — when R2 is configured, uploads.py redirects to R2)
 uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
 os.makedirs(uploads_dir, exist_ok=True)
-from .services.r2_service import _use_r2
-if not _use_r2():
+try:
+    from .services.r2_service import _use_r2
+    use_r2 = _use_r2()
+except Exception:
+    use_r2 = False
+if not use_r2:
     app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 

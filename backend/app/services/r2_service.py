@@ -1,7 +1,6 @@
 """Cloudflare R2 storage service (S3-compatible)."""
 
 import asyncio
-import boto3
 from typing import Optional
 from functools import lru_cache
 
@@ -13,6 +12,7 @@ settings = get_settings()
 @lru_cache()
 def get_r2_client():
     """Get a cached boto3 S3 client configured for Cloudflare R2."""
+    import boto3
     return boto3.client(
         "s3",
         endpoint_url=f"https://{settings.r2_account_id}.r2.cloudflarestorage.com",
@@ -55,9 +55,10 @@ async def download_bytes(key: str) -> Optional[bytes]:
             Key=key,
         )
         return response["Body"].read()
-    except client.exceptions.NoSuchKey:
-        return None
     except Exception as e:
+        error_code = getattr(e, 'response', {}).get('Error', {}).get('Code', '')
+        if error_code == 'NoSuchKey':
+            return None
         print(f"[R2] Error downloading {key}: {e}")
         return None
 
