@@ -35,13 +35,20 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
   const productionFiles = addDays(samplesDue, -18);
   const artworkLocked = addDays(productionFiles, -7);
 
-  return [
+  const milestones: Milestone[] = [
     { label: 'Artwork Due', date: artworkLocked, color: 'bg-blue-500' },
     { label: 'Production Files Due', date: productionFiles, color: 'bg-purple-500' },
     { label: 'Sample Picture Expected', date: samplesDue, color: 'bg-amber-500' },
     { label: 'Order Shipped', date: exitFactory, color: 'bg-emerald-500' },
-    { label: 'Order Delivered', date: inHandsDate, color: 'bg-rose-500' },
   ];
+
+  if (!shipDirect) {
+    milestones.push({ label: 'Delivered to King Cap', date: addDays(exitFactory, 7), color: 'bg-sky-500' });
+  }
+
+  milestones.push({ label: 'Order Delivered', date: inHandsDate, color: 'bg-rose-500' });
+
+  return milestones;
 }
 
 interface ProductionTimelineProps {

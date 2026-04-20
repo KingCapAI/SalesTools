@@ -80,16 +80,26 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
     {
       label: 'Order Shipped from Factory',
       date: exitFactory,
-      description: shipDirect ? 'Finished product ships direct to customer from factory' : 'Finished product ships from factory',
+      description: shipDirect ? 'Finished product ships direct to customer' : 'Finished product ships from factory to King Cap',
       color: 'from-emerald-500 to-green-500',
       dotColor: 'bg-emerald-500',
       labelColor: 'text-emerald-300',
       dateColor: 'text-emerald-400',
     },
+    // Standard shipping: product goes to King Cap first, then to customer
+    ...(!shipDirect ? [{
+      label: 'Delivered to King Cap',
+      date: addDays(exitFactory, 7),
+      description: 'Product arrives at King Cap for QC and fulfillment',
+      color: 'from-sky-500 to-blue-500',
+      dotColor: 'bg-sky-500',
+      labelColor: 'text-sky-300',
+      dateColor: 'text-sky-400',
+    }] : []),
     {
       label: 'Order Delivered',
       date: inHandsDate,
-      description: 'Product delivered to customer',
+      description: shipDirect ? 'Product delivered to customer from factory' : 'Product shipped from King Cap and delivered to customer',
       color: 'from-rose-500 to-pink-500',
       dotColor: 'bg-rose-500',
       labelColor: 'text-rose-300',
