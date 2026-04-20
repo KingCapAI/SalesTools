@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
-import { CalendarDays, ArrowLeft, Copy, Check } from 'lucide-react';
+import { CalendarDays, ArrowLeft, Copy, Check, List, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Milestone {
@@ -9,6 +9,7 @@ interface Milestone {
   date: Date;
   description: string;
   color: string;
+  dotColor: string;
 }
 
 function addDays(date: Date, days: number): Date {
@@ -34,10 +35,11 @@ function daysFromNow(date: Date): number {
   return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function calculateMilestones(inHandsDate: Date): Milestone[] {
+function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[] {
   // Work backwards from in-hands date:
-  // Product leaves factory 2 weeks (14 days) before in-hands
-  const exitFactory = addDays(inHandsDate, -14);
+  // Product leaves factory: 7 days (ship direct) or 14 days (standard) before in-hands
+  const exitFactoryDays = shipDirect ? -7 : -14;
+  const exitFactory = addDays(inHandsDate, exitFactoryDays);
   // Samples due 35 days before exit factory
   const samplesDue = addDays(exitFactory, -35);
   // Production files locked 2.5 weeks (18 days) before samples
@@ -51,43 +53,140 @@ function calculateMilestones(inHandsDate: Date): Milestone[] {
       date: artworkLocked,
       description: 'All artwork and design files finalized and approved by customer',
       color: 'from-blue-500 to-cyan-500',
+      dotColor: 'bg-blue-500',
     },
     {
       label: 'Production Files Submitted',
       date: productionFilesLocked,
       description: 'Final production-ready files (DST, vectors) submitted to factory',
       color: 'from-purple-500 to-indigo-500',
+      dotColor: 'bg-purple-500',
     },
     {
       label: 'Sample Expected',
       date: samplesDue,
       description: 'Pre-production sample received for approval',
       color: 'from-amber-500 to-orange-500',
+      dotColor: 'bg-amber-500',
     },
     {
       label: 'Exit Factory',
       date: exitFactory,
-      description: 'Finished product ships from factory',
+      description: shipDirect ? 'Finished product ships direct to customer from factory' : 'Finished product ships from factory',
       color: 'from-emerald-500 to-green-500',
+      dotColor: 'bg-emerald-500',
     },
     {
       label: 'In-Hands Date',
       date: inHandsDate,
       description: 'Product delivered to customer',
       color: 'from-rose-500 to-pink-500',
+      dotColor: 'bg-rose-500',
     },
   ];
 }
 
+// --- Calendar View ---
+
+function getCalendarDays(milestones: Milestone[]): { year: number; month: number }[] {
+  // Get all months that need to be shown (from first milestone to last)
+  const months: { year: number; month: number }[] = [];
+  const start = new Date(milestones[0].date);
+  const end = new Date(milestones[milestones.length - 1].date);
+  start.setDate(1);
+
+  while (start <= end) {
+    months.push({ year: start.getFullYear(), month: start.getMonth() });
+    start.setMonth(start.getMonth() + 1);
+  }
+  return months;
+}
+
+function CalendarMonth({ year, month, milestones }: { year: number; month: number; milestones: Milestone[] }) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDow = firstDay.getDay(); // 0=Sun
+  const daysInMonth = lastDay.getDate();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const monthName = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  // Build milestone lookup by day
+  const milestoneDays: Record<number, Milestone> = {};
+  for (const m of milestones) {
+    if (m.date.getFullYear() === year && m.date.getMonth() === month) {
+      milestoneDays[m.date.getDate()] = m;
+    }
+  }
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  return (
+    <div className="card">
+      <h3 className="text-white font-semibold mb-3 text-center">{monthName}</h3>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+          <div key={d} className="text-gray-500 font-medium py-1">{d}</div>
+        ))}
+        {cells.map((day, i) => {
+          if (day === null) return <div key={`empty-${i}`} />;
+          const milestone = milestoneDays[day];
+          const cellDate = new Date(year, month, day);
+          cellDate.setHours(0, 0, 0, 0);
+          const isToday = cellDate.getTime() === today.getTime();
+
+          return (
+            <div
+              key={day}
+              className={`relative py-1.5 rounded-md text-sm ${
+                milestone
+                  ? 'font-bold text-white'
+                  : isToday
+                  ? 'text-teal-400 font-medium'
+                  : 'text-gray-400'
+              } ${isToday && !milestone ? 'ring-1 ring-teal-500/50' : ''}`}
+              title={milestone ? `${milestone.label}: ${formatDate(milestone.date)}` : undefined}
+            >
+              {day}
+              {milestone && (
+                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${milestone.dotColor}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {/* Legend for this month's milestones */}
+      {Object.keys(milestoneDays).length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-800 space-y-1">
+          {Object.entries(milestoneDays).map(([day, m]) => (
+            <div key={day} className="flex items-center gap-2 text-xs">
+              <div className={`w-2 h-2 rounded-full ${m.dotColor}`} />
+              <span className="text-gray-300">{m.label}</span>
+              <span className="text-gray-500 ml-auto">{Number(day)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Main Component ---
+
 export function TimelineCalculator() {
   const [inHandsDate, setInHandsDate] = useState('');
+  const [shipDirect, setShipDirect] = useState(false);
   const [milestones, setMilestones] = useState<Milestone[] | null>(null);
   const [copied, setCopied] = useState(false);
+  const [view, setView] = useState<'timeline' | 'calendar'>('timeline');
 
   const handleCalculate = () => {
     if (!inHandsDate) return;
     const date = new Date(inHandsDate + 'T00:00:00');
-    setMilestones(calculateMilestones(date));
+    setMilestones(calculateMilestones(date, shipDirect));
   };
 
   const handleCopyTimeline = () => {
@@ -104,11 +203,20 @@ export function TimelineCalculator() {
     if (e.key === 'Enter') handleCalculate();
   };
 
+  // Recalculate when ship direct changes (if date is set)
+  const handleShipDirectChange = (checked: boolean) => {
+    setShipDirect(checked);
+    if (inHandsDate) {
+      const date = new Date(inHandsDate + 'T00:00:00');
+      setMilestones(calculateMilestones(date, checked));
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black">
       <Header />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link to="/">
@@ -133,7 +241,7 @@ export function TimelineCalculator() {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             In-Hands Date (when the customer needs the product)
           </label>
-          <div className="flex gap-3">
+          <div className="flex gap-3 mb-4">
             <input
               type="date"
               value={inHandsDate}
@@ -146,6 +254,23 @@ export function TimelineCalculator() {
               Calculate
             </Button>
           </div>
+          {/* Ship Direct toggle */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={shipDirect}
+                onChange={(e) => handleShipDirectChange(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-5 bg-gray-700 rounded-full peer-checked:bg-teal-500 transition-colors" />
+              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
+            </div>
+            <div>
+              <span className="text-sm text-gray-300 font-medium">Ship Direct</span>
+              <span className="text-xs text-gray-500 ml-2">(Factory ships directly to customer — 7 days transit instead of 14)</span>
+            </div>
+          </label>
         </div>
 
         {/* Results */}
@@ -153,78 +278,117 @@ export function TimelineCalculator() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-100">Production Timeline</h2>
-              <Button variant="outline" size="sm" onClick={handleCopyTimeline}>
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* Timeline */}
-            <div className="relative">
-              {/* Vertical line */}
-              <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gray-700" />
-
-              <div className="space-y-0">
-                {milestones.map((milestone, index) => {
-                  const days = daysFromNow(milestone.date);
-                  const isPast = days < 0;
-                  const isToday = days === 0;
-                  const isUrgent = days > 0 && days <= 7;
-
-                  return (
-                    <div key={milestone.label} className="relative flex items-start gap-4 py-4">
-                      {/* Dot */}
-                      <div className={`relative z-10 w-12 h-12 rounded-full bg-gradient-to-br ${milestone.color} flex items-center justify-center shadow-lg flex-shrink-0`}>
-                        <span className="text-white font-bold text-sm">{index + 1}</span>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <h3 className="text-white font-semibold">{milestone.label}</h3>
-                          {isPast && (
-                            <span className="px-2 py-0.5 bg-red-900/40 text-red-400 text-xs rounded-full font-medium">
-                              {Math.abs(days)} days ago
-                            </span>
-                          )}
-                          {isToday && (
-                            <span className="px-2 py-0.5 bg-yellow-900/40 text-yellow-400 text-xs rounded-full font-medium">
-                              Today
-                            </span>
-                          )}
-                          {isUrgent && (
-                            <span className="px-2 py-0.5 bg-orange-900/40 text-orange-400 text-xs rounded-full font-medium">
-                              {days} days away
-                            </span>
-                          )}
-                          {!isPast && !isToday && !isUrgent && (
-                            <span className="px-2 py-0.5 bg-gray-800 text-gray-400 text-xs rounded-full font-medium">
-                              {days} days away
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-teal-400 font-medium mt-0.5">{formatDate(milestone.date)}</p>
-                        <p className="text-gray-500 text-sm mt-0.5">{milestone.description}</p>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="flex items-center gap-2">
+                {/* View toggle */}
+                <div className="flex items-center bg-gray-800 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setView('timeline')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                      view === 'timeline' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+                    }`}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    List
+                  </button>
+                  <button
+                    onClick={() => setView('calendar')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                      view === 'calendar' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    Calendar
+                  </button>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleCopyTimeline}>
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
+
+            {/* Timeline (List) View */}
+            {view === 'timeline' && (
+              <div className="relative">
+                {/* Vertical line */}
+                <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gray-700" />
+
+                <div className="space-y-0">
+                  {milestones.map((milestone, index) => {
+                    const days = daysFromNow(milestone.date);
+                    const isPast = days < 0;
+                    const isToday = days === 0;
+                    const isUrgent = days > 0 && days <= 7;
+
+                    return (
+                      <div key={milestone.label} className="relative flex items-start gap-4 py-4">
+                        {/* Dot */}
+                        <div className={`relative z-10 w-12 h-12 rounded-full bg-gradient-to-br ${milestone.color} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                          <span className="text-white font-bold text-sm">{index + 1}</span>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <h3 className="text-white font-semibold">{milestone.label}</h3>
+                            {isPast && (
+                              <span className="px-2 py-0.5 bg-red-900/40 text-red-400 text-xs rounded-full font-medium">
+                                {Math.abs(days)} days ago
+                              </span>
+                            )}
+                            {isToday && (
+                              <span className="px-2 py-0.5 bg-yellow-900/40 text-yellow-400 text-xs rounded-full font-medium">
+                                Today
+                              </span>
+                            )}
+                            {isUrgent && (
+                              <span className="px-2 py-0.5 bg-orange-900/40 text-orange-400 text-xs rounded-full font-medium">
+                                {days} days away
+                              </span>
+                            )}
+                            {!isPast && !isToday && !isUrgent && (
+                              <span className="px-2 py-0.5 bg-gray-800 text-gray-400 text-xs rounded-full font-medium">
+                                {days} days away
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-teal-400 font-medium mt-0.5">{formatDate(milestone.date)}</p>
+                          <p className="text-gray-500 text-sm mt-0.5">{milestone.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Calendar View */}
+            {view === 'calendar' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {getCalendarDays(milestones).map(({ year, month }) => (
+                  <CalendarMonth
+                    key={`${year}-${month}`}
+                    year={year}
+                    month={month}
+                    milestones={milestones}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Summary card */}
             <div className="card mt-6 bg-gray-900/50 border border-gray-800">
               <h3 className="text-sm font-medium text-gray-400 mb-3">Timeline Summary</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500">Total lead time</p>
                   <p className="text-white font-semibold">
@@ -234,6 +398,10 @@ export function TimelineCalculator() {
                 <div>
                   <p className="text-gray-500">Days until in-hands</p>
                   <p className="text-white font-semibold">{daysFromNow(milestones[milestones.length - 1].date)} days</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Shipping</p>
+                  <p className="text-white font-semibold">{shipDirect ? 'Direct (7 days)' : 'Standard (14 days)'}</p>
                 </div>
               </div>
             </div>
