@@ -68,7 +68,8 @@ export function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {apps.map((app) => {
-            const isAllowed = allowedApps.includes(app.id);
+            const alwaysAvailable = ['timeline-calculator', 'quote-estimator'];
+            const isAllowed = alwaysAvailable.includes(app.id) || allowedApps.includes(app.id);
             const isDisabled = app.comingSoon || !isAllowed;
 
             return (
