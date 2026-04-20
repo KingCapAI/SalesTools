@@ -7,6 +7,7 @@ import { VersionHistory } from '../components/design-generator/VersionHistory';
 import { RevisionChat } from '../components/design-generator/RevisionChat';
 import { QuoteModal } from '../components/design-generator/QuoteModal';
 import { QuoteSummary } from '../components/design-generator/QuoteSummary';
+import { ProductionTimeline } from '../components/design-generator/ProductionTimeline';
 import {
   useCustomDesign,
   useCreateCustomDesignRevision,
@@ -435,6 +436,11 @@ export function CustomDesignDetail() {
                 isDeleting={deleteQuote.isPending}
                 isExporting={isExporting}
               />
+            </div>
+
+            {/* Production Planner */}
+            <div className="card">
+              <ProductionTimeline />
             </div>
 
             {/* Version History */}

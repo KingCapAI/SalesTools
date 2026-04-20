@@ -7,6 +7,7 @@ import { VersionHistory } from '../components/design-generator/VersionHistory';
 import { RevisionChat } from '../components/design-generator/RevisionChat';
 import { QuoteModal } from '../components/design-generator/QuoteModal';
 import { QuoteSummary } from '../components/design-generator/QuoteSummary';
+import { ProductionTimeline } from '../components/design-generator/ProductionTimeline';
 import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign, useRegenerateDesign, useSelectVersion } from '../hooks/useDesigns';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
 import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download, Calculator, RefreshCw, Pencil } from 'lucide-react';
@@ -364,6 +365,11 @@ export function DesignDetail() {
                 isDeleting={deleteQuote.isPending}
                 isExporting={isExporting}
               />
+            </div>
+
+            {/* Production Planner */}
+            <div className="card">
+              <ProductionTimeline />
             </div>
 
             {/* Version History */}

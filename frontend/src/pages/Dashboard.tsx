@@ -59,11 +59,11 @@ const groups: AppGroup[] = [
         to: '/quote-estimator',
       },
       {
-        id: 'timeline-calculator',
-        title: 'Timeline Calculator',
+        id: 'production-planner',
+        title: 'Production Planner',
         description: 'Calculate production milestones and key dates based on a customer in-hands date.',
         icon: CalendarDays,
-        to: '/timeline-calculator',
+        to: '/production-planner',
       },
     ],
   },
@@ -93,7 +93,7 @@ const groups: AppGroup[] = [
   },
 ];
 
-const alwaysAvailable = ['timeline-calculator', 'quote-estimator'];
+const alwaysAvailable = ['production-planner', 'quote-estimator'];
 
 export function Dashboard() {
   const { user } = useAuth();

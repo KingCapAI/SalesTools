@@ -187,7 +187,7 @@ function CalendarMonth({ year, month, milestones }: { year: number; month: numbe
 
 // --- Main Component ---
 
-export function TimelineCalculator() {
+export function ProductionPlanner() {
   const [inHandsDate, setInHandsDate] = useState('');
   const [shipDirect, setShipDirect] = useState(false);
   const [milestones, setMilestones] = useState<Milestone[] | null>(null);
@@ -241,7 +241,7 @@ export function TimelineCalculator() {
               <CalendarDays className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-100">Timeline Calculator</h1>
+              <h1 className="text-2xl font-bold text-gray-100">Production Planner</h1>
               <p className="text-gray-400 text-sm">Calculate production milestones from an in-hands date</p>
             </div>
           </div>

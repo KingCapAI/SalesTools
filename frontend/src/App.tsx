@@ -13,7 +13,7 @@ import { AIDesignGenerator } from './pages/AIDesignGenerator';
 import { DesignDetail } from './pages/DesignDetail';
 import { DesignHistory } from './pages/DesignHistory';
 import { QuoteEstimator } from './pages/QuoteEstimator';
-import { TimelineCalculator } from './pages/TimelineCalculator';
+import { ProductionPlanner } from './pages/ProductionPlanner';
 import { MarketingTools } from './pages/MarketingTools';
 import { Policies } from './pages/Policies';
 import { CustomDesignDashboard } from './pages/CustomDesignDashboard';
@@ -116,10 +116,10 @@ function App() {
               }
             />
             <Route
-              path="/timeline-calculator"
+              path="/production-planner"
               element={
                 <ProtectedRoute>
-                  <TimelineCalculator />
+                  <ProductionPlanner />
                 </ProtectedRoute>
               }
             />
