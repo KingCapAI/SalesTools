@@ -1,7 +1,7 @@
 import { Header } from '../components/layout/Header';
 import { AppCard } from '../components/layout/AppCard';
 import { useAuth } from '../context/AuthContext';
-import { Palette, Calculator, Megaphone, FileText, Layers } from 'lucide-react';
+import { Palette, Calculator, Megaphone, FileText, Layers, CalendarDays } from 'lucide-react';
 
 const apps = [
   {
@@ -24,6 +24,13 @@ const apps = [
     description: 'Calculate pricing and generate quotes for custom orders based on quantity, materials, and decoration methods.',
     icon: Calculator,
     to: '/quote-estimator',
+  },
+  {
+    id: 'timeline-calculator',
+    title: 'Timeline Calculator',
+    description: 'Calculate production milestones and key dates based on a customer in-hands date.',
+    icon: CalendarDays,
+    to: '/timeline-calculator',
   },
   {
     id: 'marketing-tools',

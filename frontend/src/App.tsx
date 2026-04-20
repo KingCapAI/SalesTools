@@ -13,6 +13,7 @@ import { AIDesignGenerator } from './pages/AIDesignGenerator';
 import { DesignDetail } from './pages/DesignDetail';
 import { DesignHistory } from './pages/DesignHistory';
 import { QuoteEstimator } from './pages/QuoteEstimator';
+import { TimelineCalculator } from './pages/TimelineCalculator';
 import { MarketingTools } from './pages/MarketingTools';
 import { Policies } from './pages/Policies';
 import { CustomDesignDashboard } from './pages/CustomDesignDashboard';
@@ -111,6 +112,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <QuoteEstimator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/timeline-calculator"
+              element={
+                <ProtectedRoute>
+                  <TimelineCalculator />
                 </ProtectedRoute>
               }
             />
