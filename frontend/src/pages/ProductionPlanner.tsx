@@ -340,41 +340,68 @@ export function ProductionPlanner() {
                     const isToday = days === 0;
                     const isUrgent = days > 0 && days <= 7;
 
+                    // Calculate gap to next milestone
+                    let gapDays: number | null = null;
+                    if (index < milestones.length - 1) {
+                      const nextDate = milestones[index + 1].date;
+                      const thisDate = milestone.date;
+                      gapDays = Math.round((nextDate.getTime() - thisDate.getTime()) / (1000 * 60 * 60 * 24));
+                    }
+
+                    const formatGap = (d: number) => {
+                      if (d % 7 === 0 && d >= 14) return `${d / 7} weeks`;
+                      if (d === 7) return '1 week';
+                      return `${d} days`;
+                    };
+
                     return (
-                      <div key={milestone.label} className="relative flex items-start gap-4 py-4">
-                        {/* Dot */}
-                        <div className={`relative z-10 w-12 h-12 rounded-full bg-gradient-to-br ${milestone.color} flex items-center justify-center shadow-lg flex-shrink-0`}>
-                          <span className="text-white font-bold text-sm">{index + 1}</span>
+                      <div key={milestone.label}>
+                        <div className="relative flex items-start gap-4 py-4">
+                          {/* Dot */}
+                          <div className={`relative z-10 w-12 h-12 rounded-full bg-gradient-to-br ${milestone.color} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                            <span className="text-white font-bold text-sm">{index + 1}</span>
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <h3 className="text-white font-semibold">{milestone.label}</h3>
+                              {isPast && (
+                                <span className="px-2 py-0.5 bg-red-900/40 text-red-400 text-xs rounded-full font-medium">
+                                  {Math.abs(days)} days ago
+                                </span>
+                              )}
+                              {isToday && (
+                                <span className="px-2 py-0.5 bg-yellow-900/40 text-yellow-400 text-xs rounded-full font-medium">
+                                  Today
+                                </span>
+                              )}
+                              {isUrgent && (
+                                <span className="px-2 py-0.5 bg-orange-900/40 text-orange-400 text-xs rounded-full font-medium">
+                                  {days} days away
+                                </span>
+                              )}
+                              {!isPast && !isToday && !isUrgent && (
+                                <span className="px-2 py-0.5 bg-gray-800 text-gray-400 text-xs rounded-full font-medium">
+                                  {days} days away
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-teal-400 font-medium mt-0.5">{formatDate(milestone.date)}</p>
+                            <p className="text-gray-500 text-sm mt-0.5">{milestone.description}</p>
+                          </div>
                         </div>
 
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <h3 className="text-white font-semibold">{milestone.label}</h3>
-                            {isPast && (
-                              <span className="px-2 py-0.5 bg-red-900/40 text-red-400 text-xs rounded-full font-medium">
-                                {Math.abs(days)} days ago
-                              </span>
-                            )}
-                            {isToday && (
-                              <span className="px-2 py-0.5 bg-yellow-900/40 text-yellow-400 text-xs rounded-full font-medium">
-                                Today
-                              </span>
-                            )}
-                            {isUrgent && (
-                              <span className="px-2 py-0.5 bg-orange-900/40 text-orange-400 text-xs rounded-full font-medium">
-                                {days} days away
-                              </span>
-                            )}
-                            {!isPast && !isToday && !isUrgent && (
-                              <span className="px-2 py-0.5 bg-gray-800 text-gray-400 text-xs rounded-full font-medium">
-                                {days} days away
-                              </span>
-                            )}
+                        {/* Gap indicator between milestones */}
+                        {gapDays !== null && (
+                          <div className="relative flex items-center gap-4 py-1">
+                            <div className="w-12 flex justify-center flex-shrink-0">
+                              <div className="relative z-10 px-2 py-0.5 bg-gray-900 border border-gray-700 rounded-full">
+                                <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap">{formatGap(gapDays)}</span>
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-teal-400 font-medium mt-0.5">{formatDate(milestone.date)}</p>
-                          <p className="text-gray-500 text-sm mt-0.5">{milestone.description}</p>
-                        </div>
+                        )}
                       </div>
                     );
                   })}
