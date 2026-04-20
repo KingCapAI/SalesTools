@@ -36,11 +36,11 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
   const artworkLocked = addDays(productionFiles, -7);
 
   return [
-    { label: 'Artwork Locked', date: artworkLocked, color: 'bg-blue-500' },
-    { label: 'Production Files', date: productionFiles, color: 'bg-purple-500' },
-    { label: 'Sample Expected', date: samplesDue, color: 'bg-amber-500' },
-    { label: 'Exit Factory', date: exitFactory, color: 'bg-emerald-500' },
-    { label: 'In-Hands', date: inHandsDate, color: 'bg-rose-500' },
+    { label: 'Artwork Due', date: artworkLocked, color: 'bg-blue-500' },
+    { label: 'Production Files Due', date: productionFiles, color: 'bg-purple-500' },
+    { label: 'Sample Picture Expected', date: samplesDue, color: 'bg-amber-500' },
+    { label: 'Order Shipped', date: exitFactory, color: 'bg-emerald-500' },
+    { label: 'Order Delivered', date: inHandsDate, color: 'bg-rose-500' },
   ];
 }
 

@@ -51,7 +51,7 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
 
   return [
     {
-      label: 'Artwork Locked',
+      label: 'Artwork Due',
       date: artworkLocked,
       description: 'All artwork and design files finalized and approved by customer',
       color: 'from-blue-500 to-cyan-500',
@@ -60,7 +60,7 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
       dateColor: 'text-blue-400',
     },
     {
-      label: 'Production Files Submitted',
+      label: 'Production Files Due',
       date: productionFilesLocked,
       description: 'Final production-ready files (DST, vectors) submitted to factory',
       color: 'from-purple-500 to-indigo-500',
@@ -69,7 +69,7 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
       dateColor: 'text-purple-400',
     },
     {
-      label: 'Sample Expected',
+      label: 'Sample Picture Expected',
       date: samplesDue,
       description: 'Pre-production sample received for approval',
       color: 'from-amber-500 to-orange-500',
@@ -78,7 +78,7 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
       dateColor: 'text-amber-400',
     },
     {
-      label: 'Exit Factory',
+      label: 'Order Shipped from Factory',
       date: exitFactory,
       description: shipDirect ? 'Finished product ships direct to customer from factory' : 'Finished product ships from factory',
       color: 'from-emerald-500 to-green-500',
@@ -87,7 +87,7 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
       dateColor: 'text-emerald-400',
     },
     {
-      label: 'In-Hands Date',
+      label: 'Order Delivered',
       date: inHandsDate,
       description: 'Product delivered to customer',
       color: 'from-rose-500 to-pink-500',
