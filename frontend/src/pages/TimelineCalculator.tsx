@@ -102,6 +102,14 @@ function getCalendarDays(milestones: Milestone[]): { year: number; month: number
   return months;
 }
 
+const MILESTONE_RING_COLORS: Record<string, string> = {
+  'bg-blue-500': 'ring-blue-500 bg-blue-500/20 text-blue-300',
+  'bg-purple-500': 'ring-purple-500 bg-purple-500/20 text-purple-300',
+  'bg-amber-500': 'ring-amber-500 bg-amber-500/20 text-amber-300',
+  'bg-emerald-500': 'ring-emerald-500 bg-emerald-500/20 text-emerald-300',
+  'bg-rose-500': 'ring-rose-500 bg-rose-500/20 text-rose-300',
+};
+
 function CalendarMonth({ year, month, milestones }: { year: number; month: number; milestones: Milestone[] }) {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -137,37 +145,40 @@ function CalendarMonth({ year, month, milestones }: { year: number; month: numbe
           const cellDate = new Date(year, month, day);
           cellDate.setHours(0, 0, 0, 0);
           const isToday = cellDate.getTime() === today.getTime();
+          const ringStyle = milestone ? MILESTONE_RING_COLORS[milestone.dotColor] || '' : '';
 
           return (
             <div
               key={day}
-              className={`relative py-1.5 rounded-md text-sm ${
+              className={`relative flex items-center justify-center w-8 h-8 mx-auto rounded-full text-sm ${
                 milestone
-                  ? 'font-bold text-white'
+                  ? `ring-2 ${ringStyle} font-bold`
                   : isToday
-                  ? 'text-teal-400 font-medium'
+                  ? 'text-teal-400 font-medium ring-1 ring-teal-500/50'
                   : 'text-gray-400'
-              } ${isToday && !milestone ? 'ring-1 ring-teal-500/50' : ''}`}
+              }`}
               title={milestone ? `${milestone.label}: ${formatDate(milestone.date)}` : undefined}
             >
               {day}
-              {milestone && (
-                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${milestone.dotColor}`} />
-              )}
             </div>
           );
         })}
       </div>
-      {/* Legend for this month's milestones */}
+      {/* Labels for this month's milestones */}
       {Object.keys(milestoneDays).length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-800 space-y-1">
-          {Object.entries(milestoneDays).map(([day, m]) => (
-            <div key={day} className="flex items-center gap-2 text-xs">
-              <div className={`w-2 h-2 rounded-full ${m.dotColor}`} />
-              <span className="text-gray-300">{m.label}</span>
-              <span className="text-gray-500 ml-auto">{Number(day)}</span>
-            </div>
-          ))}
+        <div className="mt-4 pt-3 border-t border-gray-800 space-y-2">
+          {Object.entries(milestoneDays).map(([day, m]) => {
+            const ringStyle = MILESTONE_RING_COLORS[m.dotColor] || '';
+            return (
+              <div key={day} className="flex items-center gap-2.5 text-xs">
+                <div className={`w-6 h-6 rounded-full ring-2 ${ringStyle} flex items-center justify-center text-[10px] font-bold flex-shrink-0`}>
+                  {Number(day)}
+                </div>
+                <span className="text-gray-200 font-medium">{m.label}</span>
+                <span className="text-gray-500 ml-auto">{formatDate(m.date)}</span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
