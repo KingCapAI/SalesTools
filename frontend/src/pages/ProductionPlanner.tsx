@@ -10,6 +10,8 @@ interface Milestone {
   description: string;
   color: string;
   dotColor: string;
+  labelColor: string;
+  dateColor: string;
 }
 
 function addDays(date: Date, days: number): Date {
@@ -54,6 +56,8 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
       description: 'All artwork and design files finalized and approved by customer',
       color: 'from-blue-500 to-cyan-500',
       dotColor: 'bg-blue-500',
+      labelColor: 'text-blue-300',
+      dateColor: 'text-blue-400',
     },
     {
       label: 'Production Files Submitted',
@@ -61,6 +65,8 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
       description: 'Final production-ready files (DST, vectors) submitted to factory',
       color: 'from-purple-500 to-indigo-500',
       dotColor: 'bg-purple-500',
+      labelColor: 'text-purple-300',
+      dateColor: 'text-purple-400',
     },
     {
       label: 'Sample Expected',
@@ -68,6 +74,8 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
       description: 'Pre-production sample received for approval',
       color: 'from-amber-500 to-orange-500',
       dotColor: 'bg-amber-500',
+      labelColor: 'text-amber-300',
+      dateColor: 'text-amber-400',
     },
     {
       label: 'Exit Factory',
@@ -75,6 +83,8 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
       description: shipDirect ? 'Finished product ships direct to customer from factory' : 'Finished product ships from factory',
       color: 'from-emerald-500 to-green-500',
       dotColor: 'bg-emerald-500',
+      labelColor: 'text-emerald-300',
+      dateColor: 'text-emerald-400',
     },
     {
       label: 'In-Hands Date',
@@ -82,6 +92,8 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[
       description: 'Product delivered to customer',
       color: 'from-rose-500 to-pink-500',
       dotColor: 'bg-rose-500',
+      labelColor: 'text-rose-300',
+      dateColor: 'text-rose-400',
     },
   ];
 }
@@ -356,14 +368,14 @@ export function ProductionPlanner() {
               };
 
               const TodayMarker = () => (
-                <div className="relative flex items-center gap-4 py-2">
-                  <div className="w-12 flex justify-center flex-shrink-0">
-                    <div className="relative z-10 w-3 h-3 rounded-full bg-teal-400 ring-4 ring-teal-400/20" />
+                <div className="relative flex items-center gap-4 py-3">
+                  <div className="relative z-10 w-4 flex-shrink-0 flex justify-center">
+                    <div className="w-2.5 h-2.5 rounded-full bg-teal-400 ring-4 ring-teal-400/20" />
                   </div>
                   <div className="flex-1 flex items-center gap-3">
-                    <div className="h-px flex-1 bg-teal-500/40" />
-                    <span className="text-xs font-semibold text-teal-400 uppercase tracking-wider">Today — {formatDate(today)}</span>
-                    <div className="h-px flex-1 bg-teal-500/40" />
+                    <div className="h-px flex-1 bg-teal-500/30" />
+                    <span className="text-xs font-semibold text-teal-400 uppercase tracking-wider whitespace-nowrap">Today — {formatDate(today)}</span>
+                    <div className="h-px flex-1 bg-teal-500/30" />
                   </div>
                 </div>
               );
@@ -371,7 +383,7 @@ export function ProductionPlanner() {
               return (
                 <div className="relative">
                   {/* Vertical line */}
-                  <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gray-700" />
+                  <div className="absolute left-[7px] top-8 bottom-8 w-0.5 bg-gray-700" />
 
                   <div className="space-y-0">
                     {/* Today marker before all milestones */}
@@ -397,15 +409,13 @@ export function ProductionPlanner() {
                       return (
                         <div key={milestone.label}>
                           <div className="relative flex items-start gap-4 py-4">
-                            {/* Dot */}
-                            <div className={`relative z-10 w-12 h-12 rounded-full bg-gradient-to-br ${milestone.color} flex items-center justify-center shadow-lg flex-shrink-0`}>
-                              <span className="text-white font-bold text-sm">{index + 1}</span>
-                            </div>
+                            {/* Color dot */}
+                            <div className={`relative z-10 w-4 h-4 mt-1 rounded-full bg-gradient-to-br ${milestone.color} shadow-lg flex-shrink-0 ring-4 ring-gray-900`} />
 
-                            {/* Content */}
+                            {/* Content — color-coded */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-3 flex-wrap">
-                                <h3 className="text-white font-semibold">{milestone.label}</h3>
+                                <h3 className={`font-semibold ${milestone.labelColor}`}>{milestone.label}</h3>
                                 {isToday && (
                                   <span className="px-2 py-0.5 bg-teal-900/40 text-teal-400 text-xs rounded-full font-medium">
                                     Today
@@ -427,18 +437,17 @@ export function ProductionPlanner() {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-teal-400 font-medium mt-0.5">{formatDate(milestone.date)}</p>
+                              <p className={`font-medium mt-0.5 ${milestone.dateColor}`}>{formatDate(milestone.date)}</p>
                               <p className="text-gray-500 text-sm mt-0.5">{milestone.description}</p>
                             </div>
                           </div>
 
                           {/* Gap indicator between milestones */}
                           {gapDays !== null && (
-                            <div className="relative flex items-center gap-4 py-1">
-                              <div className="w-12 flex justify-center flex-shrink-0">
-                                <div className="relative z-10 px-2 py-0.5 bg-gray-900 border border-gray-700 rounded-full">
-                                  <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap">{formatGap(gapDays)}</span>
-                                </div>
+                            <div className="relative flex items-center gap-4 py-1 ml-[5px]">
+                              <div className="w-4 flex justify-center flex-shrink-0" />
+                              <div className="relative z-10 px-2 py-0.5 bg-gray-900 border border-gray-700 rounded-full">
+                                <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap">{formatGap(gapDays)}</span>
                               </div>
                             </div>
                           )}
