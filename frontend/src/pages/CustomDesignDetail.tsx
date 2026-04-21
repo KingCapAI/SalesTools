@@ -488,6 +488,8 @@ export function CustomDesignDetail() {
           onClose={() => setQuoteModalOpen(false)}
           designId={designId}
           existingQuote={designQuote || undefined}
+          designData={design}
+          selectedVersion={selectedVersion}
           onSaved={() => {
             refetchQuote();
             refetch();

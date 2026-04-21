@@ -6,6 +6,10 @@ import { quotesApi } from '../../api/quotes';
 import { useCreateDesignQuote, useUpdateDesignQuote } from '../../hooks/useDesignQuotes';
 import type { QuoteOptions, DomesticQuoteResponse, OverseasQuoteResponse } from '../../api/quotes';
 import type { DesignQuote, DesignQuoteCreate } from '../../api/designQuotes';
+import type { Design, CustomDesign, DesignVersion } from '../../types/api';
+import type { QuoteDefaults } from '../../utils/designToQuoteMapping';
+import { mapAIDesignToQuote, mapCustomDesignToQuote } from '../../utils/designToQuoteMapping';
+import { Info } from 'lucide-react';
 import clsx from 'clsx';
 
 interface QuoteModalProps {
@@ -13,6 +17,8 @@ interface QuoteModalProps {
   onClose: () => void;
   designId: string;
   existingQuote?: DesignQuote | null;
+  designData?: Design | CustomDesign | null;
+  selectedVersion?: DesignVersion | null;
   onSaved?: () => void;
 }
 
@@ -54,7 +60,8 @@ function isValidDecoration(value: string | null | undefined): boolean {
   return typeof value === 'string' && value.trim().length > 0 && value !== '0';
 }
 
-export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }: QuoteModalProps) {
+export function QuoteModal({ isOpen, onClose, designId, existingQuote, designData, selectedVersion, onSaved }: QuoteModalProps) {
+  const [preFilledFromDesign, setPreFilledFromDesign] = useState(false);
   const [quoteType, setQuoteType] = useState<QuoteType>(existingQuote?.quote_type || 'domestic');
   const [options, setOptions] = useState<QuoteOptions | null>(null);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
@@ -115,6 +122,41 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }
     };
     loadOptions();
   }, [isOpen]);
+
+  // Auto-populate from design data when no existing quote
+  useEffect(() => {
+    if (!isOpen || existingQuote || !designData) return;
+
+    let defaults: QuoteDefaults;
+    if ('location_logos' in designData && designData.location_logos) {
+      defaults = mapCustomDesignToQuote(designData as CustomDesign);
+    } else {
+      defaults = mapAIDesignToQuote(designData as Design, selectedVersion);
+    }
+
+    // Apply domestic defaults
+    setDomesticForm((prev) => ({
+      ...prev,
+      style_number: defaults.domestic.style_number || prev.style_number,
+      front_decoration: defaults.domestic.front_decoration ?? prev.front_decoration,
+      left_decoration: defaults.domestic.left_decoration ?? prev.left_decoration,
+      right_decoration: defaults.domestic.right_decoration ?? prev.right_decoration,
+      back_decoration: defaults.domestic.back_decoration ?? prev.back_decoration,
+    }));
+
+    // Apply overseas defaults
+    setOverseasForm((prev) => ({
+      ...prev,
+      hat_type: defaults.overseas.hat_type || prev.hat_type,
+      front_decoration: defaults.overseas.front_decoration ?? prev.front_decoration,
+      left_decoration: defaults.overseas.left_decoration ?? prev.left_decoration,
+      right_decoration: defaults.overseas.right_decoration ?? prev.right_decoration,
+      back_decoration: defaults.overseas.back_decoration ?? prev.back_decoration,
+      visor_decoration: defaults.overseas.visor_decoration ?? prev.visor_decoration,
+    }));
+
+    setPreFilledFromDesign(true);
+  }, [isOpen, designData, selectedVersion]);
 
   // Reset form when existing quote changes
   useEffect(() => {
@@ -290,6 +332,14 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, onSaved }
             </div>
           ) : (
             <>
+              {/* Pre-filled banner */}
+              {preFilledFromDesign && !existingQuote && (
+                <div className="p-3 bg-teal-900/20 border border-teal-800/30 rounded-lg flex items-start gap-2">
+                  <Info className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-teal-300">Pre-filled from design. Review and adjust as needed.</p>
+                </div>
+              )}
+
               {/* Quote Type Toggle */}
               <div>
                 <label className="label mb-2">Quote Type</label>
