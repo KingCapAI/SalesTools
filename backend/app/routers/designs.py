@@ -290,6 +290,63 @@ async def regenerate_design_endpoint(
         raise HTTPException(status_code=500, detail=f"Failed to regenerate design: {str(e)}")
 
 
+@router.post("/{design_id}/versions/{version_id}/extract-decorations")
+async def extract_version_decorations(
+    design_id: str,
+    version_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """Manually trigger decoration extraction for a specific version."""
+    import base64
+
+    version = db.query(DesignVersion).filter(
+        DesignVersion.id == version_id,
+        DesignVersion.design_id == design_id,
+    ).first()
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    if not version.image_path:
+        raise HTTPException(status_code=400, detail="Version has no image")
+
+    image_bytes = await read_file_bytes(version.image_path)
+    if not image_bytes:
+        raise HTTPException(status_code=404, detail="Image file not found")
+
+    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+    decorations = await extract_decorations_from_image(image_b64)
+
+    if decorations:
+        version.detected_decorations = json_module.dumps(decorations)
+        db.commit()
+        return {"success": True, "decorations": decorations}
+    else:
+        return {"success": False, "decorations": None}
+
+
+@router.get("/extract-all-decorations")
+async def extract_all_existing_decorations(
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """One-time: extract decorations from all existing versions that don't have them yet."""
+    versions = db.query(DesignVersion).filter(
+        DesignVersion.generation_status == "completed",
+        DesignVersion.image_path.isnot(None),
+        DesignVersion.detected_decorations.is_(None),
+    ).all()
+
+    version_ids = [v.id for v in versions]
+    if not version_ids:
+        return {"message": "No versions need extraction", "count": 0}
+
+    # Run in background
+    asyncio.create_task(_extract_decorations_background(version_ids))
+
+    return {"message": f"Started extraction for {len(version_ids)} versions", "count": len(version_ids)}
+
+
 @router.post("/{design_id}/versions/{version_id}/select")
 async def select_version(
     design_id: str,
