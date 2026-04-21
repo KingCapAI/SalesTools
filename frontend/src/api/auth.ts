@@ -14,6 +14,7 @@ export const authApi = {
 
   getMicrosoftAuthUrl: () => {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-    return `${apiUrl}/auth/microsoft`;
+    const redirectUri = encodeURIComponent(window.location.origin);
+    return `${apiUrl}/auth/microsoft?redirect_uri=${redirectUri}`;
   },
 };

@@ -20,15 +20,19 @@ settings = get_settings()
 
 
 @router.get("/microsoft")
-async def microsoft_login():
-    """Redirect to Microsoft OAuth."""
-    url = await get_microsoft_oauth_url()
+async def microsoft_login(redirect_uri: str = Query(default="")):
+    """Redirect to Microsoft OAuth. Optional redirect_uri for dev/preview environments."""
+    from ..services.auth_service import get_microsoft_oauth_url
+    # Store redirect_uri in state param so we can use it after callback
+    state = redirect_uri if redirect_uri else ""
+    url = await get_microsoft_oauth_url(state=state)
     return RedirectResponse(url=url)
 
 
 @router.get("/microsoft/callback")
 async def microsoft_callback(
     code: str = Query(...),
+    state: str = Query(default=""),
     db: Session = Depends(get_db),
 ):
     """Handle Microsoft OAuth callback."""
@@ -46,14 +50,17 @@ async def microsoft_callback(
 
         token = create_user_token(user)
 
-        # Redirect to frontend with token
+        # Use redirect_uri from state if provided (dev/preview), otherwise production
+        frontend = state if state and state.startswith("http") else settings.frontend_url
+
         return RedirectResponse(
-            url=f"{settings.frontend_url}/auth/callback?token={token}"
+            url=f"{frontend}/auth/callback?token={token}"
         )
 
     except Exception as e:
+        frontend = state if state and state.startswith("http") else settings.frontend_url
         return RedirectResponse(
-            url=f"{settings.frontend_url}/auth/error?message={str(e)}"
+            url=f"{frontend}/auth/error?message={str(e)}"
         )
 
 
