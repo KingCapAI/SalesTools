@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
+import { ActionMenu } from '../components/ui/ActionMenu';
+import { Tabs } from '../components/ui/Tabs';
 import { VersionGallery } from '../components/design-generator/VersionGallery';
-import { VersionHistory } from '../components/design-generator/VersionHistory';
 import { RevisionChat } from '../components/design-generator/RevisionChat';
 import { QuoteModal } from '../components/design-generator/QuoteModal';
 import { QuoteSummary } from '../components/design-generator/QuoteSummary';
@@ -17,7 +18,10 @@ import {
   useSelectCustomVersion,
 } from '../hooks/useCustomDesigns';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
-import { ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download, Calculator, RefreshCw, Layers, Pencil } from 'lucide-react';
+import {
+  ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download,
+  Calculator, RefreshCw, Layers, Pencil, MessageSquare, CalendarDays,
+} from 'lucide-react';
 import { uploadsApi } from '../api/uploads';
 import type { ApprovalStatus } from '../types/api';
 
@@ -28,21 +32,12 @@ const approvalStatusConfig: Record<ApprovalStatus, { label: string; icon: typeof
 };
 
 const LOCATION_LABELS: Record<string, string> = {
-  front: 'Front',
-  left: 'Left Side',
-  right: 'Right Side',
-  back: 'Back',
-  visor: 'Visor',
+  front: 'Front', left: 'Left Side', right: 'Right Side', back: 'Back', visor: 'Visor',
 };
 
 const DECORATION_METHOD_LABELS: Record<string, string> = {
-  embroidery: 'Embroidery',
-  screen_print: 'Screen Print',
-  patch: 'Patch',
-  '3d_puff': '3D Puff',
-  laser_cut: 'Laser Cut',
-  heat_transfer: 'Heat Transfer',
-  sublimation: 'Sublimation',
+  embroidery: 'Embroidery', screen_print: 'Screen Print', patch: 'Patch',
+  '3d_puff': '3D Puff', laser_cut: 'Laser Cut', heat_transfer: 'Heat Transfer', sublimation: 'Sublimation',
 };
 
 export function CustomDesignDetail() {
@@ -56,7 +51,6 @@ export function CustomDesignDetail() {
   const regenerateDesign = useRegenerateCustomDesign();
   const selectVersion = useSelectCustomVersion();
 
-  // Quote hooks
   const { data: designQuote, refetch: refetchQuote } = useDesignQuote(designId || '');
   const deleteQuote = useDeleteDesignQuote();
   const exportQuote = useExportDesignWithQuote();
@@ -64,8 +58,8 @@ export function CustomDesignDetail() {
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState('chat');
 
-  // Sync selected version from server state
   useEffect(() => {
     if (design?.selected_version_id && !selectedVersionId) {
       setSelectedVersionId(design.selected_version_id);
@@ -108,9 +102,7 @@ export function CustomDesignDetail() {
     ? versions.find((v) => v.id === selectedVersionId)
     : null;
 
-  // Determine if revisions have been made (any user chat messages = revision requests)
   const hasRevisions = chats.some((c) => c.is_user);
-
   const statusConfig = approvalStatusConfig[design.approval_status];
   const StatusIcon = statusConfig.icon;
 
@@ -137,7 +129,6 @@ export function CustomDesignDetail() {
       data: { revision_notes: notes },
     });
     const result = await refetch();
-    // Auto-switch to the newest version
     if (newVersion?.id) {
       setSelectedVersionId(newVersion.id);
     } else if (result.data?.versions?.length) {
@@ -150,7 +141,7 @@ export function CustomDesignDetail() {
     if (!designId) return;
     try {
       await regenerateDesign.mutateAsync(designId);
-      setSelectedVersionId(null); // Reset selection — user must pick from new batch
+      setSelectedVersionId(null);
       await refetch();
     } catch (error: any) {
       console.error('Error regenerating design:', error);
@@ -159,7 +150,6 @@ export function CustomDesignDetail() {
   };
 
   const handleCopyAndEdit = () => {
-    // Navigate to creation form with this design's inputs pre-filled
     const prefill = {
       customerName: design.customer_name,
       brandName: design.brand_name,
@@ -194,16 +184,9 @@ export function CustomDesignDetail() {
 
     try {
       const imageUrl = uploadsApi.getFileUrl(selectedVersion.image_path);
-      const response = await fetch(imageUrl, {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`);
-      }
-
+      const response = await fetch(imageUrl, { credentials: 'include' });
+      if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
       const blob = await response.blob();
-
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -220,10 +203,7 @@ export function CustomDesignDetail() {
 
   const handleSetApprovalStatus = async (status: ApprovalStatus) => {
     if (!designId) return;
-    await updateDesign.mutateAsync({
-      id: designId,
-      data: { approval_status: status },
-    });
+    await updateDesign.mutateAsync({ id: designId, data: { approval_status: status } });
     refetch();
   };
 
@@ -255,91 +235,103 @@ export function CustomDesignDetail() {
     }
   };
 
+  const actionItems = [
+    { icon: RefreshCw, label: 'Regenerate', onClick: handleRegenerate, loading: regenerateDesign.isPending, hidden: hasRevisions },
+    { icon: Pencil, label: 'Copy & Edit', onClick: handleCopyAndEdit },
+    { icon: Download, label: 'Download', onClick: handleDownload, disabled: !selectedVersion?.image_path },
+  ];
+
+  const sidebarTabs = [
+    { id: 'chat', label: 'Revision Chat', icon: MessageSquare, badge: chats.length > 0 },
+    { id: 'details', label: 'Details', icon: Layers },
+    { id: 'quote', label: 'Quote', icon: Calculator, badge: !!designQuote },
+    { id: 'timeline', label: 'Timeline', icon: CalendarDays },
+  ];
+
   return (
     <div className="min-h-screen bg-black">
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        {/* Header — responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4 min-w-0">
             <Link to="/custom-design-builder">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
             </Link>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                 <Layers className="w-5 h-5 text-white" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-gray-100">
+                  <h1 className="text-xl lg:text-2xl font-bold text-gray-100 truncate">
                     {design.design_name || `Custom Design #${design.design_number}`}
                   </h1>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${statusConfig.bgColor} ${statusConfig.color}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 flex-shrink-0 ${statusConfig.bgColor} ${statusConfig.color}`}>
                     <StatusIcon className="w-3 h-3" />
                     {statusConfig.label}
                   </span>
                 </div>
-                <p className="text-gray-400">
+                <p className="text-gray-400 text-sm truncate">
                   {design.brand_name} • {design.hat_style.replace(/-/g, ' ')} • {design.location_logos.length} decoration{design.location_logos.length !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {!hasRevisions && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRegenerate}
-                isLoading={regenerateDesign.isPending}
-                title="Generate 3 new design options from scratch"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Regenerate
+
+          {/* Actions — responsive */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="hidden lg:flex items-center gap-2">
+              {!hasRevisions && (
+                <Button variant="outline" size="sm" onClick={handleRegenerate} isLoading={regenerateDesign.isPending} title="Generate 3 new design options">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Regenerate
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleCopyAndEdit} title="Open form pre-filled with these inputs">
+                <Pencil className="w-4 h-4 mr-2" />
+                Copy & Edit
               </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyAndEdit}
-              title="Open a new design form pre-filled with these inputs"
-            >
-              <Pencil className="w-4 h-4 mr-2" />
-              Copy & Edit
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setQuoteModalOpen(true)}
-            >
-              <Calculator className="w-4 h-4 mr-2" />
-              {designQuote ? 'Edit Quote' : 'Quote'}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              disabled={!selectedVersion?.image_path}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download
-            </Button>
+              <Button variant="outline" size="sm" onClick={handleDownload} disabled={!selectedVersion?.image_path}>
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+            </div>
+
+            <div className="hidden md:flex lg:hidden items-center gap-1">
+              {!hasRevisions && (
+                <Button variant="outline" size="sm" onClick={handleRegenerate} isLoading={regenerateDesign.isPending} title="Regenerate">
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleCopyAndEdit} title="Copy & Edit">
+                <Pencil className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDownload} disabled={!selectedVersion?.image_path} title="Download">
+                <Download className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="md:hidden">
+              <ActionMenu items={actionItems} />
+            </div>
+
             <Link to="/custom-design-builder/new">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                New Design
+              <Button size="sm">
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">New Design</span>
               </Button>
             </Link>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Design Versions - Main Column */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Design Gallery */}
           <div className="lg:col-span-2">
             <div className="card">
               <VersionGallery
@@ -352,130 +344,99 @@ export function CustomDesignDetail() {
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Location Logos Summary */}
-            <div className="card">
-              <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <Layers className="w-4 h-4" />
-                Decoration Locations
-              </h3>
-              <div className="space-y-3">
-                {design.location_logos.map((logo) => (
-                  <div key={logo.id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
-                    <img
-                      src={uploadsApi.getFileUrl(logo.logo_path)}
-                      alt={`${logo.location} logo`}
-                      className="w-10 h-10 object-contain rounded"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white">
-                        {LOCATION_LABELS[logo.location] || logo.location}
-                      </p>
-                      <p className="text-xs text-gray-400 truncate">
-                        {DECORATION_METHOD_LABELS[logo.decoration_method] || logo.decoration_method} • {logo.size}
-                        {logo.size_details && ` (${logo.size_details})`}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {design.reference_hat_path && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
-                  <p className="text-xs text-gray-400 mb-2">Reference Hat</p>
-                  <img
-                    src={uploadsApi.getFileUrl(design.reference_hat_path)}
-                    alt="Reference hat"
-                    className="w-full max-w-[120px] rounded"
-                  />
-                </div>
-              )}
-            </div>
-
+          {/* Sidebar — sticky on desktop */}
+          <div className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto space-y-4">
             {/* Approval Status */}
             <div className="card">
-              <h3 className="font-semibold text-white mb-4">Approval Status</h3>
+              <h3 className="font-semibold text-white mb-3 text-sm">Approval Status</h3>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={design.approval_status === 'approved' ? 'secondary' : 'outline'}
-                  size="sm"
-                  onClick={() => handleSetApprovalStatus('approved')}
-                  disabled={updateDesign.isPending}
-                >
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  Approve
+                <Button variant={design.approval_status === 'approved' ? 'secondary' : 'outline'} size="sm" onClick={() => handleSetApprovalStatus('approved')} disabled={updateDesign.isPending}>
+                  <CheckCircle className="w-4 h-4 mr-1" /> Approve
                 </Button>
-                <Button
-                  variant={design.approval_status === 'rejected' ? 'danger' : 'outline'}
-                  size="sm"
-                  onClick={() => handleSetApprovalStatus('rejected')}
-                  disabled={updateDesign.isPending}
-                >
-                  <XCircle className="w-4 h-4 mr-1" />
-                  Reject
+                <Button variant={design.approval_status === 'rejected' ? 'danger' : 'outline'} size="sm" onClick={() => handleSetApprovalStatus('rejected')} disabled={updateDesign.isPending}>
+                  <XCircle className="w-4 h-4 mr-1" /> Reject
                 </Button>
-                <Button
-                  variant={design.approval_status === 'pending' ? 'secondary' : 'outline'}
-                  size="sm"
-                  onClick={() => handleSetApprovalStatus('pending')}
-                  disabled={updateDesign.isPending}
-                >
-                  <Clock className="w-4 h-4 mr-1" />
-                  Pending
+                <Button variant={design.approval_status === 'pending' ? 'secondary' : 'outline'} size="sm" onClick={() => handleSetApprovalStatus('pending')} disabled={updateDesign.isPending}>
+                  <Clock className="w-4 h-4 mr-1" /> Pending
                 </Button>
               </div>
             </div>
 
-            {/* Version History */}
-            <div className="card">
-              <VersionHistory
-                versions={versions}
-                selectedVersionId={selectedVersionId}
-                onSelectVersion={handleSelectVersion}
-              />
-            </div>
+            {/* Tabbed sections */}
+            <div className="card p-0 overflow-hidden">
+              <Tabs tabs={sidebarTabs} activeTab={sidebarTab} onTabChange={setSidebarTab}>
+                {sidebarTab === 'chat' && (
+                  <>
+                    {selectedVersionId ? (
+                      <>
+                        {selectedVersion && (
+                          <p className="text-xs text-gray-500 mb-2">
+                            Revisions based on Option {selectedVersion.version_number}. Select a different version from the gallery.
+                          </p>
+                        )}
+                        <RevisionChat
+                          chats={chats}
+                          onSendMessage={handleSendMessage}
+                          onRequestRevision={handleRequestRevision}
+                          isLoading={createRevision.isPending || addChatMessage.isPending || regenerateDesign.isPending}
+                        />
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 text-sm">
+                        <p>Select a design option to enable revisions.</p>
+                      </div>
+                    )}
+                  </>
+                )}
 
-            {/* Revision Chat */}
-            <div className="card">
-              {selectedVersionId ? (
-                <>
-                  {selectedVersion && (
-                    <p className="text-xs text-gray-500 mb-2">
-                      Revisions based on Option {selectedVersion.version_number}. Select a different version from the history to change.
-                    </p>
-                  )}
-                  <RevisionChat
-                    chats={chats}
-                    onSendMessage={handleSendMessage}
-                    onRequestRevision={handleRequestRevision}
-                    isLoading={createRevision.isPending || addChatMessage.isPending || regenerateDesign.isPending}
-                  />
-                </>
-              ) : (
-                <div>
-                  <h3 className="font-semibold text-white mb-3">Revisions & Chat</h3>
-                  <div className="text-center py-8 text-gray-500 text-sm">
-                    <p>Select a design option above to enable revisions.</p>
+                {sidebarTab === 'details' && (
+                  <div className="space-y-3">
+                    {design.location_logos.map((logo) => (
+                      <div key={logo.id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
+                        <img
+                          src={uploadsApi.getFileUrl(logo.logo_path)}
+                          alt={`${logo.location} logo`}
+                          className="w-10 h-10 object-contain rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white">
+                            {LOCATION_LABELS[logo.location] || logo.location}
+                          </p>
+                          <p className="text-xs text-gray-400 truncate">
+                            {DECORATION_METHOD_LABELS[logo.decoration_method] || logo.decoration_method} • {logo.size}
+                            {logo.size_details && ` (${logo.size_details})`}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {design.reference_hat_path && (
+                      <div className="pt-3 border-t border-gray-700">
+                        <p className="text-xs text-gray-400 mb-2">Reference Hat</p>
+                        <img
+                          src={uploadsApi.getFileUrl(design.reference_hat_path)}
+                          alt="Reference hat"
+                          className="w-full max-w-[120px] rounded"
+                        />
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
+                )}
 
-            {/* Quote Summary */}
-            <div className="card">
-              <QuoteSummary
-                quote={designQuote || design.quote_summary || null}
-                onEdit={() => setQuoteModalOpen(true)}
-                onDelete={handleDeleteQuote}
-                onExport={handleExportQuote}
-                isDeleting={deleteQuote.isPending}
-                isExporting={isExporting}
-              />
-            </div>
+                {sidebarTab === 'quote' && (
+                  <QuoteSummary
+                    quote={designQuote || design.quote_summary || null}
+                    onEdit={() => setQuoteModalOpen(true)}
+                    onDelete={handleDeleteQuote}
+                    onExport={handleExportQuote}
+                    isDeleting={deleteQuote.isPending}
+                    isExporting={isExporting}
+                  />
+                )}
 
-            {/* Production Planner */}
-            <div className="card">
-              <ProductionTimeline />
+                {sidebarTab === 'timeline' && (
+                  <ProductionTimeline quoteData={designQuote} alwaysExpanded />
+                )}
+              </Tabs>
             </div>
           </div>
         </div>

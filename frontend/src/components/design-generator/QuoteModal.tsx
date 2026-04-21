@@ -62,7 +62,7 @@ function isValidDecoration(value: string | null | undefined): boolean {
 
 export function QuoteModal({ isOpen, onClose, designId, existingQuote, designData, selectedVersion, onSaved }: QuoteModalProps) {
   const [preFilledFromDesign, setPreFilledFromDesign] = useState(false);
-  const [quoteType, setQuoteType] = useState<QuoteType>(existingQuote?.quote_type || 'domestic');
+  const [quoteType, setQuoteType] = useState<QuoteType>(existingQuote?.quote_type || 'overseas');
   const [options, setOptions] = useState<QuoteOptions | null>(null);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -125,7 +125,9 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, designDat
 
   // Auto-populate from design data when no existing quote
   useEffect(() => {
-    if (!isOpen || existingQuote || !designData) return;
+    if (!isOpen || !designData) return;
+    // Skip if editing an existing quote
+    if (existingQuote) return;
 
     let defaults: QuoteDefaults;
     if ('location_logos' in designData && designData.location_logos) {
@@ -134,25 +136,33 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, designDat
       defaults = mapAIDesignToQuote(designData as Design, selectedVersion);
     }
 
-    // Apply domestic defaults
+    console.log('[QuoteModal] Auto-populating from design:', {
+      designType: 'location_logos' in designData ? 'custom' : 'ai',
+      hatStyle: designData.hat_style,
+      material: designData.material,
+      selectedVersionDecorations: selectedVersion?.detected_decorations,
+      defaults,
+    });
+
+    // Apply domestic defaults - use explicit checks to overwrite null with mapped values
     setDomesticForm((prev) => ({
       ...prev,
       style_number: defaults.domestic.style_number || prev.style_number,
-      front_decoration: defaults.domestic.front_decoration ?? prev.front_decoration,
-      left_decoration: defaults.domestic.left_decoration ?? prev.left_decoration,
-      right_decoration: defaults.domestic.right_decoration ?? prev.right_decoration,
-      back_decoration: defaults.domestic.back_decoration ?? prev.back_decoration,
+      front_decoration: defaults.domestic.front_decoration || prev.front_decoration,
+      left_decoration: defaults.domestic.left_decoration || prev.left_decoration,
+      right_decoration: defaults.domestic.right_decoration || prev.right_decoration,
+      back_decoration: defaults.domestic.back_decoration || prev.back_decoration,
     }));
 
     // Apply overseas defaults
     setOverseasForm((prev) => ({
       ...prev,
       hat_type: defaults.overseas.hat_type || prev.hat_type,
-      front_decoration: defaults.overseas.front_decoration ?? prev.front_decoration,
-      left_decoration: defaults.overseas.left_decoration ?? prev.left_decoration,
-      right_decoration: defaults.overseas.right_decoration ?? prev.right_decoration,
-      back_decoration: defaults.overseas.back_decoration ?? prev.back_decoration,
-      visor_decoration: defaults.overseas.visor_decoration ?? prev.visor_decoration,
+      front_decoration: defaults.overseas.front_decoration || prev.front_decoration,
+      left_decoration: defaults.overseas.left_decoration || prev.left_decoration,
+      right_decoration: defaults.overseas.right_decoration || prev.right_decoration,
+      back_decoration: defaults.overseas.back_decoration || prev.back_decoration,
+      visor_decoration: defaults.overseas.visor_decoration || prev.visor_decoration,
     }));
 
     setPreFilledFromDesign(true);

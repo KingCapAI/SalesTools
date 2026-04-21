@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CalendarDays, ChevronDown, ChevronUp, Zap, Info, List, Calendar,
   Palette, FileText, Camera, PlaneTakeoff, Warehouse, Package,
-  Globe, Home, Truck,
+  Globe, Home, Truck, Link2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { DesignQuote } from '../../api/designQuotes';
 
 type ProductionType = 'overseas' | 'domestic';
 
@@ -109,6 +110,16 @@ function calculateMilestones(inHandsDate: Date, shipDirect: boolean, quickTurn: 
   milestones.push({ label: 'Order Delivered', date: inHandsDate, color: 'bg-rose-500', icon: Package, labelColor: 'text-rose-300', dateColor: 'text-rose-400', dotColor: 'bg-rose-500' });
 
   return milestones;
+}
+
+function addBusinessDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  let remaining = days;
+  while (remaining > 0) {
+    result.setDate(result.getDate() + 1);
+    if (result.getDay() !== 0 && result.getDay() !== 6) remaining--;
+  }
+  return result;
 }
 
 function subtractBusinessDays(date: Date, days: number): Date {
@@ -234,9 +245,11 @@ function getCalendarMonths(milestones: Milestone[]): { year: number; month: numb
 
 interface ProductionTimelineProps {
   initialDate?: string;
+  quoteData?: DesignQuote | null;
+  alwaysExpanded?: boolean;
 }
 
-export function ProductionTimeline({ initialDate }: ProductionTimelineProps) {
+export function ProductionTimeline({ initialDate, quoteData, alwaysExpanded }: ProductionTimelineProps) {
   const [inHandsDate, setInHandsDate] = useState(initialDate || '');
   const [productionType, setProductionType] = useState<ProductionType>('overseas');
   const [shipDirect, setShipDirect] = useState(false);
@@ -245,12 +258,78 @@ export function ProductionTimeline({ initialDate }: ProductionTimelineProps) {
   const [domesticShippingDays, setDomesticShippingDays] = useState(5);
   const [expanded, setExpanded] = useState(!!initialDate);
   const [view, setView] = useState<'list' | 'calendar'>('list');
+  const [syncedFromQuote, setSyncedFromQuote] = useState(false);
   const [milestones, setMilestones] = useState<Milestone[] | null>(() => {
     if (initialDate) {
       return calculateMilestones(new Date(initialDate + 'T00:00:00'), false, false);
     }
     return null;
   });
+
+  // Auto-sync settings from quote data
+  useEffect(() => {
+    if (!quoteData) {
+      setSyncedFromQuote(false);
+      return;
+    }
+
+    // Set production type
+    const pt: ProductionType = quoteData.quote_type === 'domestic' ? 'domestic' : 'overseas';
+    setProductionType(pt);
+
+    if (pt === 'overseas') {
+      // Ship direct detection
+      const sd = quoteData.shipping_method === 'Direct to Customer';
+      setShipDirect(sd);
+
+      // Quick turn eligibility: check if ALL decorations are in quick turn methods
+      const decorations = [
+        quoteData.front_decoration,
+        quoteData.left_decoration,
+        quoteData.right_decoration,
+        quoteData.back_decoration,
+        quoteData.visor_decoration,
+      ].filter((d): d is string => !!d && d.trim().length > 0);
+
+      const qt = decorations.length > 0 && decorations.every(
+        (d) => QUICK_TURN_METHODS.some((m) => m.toLowerCase() === d.toLowerCase())
+      );
+      setQuickTurn(qt);
+    } else {
+      // Parse domestic production speed from shipping_speed field
+      const speed = quoteData.shipping_speed || '';
+      if (speed.includes('4 Production')) setDomesticProductionDays(4);
+      else if (speed.includes('3 Production')) setDomesticProductionDays(3);
+      else if (speed.includes('2 Production')) setDomesticProductionDays(2);
+      else setDomesticProductionDays(7);
+    }
+
+    setSyncedFromQuote(true);
+    setExpanded(true);
+
+    // Recalculate if we have a date
+    if (inHandsDate) {
+      if (pt === 'domestic') {
+        const speed = quoteData.shipping_speed || '';
+        let dpd = 7;
+        if (speed.includes('4 Production')) dpd = 4;
+        else if (speed.includes('3 Production')) dpd = 3;
+        else if (speed.includes('2 Production')) dpd = 2;
+        setMilestones(calculateDomesticMilestones(new Date(inHandsDate + 'T00:00:00'), domesticShippingDays, dpd));
+      } else {
+        const sd = quoteData.shipping_method === 'Direct to Customer';
+        const decorations = [
+          quoteData.front_decoration, quoteData.left_decoration,
+          quoteData.right_decoration, quoteData.back_decoration,
+          quoteData.visor_decoration,
+        ].filter((d): d is string => !!d && d.trim().length > 0);
+        const qt = decorations.length > 0 && decorations.every(
+          (d) => QUICK_TURN_METHODS.some((m) => m.toLowerCase() === d.toLowerCase())
+        );
+        setMilestones(calculateMilestones(new Date(inHandsDate + 'T00:00:00'), sd, qt));
+      }
+    }
+  }, [quoteData]);
 
   const recalculate = (date?: string, pt?: ProductionType, sd?: boolean, qt?: boolean, dpd?: number, dsd?: number) => {
     const d = date ?? inHandsDate;
@@ -297,25 +376,78 @@ export function ProductionTimeline({ initialDate }: ProductionTimelineProps) {
     return `${d}d`;
   };
 
+  const isExpanded = alwaysExpanded || expanded;
+
   return (
     <div>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between w-full text-left"
-      >
-        <h3 className="font-semibold text-white flex items-center gap-2">
-          <CalendarDays className="w-4 h-4 text-teal-400" />
-          Production Planner
-        </h3>
-        {expanded ? (
-          <ChevronUp className="w-4 h-4 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
-        )}
-      </button>
+      {!alwaysExpanded && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center justify-between w-full text-left"
+        >
+          <h3 className="font-semibold text-white flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-teal-400" />
+            Production Planner
+          </h3>
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          )}
+        </button>
+      )}
 
-      {expanded && (
+      {isExpanded && (
         <div className="mt-4 space-y-3">
+          {/* Synced from quote — show estimated delivery */}
+          {syncedFromQuote && !inHandsDate && (
+            <div className="p-2.5 bg-teal-900/20 border border-teal-800/30 rounded-lg">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Link2 className="w-3 h-3 text-teal-400 flex-shrink-0" />
+                <p className="text-[10px] text-teal-400 font-semibold uppercase tracking-wide">Estimated from quote</p>
+              </div>
+              {(() => {
+                // Calculate "if we start today" timeline
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                let estimatedMilestones: Milestone[];
+                if (productionType === 'domestic') {
+                  // Forward: artwork today → sample 3 biz days → production → shipping
+                  const sample = addBusinessDays(today, 3);
+                  const prodComplete = addBusinessDays(sample, domesticProductionDays);
+                  const delivery = addBusinessDays(prodComplete, domesticShippingDays);
+                  estimatedMilestones = calculateDomesticMilestones(delivery, domesticShippingDays, domesticProductionDays);
+                } else {
+                  const prodDays = quickTurn ? 21 : 35;
+                  // Forward: artwork today → +7 prod files → +18 sample → +prodDays exit → +shipping delivery
+                  const artworkDate = today;
+                  const prodFiles = toWeekday(addDays(artworkDate, 7));
+                  const sampleDue = toWeekday(addDays(prodFiles, 18));
+                  const exitFactory = toWeekday(addDays(sampleDue, prodDays));
+                  const delivery = shipDirect ? toWeekday(addDays(exitFactory, 7)) : toWeekday(addDays(exitFactory, 14));
+                  estimatedMilestones = calculateMilestones(delivery, shipDirect, quickTurn);
+                }
+                const deliveryDate = estimatedMilestones[estimatedMilestones.length - 1].date;
+                const deliveryDays = daysFromNow(deliveryDate);
+                return (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-white font-medium">
+                      If artwork starts today → delivery by <span className="text-teal-300">{formatDate(deliveryDate)}</span>
+                    </p>
+                    <p className="text-[10px] text-gray-400">
+                      {deliveryDays} days total • {productionType === 'overseas' ? (quickTurn ? 'Quick Turn 21d' : 'Standard 35d') : `${domesticProductionDays} biz days`} production • {productionType === 'overseas' ? (shipDirect ? 'Ship Direct' : 'Via King Cap') : `${domesticShippingDays}d shipping`}
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Target date section */}
+          {syncedFromQuote && !inHandsDate && (
+            <p className="text-[10px] text-gray-500 text-center">— or enter a target in-hands date below —</p>
+          )}
+
           {/* Production Type Toggle */}
           <div className="flex items-center bg-gray-800 rounded-lg p-0.5">
             <button
@@ -537,6 +669,51 @@ export function ProductionTimeline({ initialDate }: ProductionTimelineProps) {
                 </div>
               )}
 
+              {/* Warnings and suggestions */}
+              {(() => {
+                const pastDue = milestones.filter((m) => daysFromNow(m.date) < 0);
+                if (pastDue.length === 0) return null;
+
+                const suggestions: string[] = [];
+                if (productionType === 'overseas') {
+                  if (!shipDirect) suggestions.push('Switch to Ship Direct to save 7 days');
+                  if (!quickTurn) {
+                    // Check if quote decorations are QT eligible
+                    const decorations = quoteData ? [
+                      quoteData.front_decoration, quoteData.left_decoration,
+                      quoteData.right_decoration, quoteData.back_decoration,
+                      quoteData.visor_decoration,
+                    ].filter((d): d is string => !!d && d.trim().length > 0) : [];
+                    const qtEligible = decorations.length > 0 && decorations.every(
+                      (d) => QUICK_TURN_METHODS.some((m) => m.toLowerCase() === d.toLowerCase())
+                    );
+                    if (qtEligible) suggestions.push('Eligible for Quick Turn — saves 14 days of production');
+                  }
+                } else {
+                  if (domesticProductionDays > 2) suggestions.push('Consider Rush production to save time');
+                  if (domesticShippingDays > 1) suggestions.push('Faster shipping available (Overnight)');
+                }
+
+                return (
+                  <div className="p-2 bg-red-900/20 border border-red-800/30 rounded-lg">
+                    <p className="text-[10px] text-red-300 font-medium mb-1">
+                      {pastDue.length} milestone{pastDue.length > 1 ? 's' : ''} already past due
+                    </p>
+                    {suggestions.length > 0 && (
+                      <div className="space-y-0.5 mt-1.5">
+                        <p className="text-[10px] text-gray-400">Suggestions:</p>
+                        {suggestions.map((s) => (
+                          <p key={s} className="text-[10px] text-amber-300 flex items-center gap-1">
+                            <Zap className="w-2.5 h-2.5 flex-shrink-0" />
+                            {s}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Summary */}
               <div className="pt-2 border-t border-gray-800 grid grid-cols-2 gap-2 text-[10px]">
                 <div>
@@ -548,8 +725,14 @@ export function ProductionTimeline({ initialDate }: ProductionTimelineProps) {
                 <div>
                   <p className="text-gray-500">Production</p>
                   <p className="text-white font-medium flex items-center gap-1">
-                    {quickTurn && <Zap className="w-2.5 h-2.5 text-amber-400" />}
-                    {quickTurn ? '21 days' : '35 days'}
+                    {productionType === 'overseas' ? (
+                      <>
+                        {quickTurn && <Zap className="w-2.5 h-2.5 text-amber-400" />}
+                        {quickTurn ? '21 days' : '35 days'}
+                      </>
+                    ) : (
+                      <>{domesticProductionDays} biz days</>
+                    )}
                   </p>
                 </div>
               </div>
