@@ -355,23 +355,6 @@ export function DesignDetail() {
               </div>
             </div>
 
-            {/* Quote Summary */}
-            <div className="card">
-              <QuoteSummary
-                quote={designQuote || design.quote_summary || null}
-                onEdit={() => setQuoteModalOpen(true)}
-                onDelete={handleDeleteQuote}
-                onExport={handleExportQuote}
-                isDeleting={deleteQuote.isPending}
-                isExporting={isExporting}
-              />
-            </div>
-
-            {/* Production Planner */}
-            <div className="card">
-              <ProductionTimeline />
-            </div>
-
             {/* Version History */}
             <div className="card">
               <VersionHistory
@@ -405,6 +388,23 @@ export function DesignDetail() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Quote Summary */}
+            <div className="card">
+              <QuoteSummary
+                quote={designQuote || design.quote_summary || null}
+                onEdit={() => setQuoteModalOpen(true)}
+                onDelete={handleDeleteQuote}
+                onExport={handleExportQuote}
+                isDeleting={deleteQuote.isPending}
+                isExporting={isExporting}
+              />
+            </div>
+
+            {/* Production Planner */}
+            <div className="card">
+              <ProductionTimeline />
             </div>
           </div>
         </div>

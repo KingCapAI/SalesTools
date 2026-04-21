@@ -1,10 +1,68 @@
 import { useState } from 'react';
-import { CalendarDays, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  CalendarDays, ChevronDown, ChevronUp, Zap, Info, List, Calendar,
+  Palette, FileText, Camera, PlaneTakeoff, Warehouse, Package,
+  Globe, Home, Truck,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+type ProductionType = 'overseas' | 'domestic';
+
+const DOMESTIC_PRODUCTION_SPEEDS: { label: string; days: number; fee: string }[] = [
+  { label: 'Standard (5-7 days)', days: 7, fee: 'No charge' },
+  { label: 'Rush (4 days)', days: 4, fee: '+$2.00/pc' },
+  { label: 'Rush (3 days)', days: 3, fee: '+$2.50/pc' },
+  { label: 'Rush (2 days)', days: 2, fee: '+$3.00/pc' },
+];
+
+const DOMESTIC_SHIPPING_METHODS: { label: string; days: number }[] = [
+  { label: 'Ground (5d)', days: 5 },
+  { label: 'Express (3d)', days: 3 },
+  { label: 'Priority (2d)', days: 2 },
+  { label: 'Overnight (1d)', days: 1 },
+];
 
 interface Milestone {
   label: string;
   date: Date;
   color: string;
+  icon: LucideIcon;
+  labelColor: string;
+  dateColor: string;
+  dotColor: string;
+}
+
+const QUICK_TURN_METHODS = [
+  'Flat Embroidery',
+  '3D Embroidery',
+  'Sublimated Patch',
+  'Sublimated Label',
+];
+
+const STANDARD_ONLY_METHODS = [
+  'Woven Patch',
+  'Embroidered Patch',
+  'Leather Patch',
+  'Suede Patch',
+  'Mesh Patch',
+  'Distressed Patch',
+  'PVC Patch',
+  'High Density Print',
+  'Heat Transfer',
+  'TPU Heat Transfer',
+  'Metallic Heat Transfer',
+  'Flocking Heat Transfer',
+  'AI Embroidery',
+  '3D + Flat Embroidery',
+  'Faux Leather Laser Patch',
+];
+
+function toWeekday(date: Date): Date {
+  const result = new Date(date);
+  const dow = result.getDay();
+  if (dow === 0) result.setDate(result.getDate() + 1);
+  if (dow === 6) result.setDate(result.getDate() + 2);
+  return result;
 }
 
 function addDays(date: Date, days: number): Date {
@@ -21,6 +79,7 @@ function formatDate(date: Date): string {
   });
 }
 
+
 function daysFromNow(date: Date): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -29,56 +88,213 @@ function daysFromNow(date: Date): number {
   return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function calculateMilestones(inHandsDate: Date, shipDirect: boolean): Milestone[] {
-  const exitFactory = addDays(inHandsDate, shipDirect ? -7 : -14);
-  const samplesDue = addDays(exitFactory, -35);
-  const productionFiles = addDays(samplesDue, -18);
-  const artworkLocked = addDays(productionFiles, -7);
+function calculateMilestones(inHandsDate: Date, shipDirect: boolean, quickTurn: boolean): Milestone[] {
+  const exitFactory = toWeekday(addDays(inHandsDate, shipDirect ? -7 : -14));
+  const productionDays = quickTurn ? 21 : 35;
+  const samplesDue = toWeekday(addDays(exitFactory, -productionDays));
+  const productionFiles = toWeekday(addDays(samplesDue, -18));
+  const artworkLocked = toWeekday(addDays(productionFiles, -7));
 
   const milestones: Milestone[] = [
-    { label: 'Artwork Due', date: artworkLocked, color: 'bg-blue-500' },
-    { label: 'Production Files Due', date: productionFiles, color: 'bg-purple-500' },
-    { label: 'Sample Picture Expected', date: samplesDue, color: 'bg-amber-500' },
-    { label: 'Order Shipped', date: exitFactory, color: 'bg-emerald-500' },
+    { label: 'Artwork Due', date: artworkLocked, color: 'bg-blue-500', icon: Palette, labelColor: 'text-blue-300', dateColor: 'text-blue-400', dotColor: 'bg-blue-500' },
+    { label: 'Production Files Due', date: productionFiles, color: 'bg-purple-500', icon: FileText, labelColor: 'text-purple-300', dateColor: 'text-purple-400', dotColor: 'bg-purple-500' },
+    { label: 'Sample Picture Expected', date: samplesDue, color: 'bg-amber-500', icon: Camera, labelColor: 'text-amber-300', dateColor: 'text-amber-400', dotColor: 'bg-amber-500' },
+    { label: 'Order Shipped', date: exitFactory, color: 'bg-emerald-500', icon: PlaneTakeoff, labelColor: 'text-emerald-300', dateColor: 'text-emerald-400', dotColor: 'bg-emerald-500' },
   ];
 
   if (!shipDirect) {
-    milestones.push({ label: 'Delivered to King Cap', date: addDays(exitFactory, 7), color: 'bg-sky-500' });
+    milestones.push({ label: 'Delivered to King Cap', date: toWeekday(addDays(exitFactory, 7)), color: 'bg-sky-500', icon: Warehouse, labelColor: 'text-sky-300', dateColor: 'text-sky-400', dotColor: 'bg-sky-500' });
   }
 
-  milestones.push({ label: 'Order Delivered', date: inHandsDate, color: 'bg-rose-500' });
+  milestones.push({ label: 'Order Delivered', date: inHandsDate, color: 'bg-rose-500', icon: Package, labelColor: 'text-rose-300', dateColor: 'text-rose-400', dotColor: 'bg-rose-500' });
 
   return milestones;
 }
 
+function subtractBusinessDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  let remaining = days;
+  while (remaining > 0) {
+    result.setDate(result.getDate() - 1);
+    if (result.getDay() !== 0 && result.getDay() !== 6) remaining--;
+  }
+  return result;
+}
+
+function calculateDomesticMilestones(inHandsDate: Date, shippingDays: number, productionDays: number): Milestone[] {
+  // Work backwards: delivery → production complete → sample picture → artwork
+  const productionComplete = subtractBusinessDays(inHandsDate, shippingDays);
+  const samplePicture = subtractBusinessDays(productionComplete, productionDays);
+  const artworkSubmitted = subtractBusinessDays(samplePicture, 3);
+
+  return [
+    { label: 'Artwork Submitted', date: artworkSubmitted, color: 'bg-blue-500', icon: Palette, labelColor: 'text-blue-300', dateColor: 'text-blue-400', dotColor: 'bg-blue-500' },
+    { label: 'Sample Picture', date: samplePicture, color: 'bg-amber-500', icon: Camera, labelColor: 'text-amber-300', dateColor: 'text-amber-400', dotColor: 'bg-amber-500' },
+    { label: 'Production Complete', date: productionComplete, color: 'bg-emerald-500', icon: Package, labelColor: 'text-emerald-300', dateColor: 'text-emerald-400', dotColor: 'bg-emerald-500' },
+    { label: 'Order Delivered', date: inHandsDate, color: 'bg-rose-500', icon: Truck, labelColor: 'text-rose-300', dateColor: 'text-rose-400', dotColor: 'bg-rose-500' },
+  ];
+}
+
+// --- Mini Calendar for sidebar ---
+
+const RING_COLORS: Record<string, string> = {
+  'bg-blue-500': 'ring-blue-500 bg-blue-500/20 text-blue-300',
+  'bg-purple-500': 'ring-purple-500 bg-purple-500/20 text-purple-300',
+  'bg-amber-500': 'ring-amber-500 bg-amber-500/20 text-amber-300',
+  'bg-emerald-500': 'ring-emerald-500 bg-emerald-500/20 text-emerald-300',
+  'bg-sky-500': 'ring-sky-500 bg-sky-500/20 text-sky-300',
+  'bg-rose-500': 'ring-rose-500 bg-rose-500/20 text-rose-300',
+};
+
+function MiniCalendarMonth({ year, month, milestones }: { year: number; month: number; milestones: Milestone[] }) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDow = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const monthName = firstDay.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+  const milestoneDays: Record<number, Milestone> = {};
+  for (const m of milestones) {
+    if (m.date.getFullYear() === year && m.date.getMonth() === month) {
+      milestoneDays[m.date.getDate()] = m;
+    }
+  }
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  return (
+    <div>
+      <h4 className="text-xs text-gray-400 font-semibold mb-1.5 text-center">{monthName}</h4>
+      <div className="grid grid-cols-7 gap-0.5 text-center" style={{ fontSize: '10px' }}>
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+          <div key={`${d}-${i}`} className="text-gray-600 font-medium py-0.5">{d}</div>
+        ))}
+        {cells.map((day, i) => {
+          if (day === null) return <div key={`e-${i}`} />;
+          const milestone = milestoneDays[day];
+          const cellDate = new Date(year, month, day);
+          cellDate.setHours(0, 0, 0, 0);
+          const isToday = cellDate.getTime() === today.getTime();
+          const ringStyle = milestone ? RING_COLORS[milestone.dotColor] || '' : '';
+
+          return (
+            <div
+              key={day}
+              className={`flex items-center justify-center w-5 h-5 mx-auto rounded-full ${
+                milestone
+                  ? `ring-1.5 ${ringStyle} font-bold`
+                  : isToday
+                  ? 'text-teal-400 font-medium ring-1 ring-teal-500/50'
+                  : 'text-gray-500'
+              }`}
+              title={milestone ? `${milestone.label}: ${formatDate(milestone.date)}` : undefined}
+            >
+              {day}
+            </div>
+          );
+        })}
+      </div>
+      {Object.keys(milestoneDays).length > 0 && (
+        <div className="mt-2 pt-1.5 border-t border-gray-800 space-y-1">
+          {Object.entries(milestoneDays).map(([day, m]) => {
+            const Icon = m.icon;
+            return (
+              <div key={day} className="flex items-center gap-1.5" style={{ fontSize: '10px' }}>
+                <div className={`w-2 h-2 rounded-full ${m.dotColor} flex-shrink-0`} />
+                <Icon className={`w-2.5 h-2.5 ${m.labelColor} flex-shrink-0`} />
+                <span className="text-gray-300">{m.label}</span>
+                <span className="text-gray-500 ml-auto">{Number(day)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getCalendarMonths(milestones: Milestone[]): { year: number; month: number }[] {
+  const months: { year: number; month: number }[] = [];
+  const start = new Date(milestones[0].date);
+  const end = new Date(milestones[milestones.length - 1].date);
+  start.setDate(1);
+  while (start <= end) {
+    months.push({ year: start.getFullYear(), month: start.getMonth() });
+    start.setMonth(start.getMonth() + 1);
+  }
+  return months;
+}
+
+// --- Main Component ---
+
 interface ProductionTimelineProps {
-  /** If provided, shows the timeline immediately */
   initialDate?: string;
 }
 
 export function ProductionTimeline({ initialDate }: ProductionTimelineProps) {
   const [inHandsDate, setInHandsDate] = useState(initialDate || '');
+  const [productionType, setProductionType] = useState<ProductionType>('overseas');
   const [shipDirect, setShipDirect] = useState(false);
+  const [quickTurn, setQuickTurn] = useState(false);
+  const [domesticProductionDays, setDomesticProductionDays] = useState(7);
+  const [domesticShippingDays, setDomesticShippingDays] = useState(5);
   const [expanded, setExpanded] = useState(!!initialDate);
+  const [view, setView] = useState<'list' | 'calendar'>('list');
   const [milestones, setMilestones] = useState<Milestone[] | null>(() => {
     if (initialDate) {
-      return calculateMilestones(new Date(initialDate + 'T00:00:00'), false);
+      return calculateMilestones(new Date(initialDate + 'T00:00:00'), false, false);
     }
     return null;
   });
 
-  const handleCalculate = () => {
-    if (!inHandsDate) return;
-    const date = new Date(inHandsDate + 'T00:00:00');
-    setMilestones(calculateMilestones(date, shipDirect));
+  const recalculate = (date?: string, pt?: ProductionType, sd?: boolean, qt?: boolean, dpd?: number, dsd?: number) => {
+    const d = date ?? inHandsDate;
+    if (!d) return;
+    const type = pt ?? productionType;
+    if (type === 'domestic') {
+      setMilestones(calculateDomesticMilestones(new Date(d + 'T00:00:00'), dsd ?? domesticShippingDays, dpd ?? domesticProductionDays));
+    } else {
+      setMilestones(calculateMilestones(new Date(d + 'T00:00:00'), sd ?? shipDirect, qt ?? quickTurn));
+    }
     setExpanded(true);
+  };
+
+  const handleCalculate = () => recalculate();
+
+  const handleProductionTypeChange = (type: ProductionType) => {
+    setProductionType(type);
+    recalculate(undefined, type);
   };
 
   const handleShipDirectChange = (checked: boolean) => {
     setShipDirect(checked);
-    if (inHandsDate) {
-      setMilestones(calculateMilestones(new Date(inHandsDate + 'T00:00:00'), checked));
-    }
+    recalculate(undefined, undefined, checked);
+  };
+
+  const handleQuickTurnChange = (checked: boolean) => {
+    setQuickTurn(checked);
+    recalculate(undefined, undefined, undefined, checked);
+  };
+
+  const handleDomesticProductionChange = (days: number) => {
+    setDomesticProductionDays(days);
+    recalculate(undefined, undefined, undefined, undefined, days);
+  };
+
+  const handleDomesticShippingChange = (days: number) => {
+    setDomesticShippingDays(days);
+    recalculate(undefined, undefined, undefined, undefined, undefined, days);
+  };
+
+  const formatGap = (d: number) => {
+    if (d % 7 === 0 && d >= 14) return `${d / 7}w`;
+    if (d === 7) return '1w';
+    return `${d}d`;
   };
 
   return (
@@ -100,61 +316,244 @@ export function ProductionTimeline({ initialDate }: ProductionTimelineProps) {
 
       {expanded && (
         <div className="mt-4 space-y-3">
-          {/* Date input */}
-          <div className="flex gap-2">
-            <input
-              type="date"
-              value={inHandsDate}
-              onChange={(e) => setInHandsDate(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCalculate()}
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-              placeholder="In-hands date"
-            />
+          {/* Production Type Toggle */}
+          <div className="flex items-center bg-gray-800 rounded-lg p-0.5">
             <button
-              onClick={handleCalculate}
-              disabled={!inHandsDate}
-              className="px-3 py-2 bg-teal-600 hover:bg-teal-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm rounded-lg transition-colors"
+              onClick={() => handleProductionTypeChange('overseas')}
+              className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
+                productionType === 'overseas' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+              }`}
             >
-              Go
+              <Globe className="w-3 h-3" />
+              Overseas
+            </button>
+            <button
+              onClick={() => handleProductionTypeChange('domestic')}
+              className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
+                productionType === 'domestic' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              <Home className="w-3 h-3" />
+              Domestic
             </button>
           </div>
 
-          {/* Ship direct toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <div className="relative">
+          {/* Date input */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">In-Hands Date</label>
+            <div className="flex gap-2">
               <input
-                type="checkbox"
-                checked={shipDirect}
-                onChange={(e) => handleShipDirectChange(e.target.checked)}
-                className="sr-only peer"
+                type="date"
+                value={inHandsDate}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setInHandsDate(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCalculate()}
+                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none [color-scheme:dark]"
               />
-              <div className="w-8 h-4 bg-gray-700 rounded-full peer-checked:bg-teal-500 transition-colors" />
-              <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4" />
+              <button
+                onClick={handleCalculate}
+                disabled={!inHandsDate}
+                className="px-3 py-2 bg-teal-600 hover:bg-teal-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm rounded-lg transition-colors"
+              >
+                Go
+              </button>
             </div>
-            <span className="text-xs text-gray-400">Ship Direct</span>
-          </label>
+          </div>
 
-          {/* Milestones */}
-          {milestones && (
-            <div className="space-y-2 pt-1">
-              {milestones.map((m) => {
-                const days = daysFromNow(m.date);
-                const isPast = days < 0;
+          {/* Overseas Options */}
+          {productionType === 'overseas' && (
+            <div className="space-y-2">
+              {/* Quick Turn */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={quickTurn}
+                    onChange={(e) => handleQuickTurnChange(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-8 h-4 bg-gray-700 rounded-full peer-checked:bg-amber-500 transition-colors" />
+                  <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4" />
+                </div>
+                <span className="text-xs text-gray-300 flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-400" />
+                  Quick Turn (21 days)
+                </span>
+              </label>
 
-                return (
-                  <div key={m.label} className="flex items-center gap-2.5">
-                    <div className={`w-2 h-2 rounded-full ${m.color} flex-shrink-0`} />
-                    <span className="text-xs text-gray-300 font-medium w-28 flex-shrink-0">{m.label}</span>
-                    <span className={`text-xs ${isPast ? 'text-red-400' : 'text-gray-400'}`}>
-                      {formatDate(m.date)}
-                    </span>
-                    <span className={`text-xs ml-auto ${isPast ? 'text-red-400' : days <= 7 ? 'text-orange-400' : 'text-gray-500'}`}>
-                      {isPast ? `${Math.abs(days)}d ago` : days === 0 ? 'Today' : `${days}d`}
-                    </span>
+              {/* Quick Turn info */}
+              {quickTurn && (
+                <div className="p-2 bg-amber-900/15 border border-amber-800/30 rounded-lg">
+                  <div className="flex items-start gap-1.5">
+                    <Info className="w-3 h-3 text-amber-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-amber-300 font-medium mb-1">Eligible methods:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {QUICK_TURN_METHODS.map((m) => (
+                          <span key={m} className="px-1.5 py-0.5 bg-amber-800/30 text-amber-300 rounded text-[10px]">{m}</span>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-1.5">Standard (35-day) required for:</p>
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {STANDARD_ONLY_METHODS.slice(0, 6).map((m) => (
+                          <span key={m} className="px-1.5 py-0.5 bg-gray-800 text-gray-400 rounded text-[10px]">{m}</span>
+                        ))}
+                        {STANDARD_ONLY_METHODS.length > 6 && (
+                          <span className="px-1.5 py-0.5 bg-gray-800 text-gray-500 rounded text-[10px]">+{STANDARD_ONLY_METHODS.length - 6} more</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              {/* Ship Direct */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={shipDirect}
+                    onChange={(e) => handleShipDirectChange(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-8 h-4 bg-gray-700 rounded-full peer-checked:bg-teal-500 transition-colors" />
+                  <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4" />
+                </div>
+                <span className="text-xs text-gray-400">Ship Direct (7 days)</span>
+              </label>
             </div>
+          )}
+
+          {/* Domestic Options */}
+          {productionType === 'domestic' && (
+            <div className="space-y-2">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Production Speed</label>
+                <select
+                  value={domesticProductionDays}
+                  onChange={(e) => handleDomesticProductionChange(Number(e.target.value))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none [color-scheme:dark]"
+                >
+                  {DOMESTIC_PRODUCTION_SPEEDS.map((s) => (
+                    <option key={s.days} value={s.days}>{s.label} — {s.fee}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Shipping Method</label>
+                <select
+                  value={domesticShippingDays}
+                  onChange={(e) => handleDomesticShippingChange(Number(e.target.value))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none [color-scheme:dark]"
+                >
+                  {DOMESTIC_SHIPPING_METHODS.map((m) => (
+                    <option key={m.days} value={m.days}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              {domesticProductionDays < 7 && (
+                <p className="text-[10px] text-amber-300 flex items-center gap-1">
+                  <Info className="w-3 h-3 flex-shrink-0" />
+                  Rush: {DOMESTIC_PRODUCTION_SPEEDS.find((s) => s.days === domesticProductionDays)?.fee}/piece
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Results */}
+          {milestones && (
+            <>
+              {/* View toggle */}
+              <div className="flex items-center bg-gray-800 rounded-lg p-0.5">
+                <button
+                  onClick={() => setView('list')}
+                  className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
+                    view === 'list' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <List className="w-3 h-3" />
+                  List
+                </button>
+                <button
+                  onClick={() => setView('calendar')}
+                  className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
+                    view === 'calendar' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <Calendar className="w-3 h-3" />
+                  Calendar
+                </button>
+              </div>
+
+              {/* List view */}
+              {view === 'list' && (
+                <div className="space-y-0 pt-1">
+                  {milestones.map((m, index) => {
+                    const days = daysFromNow(m.date);
+                    const isPast = days < 0;
+                    const isToday = days === 0;
+                    const Icon = m.icon;
+
+                    // Gap to next milestone
+                    let gapDays: number | null = null;
+                    if (index < milestones.length - 1) {
+                      gapDays = Math.round((milestones[index + 1].date.getTime() - m.date.getTime()) / (1000 * 60 * 60 * 24));
+                    }
+
+                    return (
+                      <div key={m.label}>
+                        <div className="flex items-center gap-2 py-1.5">
+                          <Icon className={`w-3.5 h-3.5 ${m.labelColor} flex-shrink-0`} />
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-xs font-medium ${m.labelColor}`}>{m.label}</span>
+                          </div>
+                          <span className={`text-xs ${m.dateColor} flex-shrink-0`}>{formatDate(m.date)}</span>
+                          <span className={`text-[10px] w-8 text-right flex-shrink-0 ${isPast ? 'text-red-400' : isToday ? 'text-teal-400' : days <= 7 ? 'text-orange-400' : 'text-gray-500'}`}>
+                            {isPast ? `${Math.abs(days)}d ago` : isToday ? 'Today' : `${days}d`}
+                          </span>
+                        </div>
+                        {gapDays !== null && (
+                          <div className="flex justify-center py-0.5">
+                            <span className="text-[10px] text-gray-600 px-1.5 py-0.5 bg-gray-800/50 rounded-full">{formatGap(gapDays)}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Calendar view */}
+              {view === 'calendar' && (
+                <div className="space-y-4 pt-1">
+                  {getCalendarMonths(milestones).map(({ year, month }) => (
+                    <MiniCalendarMonth
+                      key={`${year}-${month}`}
+                      year={year}
+                      month={month}
+                      milestones={milestones}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Summary */}
+              <div className="pt-2 border-t border-gray-800 grid grid-cols-2 gap-2 text-[10px]">
+                <div>
+                  <p className="text-gray-500">Lead time</p>
+                  <p className="text-white font-medium">
+                    {Math.abs(daysFromNow(milestones[0].date) - daysFromNow(milestones[milestones.length - 1].date))} days
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Production</p>
+                  <p className="text-white font-medium flex items-center gap-1">
+                    {quickTurn && <Zap className="w-2.5 h-2.5 text-amber-400" />}
+                    {quickTurn ? '21 days' : '35 days'}
+                  </p>
+                </div>
+              </div>
+            </>
           )}
         </div>
       )}
