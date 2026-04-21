@@ -26,7 +26,8 @@ async def get_microsoft_oauth_url(state: Optional[str] = None) -> str:
     if state:
         params["state"] = state
 
-    query = "&".join(f"{k}={v}" for k, v in params.items())
+    from urllib.parse import urlencode
+    query = urlencode(params)
     return f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize?{query}"
 
 
