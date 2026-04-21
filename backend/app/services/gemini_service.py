@@ -112,6 +112,88 @@ def init_gemini():
         genai.configure(api_key=settings.google_gemini_api_key)
 
 
+async def extract_decorations_from_image(image_data: str) -> Optional[Dict[str, str]]:
+    """
+    Use Gemini Vision to read decoration method callouts from a generated hat design image.
+
+    Args:
+        image_data: Base64-encoded image data
+
+    Returns:
+        Dict mapping location to decoration method, e.g.
+        {"front": "3D Embroidery", "left": "Woven Patch", "back": "Flat Embroidery"}
+        Returns None if extraction fails.
+    """
+    try:
+        init_gemini()
+
+        model = genai.GenerativeModel("gemini-2.0-flash")
+
+        prompt = """Analyze this hat design image. It shows multiple views of a hat with decoration method callout labels (white pills with black text connected by lines/arrows to the decorations).
+
+For each labeled decoration, identify:
+1. The hat LOCATION (front, left, right, back, underbill/visor)
+2. The DECORATION METHOD text shown in the label
+
+Return ONLY a JSON object mapping location to decoration method. Example:
+{"front": "3D Embroidery", "left": "Woven Patch", "back": "Flat Embroidery"}
+
+Rules:
+- Only include locations that have a visible callout label
+- Use the EXACT text from the callout label
+- If the same decoration method appears labeled multiple times, count it only ONCE for its location
+- Do NOT include the model/person view — only read labels from hat-only views
+- If no callout labels are visible, return {}
+
+Return ONLY the JSON object, no other text."""
+
+        image_part = {
+            "inline_data": {
+                "mime_type": "image/png",
+                "data": image_data,
+            }
+        }
+
+        response = model.generate_content([prompt, image_part])
+        response_text = response.text.strip()
+
+        # Clean markdown code blocks if present
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+
+        result = json.loads(response_text.strip())
+
+        # Normalize location keys to lowercase
+        normalized = {}
+        for loc, method in result.items():
+            key = loc.lower().strip()
+            # Normalize common variations
+            if key in ("underbill", "visor", "underbrim", "under brim", "under bill"):
+                key = "underbill"
+            if key in ("left side", "left panel"):
+                key = "left"
+            if key in ("right side", "right panel"):
+                key = "right"
+            if key in ("front center", "front panel"):
+                key = "front"
+            if key in ("back panel", "rear"):
+                key = "back"
+            # Deduplicate — keep first occurrence
+            if key not in normalized:
+                normalized[key] = method
+
+        print(f"[DecorationExtract] Detected: {normalized}")
+        return normalized
+
+    except Exception as e:
+        print(f"[DecorationExtract] Failed to extract decorations: {e}")
+        return None
+
+
 async def scrape_brand_info(
     brand_name: Optional[str] = None,
     brand_url: Optional[str] = None,

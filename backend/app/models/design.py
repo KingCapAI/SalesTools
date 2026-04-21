@@ -60,6 +60,7 @@ class DesignVersion(Base):
     generation_status = Column(String(50), nullable=False, default="pending")
     error_message = Column(Text, nullable=True)
     tokens_used = Column(Integer, nullable=True)
+    detected_decorations = Column(Text, nullable=True)  # JSON: {"front": "3D Embroidery", "left": "Woven Patch", ...}
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

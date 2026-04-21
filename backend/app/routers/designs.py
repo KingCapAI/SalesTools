@@ -7,7 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from ..database import get_db
+import json as json_module
+from ..database import get_db, engine
 from ..models import Design, DesignVersion, DesignChat
 from ..models.design import DesignLogo
 from ..schemas.design import (
@@ -29,11 +30,45 @@ from ..services.design_service import (
     search_designs,
     VERSIONS_PER_BATCH,
 )
-from ..services.gemini_service import generate_design
-from ..services.storage_service import save_generated_image
+from ..services.gemini_service import generate_design, extract_decorations_from_image
+from ..services.storage_service import save_generated_image, read_file_bytes
 from ..utils.dependencies import require_auth, get_current_user
 
 router = APIRouter(prefix="/designs", tags=["Designs"])
+
+
+async def _extract_decorations_background(version_ids: list[str]):
+    """Background task: extract decoration methods from generated images and save to DB."""
+    from sqlalchemy.orm import Session as DBSession
+    from sqlalchemy.orm import sessionmaker
+
+    SessionLocal = sessionmaker(bind=engine)
+
+    for vid in version_ids:
+        try:
+            db = SessionLocal()
+            version = db.query(DesignVersion).filter(DesignVersion.id == vid).first()
+            if not version or not version.image_path or version.generation_status != "completed":
+                db.close()
+                continue
+
+            # Read the image from storage
+            image_bytes = await read_file_bytes(version.image_path)
+            if not image_bytes:
+                db.close()
+                continue
+
+            import base64
+            image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+
+            decorations = await extract_decorations_from_image(image_b64)
+            if decorations:
+                version.detected_decorations = json_module.dumps(decorations)
+                db.commit()
+                print(f"[DecorationExtract] Saved decorations for version {vid}: {decorations}")
+            db.close()
+        except Exception as e:
+            print(f"[DecorationExtract] Error for version {vid}: {e}")
 
 
 @router.get("", response_model=List[DesignListResponse])
@@ -78,6 +113,12 @@ async def create_new_design(
             design_data=design_data,
             user_id=user.id,
         )
+
+        # Fire background decoration extraction
+        completed_ids = [v.id for v in design.versions if v.generation_status == "completed"]
+        if completed_ids:
+            asyncio.create_task(_extract_decorations_background(completed_ids))
+
         return get_design_with_versions(db, design.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -237,6 +278,11 @@ async def regenerate_design_endpoint(
         db.commit()
         for v in versions:
             db.refresh(v)
+
+        # Fire background decoration extraction for completed versions
+        completed_ids = [v.id for v in versions if v.generation_status == "completed"]
+        if completed_ids:
+            asyncio.create_task(_extract_decorations_background(completed_ids))
 
         return versions
 

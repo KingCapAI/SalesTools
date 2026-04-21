@@ -65,6 +65,7 @@ class DesignVersionResponse(BaseModel):
     image_url: Optional[str] = None
     generation_status: str
     error_message: Optional[str] = None
+    detected_decorations: Optional[str] = None  # JSON string: {"front": "3D Embroidery", ...}
     created_at: datetime
 
     class Config:

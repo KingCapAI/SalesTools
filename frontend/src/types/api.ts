@@ -143,6 +143,7 @@ export interface DesignVersion {
   image_url?: string;
   generation_status: string;
   error_message?: string;
+  detected_decorations?: string | null; // JSON string: {"front": "3D Embroidery", ...}
   created_at: string;
 }
 

@@ -121,6 +121,13 @@ def run_migrations(engine):
                 conn.commit()
                 print("Migration: Added is_selected column to design_versions table")
 
+            if 'detected_decorations' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE design_versions ADD COLUMN detected_decorations TEXT"
+                ))
+                conn.commit()
+                print("Migration: Added detected_decorations column to design_versions table")
+
     # Migration: Add Stripe columns to orders table
     if 'orders' in inspector.get_table_names():
         columns = [col['name'] for col in inspector.get_columns('orders')]

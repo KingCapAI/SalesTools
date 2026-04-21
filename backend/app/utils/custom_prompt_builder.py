@@ -178,13 +178,13 @@ ALLOWED DECORATION METHODS PER LOCATION:
 Do NOT use decoration methods not listed for a given location.
 
 DECORATION METHOD CALLOUTS:
-For each decoration visible in a view, add ONE small text label identifying the method. Rules:
-- ONE label per decoration — never duplicate a label for the same decoration in the same view.
+Label each unique decoration ONCE across the entire image. Rules:
+- Each decoration method should be labeled EXACTLY ONCE in the view where it is most clearly visible. Do NOT label the same decoration in multiple views.
 - Format: thin line or arrow from label to the decoration it identifies.
 - Label text = exact method name, e.g. "Flat Embroidery", "3D Embroidery", "PVC Patch", "Woven Patch", "Sublimated Patch", "Sublimated Print".
 - Style: clean sans-serif font, black text on a small white pill/tag background.
-- Only label decorations VISIBLE in that specific view. If a view shows no decoration, show NO labels.
-- If a view shows 2 decorations (e.g. front logo + side logo), show exactly 2 labels — one per decoration.
+- Do NOT add ANY labels to the MODEL VIEW (view #6). The model view should be clean with no callouts.
+- Only label decorations in hat-only views (views 1-5). Pick the view where each decoration is most prominent.
 
 IMAGE LAYOUT — EXACTLY 6 UNIQUE VIEWS in a 3×2 grid:
 Each view shows the SAME hat from a DIFFERENT angle. Same design, same colors, same logos, same decorations in every view.
@@ -241,13 +241,13 @@ ALLOWED DECORATION METHODS PER LOCATION:
 Do NOT use decoration methods not listed for a given location.
 
 DECORATION METHOD CALLOUTS:
-For each decoration visible in a view, add ONE small text label identifying the method. Rules:
-- ONE label per decoration — never duplicate a label for the same decoration in the same view.
+Label each unique decoration ONCE across the entire image. Rules:
+- Each decoration method should be labeled EXACTLY ONCE in the view where it is most clearly visible. Do NOT label the same decoration in multiple views.
 - Format: thin line or arrow from label to the decoration it identifies.
 - Label text = exact method name, e.g. "Flat Embroidery", "3D Embroidery", "PVC Patch", "Woven Patch", "Sublimated Patch", "Sublimated Print".
 - Style: clean sans-serif font, black text on a small white pill/tag background.
-- Only label decorations VISIBLE in that specific view. If a view shows no decoration, show NO labels.
-- If a view shows 2 decorations (e.g. front logo + side logo), show exactly 2 labels — one per decoration.
+- Do NOT add ANY labels to the MODEL VIEW (view #6). The model view should be clean with no callouts.
+- Only label decorations in hat-only views (views 1-5). Pick the view where each decoration is most prominent.
 
 IMAGE LAYOUT — EXACTLY 6 UNIQUE VIEWS in a 3×2 grid:
 Each view shows the SAME hat from a DIFFERENT angle. Same design, same colors, same logos, same decorations in every view.
