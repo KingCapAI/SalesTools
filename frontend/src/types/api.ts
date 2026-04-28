@@ -247,7 +247,7 @@ export type HatStructure = 'structured' | 'unstructured';
 export type ClosureType = 'snapback' | 'metal_slider_buckle' | 'velcro_strap';
 
 // Custom Design types
-export type DecorationLocation = 'front' | 'left' | 'right' | 'back' | 'visor';
+export type DecorationLocation = 'front' | 'front_lower_left' | 'front_lower_right' | 'left' | 'right' | 'back' | 'visor';
 
 export type DecorationMethod =
   | 'embroidery'

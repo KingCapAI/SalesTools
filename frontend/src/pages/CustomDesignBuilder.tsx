@@ -11,7 +11,7 @@ import { useCreateCustomDesign } from '../hooks/useCustomDesigns';
 import { ArrowLeft, Sparkles, Layers } from 'lucide-react';
 import type { HatStyle, Material, HatStructure, ClosureType, DecorationLocation, LocationLogoCreate } from '../types/api';
 
-const LOCATIONS: DecorationLocation[] = ['front', 'left', 'right', 'back', 'visor'];
+const LOCATIONS: DecorationLocation[] = ['front', 'front_lower_left', 'front_lower_right', 'left', 'right', 'back', 'visor'];
 
 export function CustomDesignBuilder() {
   const navigate = useNavigate();
@@ -32,6 +32,8 @@ export function CustomDesignBuilder() {
   // Location logos state - keyed by location
   const [locationLogos, setLocationLogos] = useState<Record<DecorationLocation, Partial<LocationLogoCreate> | null>>({
     front: null,
+    front_lower_left: null,
+    front_lower_right: null,
     left: null,
     right: null,
     back: null,

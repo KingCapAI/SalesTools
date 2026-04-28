@@ -24,6 +24,8 @@ const SIZES: { value: DecorationSize; label: string }[] = [
 
 const LOCATION_LABELS: Record<DecorationLocation, string> = {
   front: 'Front',
+  front_lower_left: 'Front Lower Left',
+  front_lower_right: 'Front Lower Right',
   left: 'Left Side',
   right: 'Right Side',
   back: 'Back',

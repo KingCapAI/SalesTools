@@ -8,6 +8,8 @@ from .design import HatStyle, Material, HatStructure, ClosureType, ApprovalStatu
 
 class DecorationLocation(str, Enum):
     FRONT = "front"
+    FRONT_LOWER_LEFT = "front_lower_left"
+    FRONT_LOWER_RIGHT = "front_lower_right"
     LEFT = "left"
     RIGHT = "right"
     BACK = "back"

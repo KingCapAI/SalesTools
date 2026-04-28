@@ -32,7 +32,8 @@ const approvalStatusConfig: Record<ApprovalStatus, { label: string; icon: typeof
 };
 
 const LOCATION_LABELS: Record<string, string> = {
-  front: 'Front', left: 'Left Side', right: 'Right Side', back: 'Back', visor: 'Visor',
+  front: 'Front', front_lower_left: 'Front Lower Left', front_lower_right: 'Front Lower Right',
+  left: 'Left Side', right: 'Right Side', back: 'Back', visor: 'Visor',
 };
 
 const DECORATION_METHOD_LABELS: Record<string, string> = {

@@ -25,6 +25,8 @@ SIZES = {
 # Location display names
 LOCATION_NAMES = {
     "front": "front center",
+    "front_lower_left": "front lower-left (below and to the left of the main front logo)",
+    "front_lower_right": "front lower-right (below and to the right of the main front logo)",
     "left": "left side",
     "right": "right side",
     "back": "back",

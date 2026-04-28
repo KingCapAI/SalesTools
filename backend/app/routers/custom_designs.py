@@ -837,12 +837,12 @@ async def add_custom_design_chat(
 @router.post("/upload/location-logo", response_model=LocationLogoUploadResponse)
 async def upload_location_logo(
     file: UploadFile = File(...),
-    location: str = Query(..., description="Location: front, left, right, back, visor"),
+    location: str = Query(..., description="Location: front, front_lower_left, front_lower_right, left, right, back, visor"),
     db: Session = Depends(get_db),
     user=Depends(require_auth),
 ):
     """Upload a logo for a specific location."""
-    if location not in ["front", "left", "right", "back", "visor"]:
+    if location not in ["front", "front_lower_left", "front_lower_right", "left", "right", "back", "visor"]:
         raise HTTPException(status_code=400, detail="Invalid location")
 
     # Validate file type (SVG not supported - Gemini API only accepts PNG/JPG/WEBP)
