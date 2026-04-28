@@ -112,6 +112,68 @@ def init_gemini():
         genai.configure(api_key=settings.google_gemini_api_key)
 
 
+async def _call_gemini_text(prompt: str, image_parts: Optional[List[Dict]] = None) -> str:
+    """
+    Call Gemini text model via Vertex AI (preferred) or direct API (fallback).
+    Returns the response text.
+    """
+    if _use_vertex_ai():
+        token = _get_vertex_access_token()
+        if token:
+            project = settings.google_cloud_project
+            url = (
+                f"https://aiplatform.googleapis.com/v1/projects/{project}"
+                f"/locations/global/publishers/google/models/gemini-2.0-flash:generateContent"
+            )
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            }
+
+            parts = []
+            if image_parts:
+                parts.extend(image_parts)
+            parts.append({"text": prompt})
+
+            payload = {
+                "contents": [{"parts": parts}],
+                "generationConfig": {"responseModalities": ["TEXT"]}
+            }
+
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                if response.status_code != 200:
+                    raise Exception(f"Vertex AI error {response.status_code}: {response.text[:500]}")
+                result = response.json()
+                if "candidates" in result and len(result["candidates"]) > 0:
+                    candidate = result["candidates"][0]
+                    if "content" in candidate and "parts" in candidate["content"]:
+                        for part in candidate["content"]["parts"]:
+                            if "text" in part:
+                                return part["text"]
+                raise Exception(f"No text in Vertex AI response: {result}")
+
+    # Fallback to direct SDK
+    init_gemini()
+    model = genai.GenerativeModel("gemini-2.0-flash")
+    if image_parts:
+        # Convert Vertex format to SDK format
+        sdk_parts = []
+        for p in image_parts:
+            if "inlineData" in p:
+                sdk_parts.append({
+                    "inline_data": {
+                        "mime_type": p["inlineData"]["mimeType"],
+                        "data": p["inlineData"]["data"],
+                    }
+                })
+        sdk_parts.append(prompt)
+        response = model.generate_content(sdk_parts)
+    else:
+        response = model.generate_content(prompt)
+    return response.text
+
+
 async def extract_decorations_from_image(image_data: str) -> Optional[Dict[str, str]]:
     """
     Use Gemini Vision to read decoration method callouts from a generated hat design image.
@@ -125,10 +187,6 @@ async def extract_decorations_from_image(image_data: str) -> Optional[Dict[str, 
         Returns None if extraction fails.
     """
     try:
-        init_gemini()
-
-        model = genai.GenerativeModel("gemini-2.0-flash")
-
         prompt = """Analyze this hat design image. It shows multiple views of a hat with decoration method callout labels (white pills with black text connected by lines/arrows to the decorations).
 
 For each labeled decoration, identify:
@@ -148,14 +206,14 @@ Rules:
 Return ONLY the JSON object, no other text."""
 
         image_part = {
-            "inline_data": {
-                "mime_type": "image/png",
+            "inlineData": {
+                "mimeType": "image/png",
                 "data": image_data,
             }
         }
 
-        response = model.generate_content([prompt, image_part])
-        response_text = response.text.strip()
+        raw_text = await _call_gemini_text(prompt, image_parts=[image_part])
+        response_text = raw_text.strip()
 
         # Clean markdown code blocks if present
         if response_text.startswith("```json"):
@@ -241,11 +299,10 @@ Respond in JSON format with the following structure:
 }}"""
 
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(prompt)
+        raw_text = await _call_gemini_text(prompt)
 
         # Try to parse as JSON
-        response_text = response.text.strip()
+        response_text = raw_text.strip()
 
         # Remove markdown code blocks if present
         if response_text.startswith("```json"):
@@ -262,9 +319,9 @@ Respond in JSON format with the following structure:
         except json.JSONDecodeError:
             # Return raw text if JSON parsing fails
             return {
-                "raw_response": response.text,
+                "raw_response": raw_text,
                 "brand_style": "Unable to parse structured response",
-                "recommendations": response.text,
+                "recommendations": raw_text,
             }
 
     except Exception as e:
