@@ -117,43 +117,55 @@ async def _call_gemini_text(prompt: str, image_parts: Optional[List[Dict]] = Non
     Call Gemini text model via Vertex AI (preferred) or direct API (fallback).
     Returns the response text.
     """
-    if _use_vertex_ai():
-        token = _get_vertex_access_token()
-        if token:
-            project = settings.google_cloud_project
-            url = (
-                f"https://aiplatform.googleapis.com/v1/projects/{project}"
-                f"/locations/global/publishers/google/models/gemini-2.0-flash:generateContent"
-            )
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {token}",
-            }
+    use_vertex = _use_vertex_ai()
+    print(f"[GeminiText] use_vertex_ai={use_vertex}, project={settings.google_cloud_project!r}, has_creds={bool(settings.google_application_credentials_json)}")
 
-            parts = []
-            if image_parts:
-                parts.extend(image_parts)
-            parts.append({"text": prompt})
+    if use_vertex:
+        try:
+            token = _get_vertex_access_token()
+            if token:
+                project = settings.google_cloud_project
+                url = (
+                    f"https://aiplatform.googleapis.com/v1/projects/{project}"
+                    f"/locations/global/publishers/google/models/gemini-2.0-flash:generateContent"
+                )
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {token}",
+                }
 
-            payload = {
-                "contents": [{"parts": parts}],
-                "generationConfig": {"responseModalities": ["TEXT"]}
-            }
+                parts = []
+                if image_parts:
+                    parts.extend(image_parts)
+                parts.append({"text": prompt})
 
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.post(url, json=payload, headers=headers)
-                if response.status_code != 200:
-                    raise Exception(f"Vertex AI error {response.status_code}: {response.text[:500]}")
-                result = response.json()
-                if "candidates" in result and len(result["candidates"]) > 0:
-                    candidate = result["candidates"][0]
-                    if "content" in candidate and "parts" in candidate["content"]:
-                        for part in candidate["content"]["parts"]:
-                            if "text" in part:
-                                return part["text"]
-                raise Exception(f"No text in Vertex AI response: {result}")
+                payload = {
+                    "contents": [{"parts": parts}],
+                    "generationConfig": {"responseModalities": ["TEXT"]}
+                }
+
+                print("[GeminiText] Calling Vertex AI gemini-2.0-flash...")
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    response = await client.post(url, json=payload, headers=headers)
+                    if response.status_code != 200:
+                        print(f"[GeminiText] Vertex AI error {response.status_code}: {response.text[:300]}")
+                        raise Exception(f"Vertex AI error {response.status_code}: {response.text[:500]}")
+                    result = response.json()
+                    if "candidates" in result and len(result["candidates"]) > 0:
+                        candidate = result["candidates"][0]
+                        if "content" in candidate and "parts" in candidate["content"]:
+                            for part in candidate["content"]["parts"]:
+                                if "text" in part:
+                                    print(f"[GeminiText] Vertex AI success ({len(part['text'])} chars)")
+                                    return part["text"]
+                    raise Exception(f"No text in Vertex AI response: {result}")
+            else:
+                print("[GeminiText] No Vertex token available, falling back to direct SDK")
+        except Exception as e:
+            print(f"[GeminiText] Vertex AI failed: {e}, falling back to direct SDK")
 
     # Fallback to direct SDK
+    print("[GeminiText] Using direct SDK (free tier)")
     init_gemini()
     model = genai.GenerativeModel("gemini-2.0-flash")
     if image_parts:
