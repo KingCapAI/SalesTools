@@ -9,10 +9,10 @@ LEGAL_TEXT = """All designs, artwork, and concepts presented herein are the sole
 HAT_STYLES = {
     "6-panel-hat": "6-panel hat",
     "6-panel-trucker": "6-panel trucker hat",
-    "5-panel-hat": "5-panel hat",
-    "5-panel-trucker": "5-panel trucker hat",
+    "5-panel-hat": "A-Frame 5-panel hat",
+    "5-panel-trucker": "A-Frame 5-panel trucker hat",
     "perforated-6-panel": "perforated 6-panel hat",
-    "perforated-5-panel": "perforated 5-panel hat",
+    "perforated-5-panel": "perforated A-Frame 5-panel hat",
 }
 
 # Material display names
