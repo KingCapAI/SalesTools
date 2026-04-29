@@ -1002,6 +1002,24 @@ function OverseasResults({ result }: { result: OverseasQuoteResponse }) {
                 );
               })}
             </tr>
+
+            {/* Total (Hat + Shipping) */}
+            <tr className="bg-gray-700/50">
+              <td className="py-2 px-2 text-gray-100 font-semibold">Total</td>
+              {result.price_breaks.map((pb) => {
+                const hatCost = getHatCost(pb);
+                const shippingCost = meetsMoq(pb) ? (pb.shipping_price || 0) : null;
+                const total = hatCost === null || shippingCost === null ? null : hatCost + shippingCost;
+                return (
+                  <td
+                    key={pb.quantity_break}
+                    className={`py-2 px-2 text-right font-semibold ${total === null ? 'text-gray-500 text-xs' : 'text-primary-400'}`}
+                  >
+                    {formatPriceOrMoq(total)}
+                  </td>
+                );
+              })}
+            </tr>
           </tbody>
         </table>
       </div>
