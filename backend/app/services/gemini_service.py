@@ -21,6 +21,40 @@ SUPPORTED_IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
 
 settings = get_settings()
 
+# Layout template — 6-view grid reference image bundled with the backend
+_LAYOUT_TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "assets" / "ai_design_template.jpeg"
+_layout_template_part_cache: Optional[Dict[str, Any]] = None
+
+
+def _get_layout_template_part() -> Optional[Dict[str, Any]]:
+    """Load the 6-view layout template once and return as an inlineData image part."""
+    global _layout_template_part_cache
+    if _layout_template_part_cache is not None:
+        return _layout_template_part_cache
+    try:
+        if not _LAYOUT_TEMPLATE_PATH.exists():
+            print(f"Warning: Layout template not found at {_LAYOUT_TEMPLATE_PATH}")
+            return None
+        with open(_LAYOUT_TEMPLATE_PATH, "rb") as f:
+            raw = f.read()
+        _layout_template_part_cache = {
+            "inlineData": {
+                "mimeType": "image/jpeg",
+                "data": base64.b64encode(raw).decode("utf-8"),
+            }
+        }
+        return _layout_template_part_cache
+    except Exception as e:
+        print(f"Warning: Could not load layout template: {e}")
+        return None
+
+
+_LAYOUT_TEMPLATE_LABEL = (
+    "LAYOUT TEMPLATE (reference only): Use this image ONLY to determine the 3x2 grid composition and the six "
+    "angle labels (FRONT, WEARERS RIGHT, WEARERS LEFT, BACK, UNDERVISOR, MODEL). Do NOT copy the hat shape, "
+    "colors, or any design details from this template. Match the box positions and label placement exactly."
+)
+
 # Retry configuration for 503 errors
 MAX_RETRIES = 5
 RETRY_DELAY_SECONDS = 5
@@ -326,6 +360,14 @@ async def generate_design_image(
 
         # Build parts list - include logos and/or original image
         parts = []
+
+        # Layout template (reference only) — placed first so the model uses it as composition guidance.
+        # Skip when an original image is provided (revision/edit flow keeps existing layout).
+        if not original_image_path:
+            template_part = _get_layout_template_part()
+            if template_part:
+                parts.append({"text": _LAYOUT_TEMPLATE_LABEL})
+                parts.append(template_part)
 
         # Multi-logo support: add each logo with a label
         if logos:
@@ -758,6 +800,12 @@ async def generate_custom_design(
 
         # Build parts list - include all location logos and reference hat
         parts = []
+
+        # Layout template (reference only) — first part so it frames the composition
+        template_part = _get_layout_template_part()
+        if template_part:
+            parts.append({"text": _LAYOUT_TEMPLATE_LABEL})
+            parts.append(template_part)
 
         # Add reference hat image if provided
         if reference_hat_path:

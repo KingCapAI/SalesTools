@@ -210,19 +210,26 @@ Label each unique decoration ONCE across the entire image. Rules:
 - Do NOT add ANY labels to the MODEL VIEW (view #6). The model view should be clean with no callouts.
 - Only label decorations in hat-only views (views 1-5). Pick the view where each decoration is most prominent.
 
-IMAGE LAYOUT — EXACTLY 6 UNIQUE VIEWS in a 3×2 grid:
+IMAGE LAYOUT — Match the provided LAYOUT TEMPLATE image precisely. The template defines a 3x2 grid with EXACTLY 6 UNIQUE VIEWS. Use the template ONLY for grid composition and angle labels — do not copy its hat shape, colors, or design.
+
 Each view shows the SAME hat from a DIFFERENT angle. Same design, same colors, same logos, same decorations in every view.
-1. **FRONT VIEW** (top-left) — hat facing camera straight-on, showing front panel
-2. **LEFT SIDE VIEW** (top-center) — hat rotated 90° showing left side panel only
-3. **RIGHT SIDE VIEW** (top-right) — hat rotated 90° showing right side panel only
-4. **BACK VIEW** (bottom-left) — hat rotated 180° showing back panel and closure
-5. **UNDERBILL VIEW** (bottom-center) — hat flipped to show inside of visor/brim
-6. **MODEL VIEW** (bottom-right) — hat worn on a white male model, portrait angle
+
+Top row:
+1. **FRONT** (top-left) — hat facing camera straight-on, front panel visible
+2. **WEARERS RIGHT** (top-center) — hat rotated so the WEARER'S RIGHT side faces the camera; the brim points to the LEFT side of the image
+3. **WEARERS LEFT** (top-right) — hat rotated so the WEARER'S LEFT side faces the camera; the brim points to the RIGHT side of the image
+
+Bottom row:
+4. **BACK** (bottom-left) — hat rotated 180°, back panel and closure visible
+5. **UNDERVISOR** (bottom-center) — hat flipped to show the underside of the visor/brim and the sweatband
+6. **MODEL** (bottom-right) — hat worn on a white male model, portrait angle
+
+Place the angle labels (FRONT, WEARERS RIGHT, WEARERS LEFT, BACK, UNDERVISOR, MODEL) under each box exactly as shown in the LAYOUT TEMPLATE.
 
 STRICT RULES:
 - Exactly 6 views. Not 4, not 5, not 7, not 8. Exactly 6.
-- Every view must be a DIFFERENT angle. No two views may show the same side of the hat.
-- LEFT SIDE and RIGHT SIDE are mirror images — they must NOT look the same. Left shows the left panel, right shows the right panel.
+- Each view must show a DIFFERENT angle — no duplicate or near-duplicate views.
+- WEARERS RIGHT and WEARERS LEFT are mirror images — they must NOT look the same. WEARERS RIGHT shows the right side panel from the wearer's perspective; WEARERS LEFT shows the left side panel from the wearer's perspective.
 - The design must be IDENTICAL across all views — do not change decorations, colors, or logos between views.
 
 Professional studio lighting, white background, 4k resolution.
