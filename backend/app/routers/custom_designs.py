@@ -22,7 +22,7 @@ from ..schemas.custom_design import (
 from ..schemas.design import DesignVersionResponse, DesignChatCreate, DesignChatResponse, RevisionCreate
 import asyncio
 from ..services.gemini_service import generate_custom_design, generate_revision
-from ..services.storage_service import save_generated_image
+from ..services.storage_service import save_generated_image, delete_file
 
 VERSIONS_PER_BATCH = 3
 from ..utils.dependencies import require_auth, get_current_user
@@ -511,6 +511,58 @@ async def select_custom_design_version(
     db.commit()
 
     return {"message": "Version selected", "version_id": version_id}
+
+
+@router.delete("/{design_id}/versions/{version_id}")
+async def delete_custom_design_version(
+    design_id: str,
+    version_id: str,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """Delete a single generated version. Refuses if it would leave the design empty."""
+    design = db.query(Design).filter(
+        Design.id == design_id,
+        Design.design_type == "custom"
+    ).first()
+    if not design:
+        raise HTTPException(status_code=404, detail="Custom design not found")
+
+    version = db.query(DesignVersion).filter(
+        DesignVersion.id == version_id,
+        DesignVersion.design_id == design_id,
+    ).first()
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    remaining = db.query(DesignVersion).filter(
+        DesignVersion.design_id == design_id,
+        DesignVersion.id != version_id,
+    ).count()
+    if remaining == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete the last version. Delete the entire design instead.",
+        )
+
+    # Detach chat messages referencing this version (preserve chat history)
+    db.query(DesignChat).filter(DesignChat.version_id == version_id).update({"version_id": None})
+
+    if design.selected_version_id == version_id:
+        design.selected_version_id = None
+        design.updated_at = datetime.utcnow()
+
+    image_path = version.image_path
+    db.delete(version)
+    db.commit()
+
+    if image_path:
+        try:
+            delete_file(image_path)
+        except Exception as e:
+            print(f"Warning: failed to delete image file {image_path}: {e}")
+
+    return {"message": "Version deleted", "version_id": version_id}
 
 
 @router.post("/{design_id}/duplicate", response_model=CustomDesignResponse)

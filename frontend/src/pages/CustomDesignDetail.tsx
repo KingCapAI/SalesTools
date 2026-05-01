@@ -16,6 +16,7 @@ import {
   useUpdateCustomDesign,
   useRegenerateCustomDesign,
   useSelectCustomVersion,
+  useDeleteCustomVersion,
 } from '../hooks/useCustomDesigns';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
 import {
@@ -51,6 +52,7 @@ export function CustomDesignDetail() {
   const updateDesign = useUpdateCustomDesign();
   const regenerateDesign = useRegenerateCustomDesign();
   const selectVersion = useSelectCustomVersion();
+  const deleteVersion = useDeleteCustomVersion();
 
   const { data: designQuote, refetch: refetchQuote } = useDesignQuote(designId || '');
   const deleteQuote = useDeleteDesignQuote();
@@ -114,6 +116,19 @@ export function CustomDesignDetail() {
       await selectVersion.mutateAsync({ designId, versionId });
     } catch (error: any) {
       console.error('Error selecting version:', error);
+    }
+  };
+
+  const handleDeleteVersion = async (versionId: string) => {
+    if (!designId) return;
+    try {
+      await deleteVersion.mutateAsync({ designId, versionId });
+      if (selectedVersionId === versionId) {
+        setSelectedVersionId(null);
+      }
+      refetch();
+    } catch (error: any) {
+      alert(error?.response?.data?.detail || 'Failed to delete version');
     }
   };
 
@@ -340,6 +355,8 @@ export function CustomDesignDetail() {
                 designNumber={design.design_number}
                 selectedVersionId={selectedVersionId}
                 onSelectVersion={handleSelectVersion}
+                onDeleteVersion={handleDeleteVersion}
+                deletingVersionId={deleteVersion.isPending ? (deleteVersion.variables?.versionId ?? null) : null}
                 isLoading={regenerateDesign.isPending}
               />
             </div>

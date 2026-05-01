@@ -187,8 +187,8 @@ async def extract_decorations_from_image(image_data: str) -> Optional[Dict[str, 
         prompt = """Analyze this hat design image. It shows multiple views of a hat with decoration method callout labels (white pills with black text connected by lines/arrows to the decorations).
 
 For each labeled decoration, identify:
-1. The hat LOCATION (front, left, right, back, underbill/visor)
-2. The DECORATION METHOD text shown in the label
+1. The hat LOCATION. Use these EXACT keys: "front", "left", "right", "back", "underbill". The angle labels in the image may say FRONT, WEARERS RIGHT, WEARERS LEFT, BACK, UNDERVISOR, MODEL — map them as: WEARERS RIGHT -> "right", WEARERS LEFT -> "left", UNDERVISOR -> "underbill". Skip the MODEL view.
+2. The DECORATION METHOD text shown in the callout label
 
 Return ONLY a JSON object mapping location to decoration method. Example:
 {"front": "3D Embroidery", "left": "Woven Patch", "back": "Flat Embroidery"}
@@ -225,17 +225,17 @@ Return ONLY the JSON object, no other text."""
         # Normalize location keys to lowercase
         normalized = {}
         for loc, method in result.items():
-            key = loc.lower().strip()
+            key = loc.lower().strip().replace("'", "").replace("’", "")
             # Normalize common variations
-            if key in ("underbill", "visor", "underbrim", "under brim", "under bill"):
+            if key in ("underbill", "undervisor", "visor", "underbrim", "under brim", "under bill", "under visor"):
                 key = "underbill"
-            if key in ("left side", "left panel"):
+            if key in ("left side", "left panel", "wearers left", "wearer left", "left view"):
                 key = "left"
-            if key in ("right side", "right panel"):
+            if key in ("right side", "right panel", "wearers right", "wearer right", "right view"):
                 key = "right"
-            if key in ("front center", "front panel"):
+            if key in ("front center", "front panel", "front view"):
                 key = "front"
-            if key in ("back panel", "rear"):
+            if key in ("back panel", "rear", "back view"):
                 key = "back"
             # Deduplicate — keep first occurrence
             if key not in normalized:

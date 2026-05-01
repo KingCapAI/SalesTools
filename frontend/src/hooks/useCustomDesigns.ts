@@ -78,6 +78,19 @@ export function useSelectCustomVersion() {
   });
 }
 
+export function useDeleteCustomVersion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ designId, versionId }: { designId: string; versionId: string }) =>
+      customDesignsApi.deleteVersion(designId, versionId),
+    onSuccess: (_, { designId }) => {
+      queryClient.invalidateQueries({ queryKey: ['custom-design', designId] });
+      queryClient.invalidateQueries({ queryKey: ['custom-designs'] });
+    },
+  });
+}
+
 export function useDuplicateCustomDesign() {
   const queryClient = useQueryClient();
 

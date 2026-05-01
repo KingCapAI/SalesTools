@@ -152,19 +152,28 @@ function mapDetectedDecorations(
   const result = { front: null as string | null, left: null as string | null, right: null as string | null, back: null as string | null, visor: null as string | null };
 
   for (const [location, method] of Object.entries(detected)) {
-    const key = location.toLowerCase().trim();
+    const key = location.toLowerCase().trim().replace(/['’]/g, '');
     const mapped = decorationMap[method.toLowerCase().trim()] || null;
     if (!mapped) continue;
 
-    if (key === 'front' || key === 'front center' || key === 'front panel') {
+    if (key === 'front' || key === 'front center' || key === 'front panel' || key === 'front view') {
       result.front = mapped;
-    } else if (key === 'left' || key === 'left side') {
+    } else if (
+      key === 'left' || key === 'left side' || key === 'left panel' ||
+      key === 'wearers left' || key === 'wearer left' || key === 'left view'
+    ) {
       result.left = mapped;
-    } else if (key === 'right' || key === 'right side') {
+    } else if (
+      key === 'right' || key === 'right side' || key === 'right panel' ||
+      key === 'wearers right' || key === 'wearer right' || key === 'right view'
+    ) {
       result.right = mapped;
-    } else if (key === 'back' || key === 'back panel') {
+    } else if (key === 'back' || key === 'back panel' || key === 'rear' || key === 'back view') {
       result.back = mapped;
-    } else if (key === 'underbill' || key === 'visor' || key === 'underbrim') {
+    } else if (
+      key === 'underbill' || key === 'undervisor' || key === 'visor' ||
+      key === 'underbrim' || key === 'under visor' || key === 'under bill'
+    ) {
       result.visor = mapped;
     }
   }

@@ -9,7 +9,7 @@ import { RevisionChat } from '../components/design-generator/RevisionChat';
 import { QuoteModal } from '../components/design-generator/QuoteModal';
 import { QuoteSummary } from '../components/design-generator/QuoteSummary';
 import { ProductionTimeline } from '../components/design-generator/ProductionTimeline';
-import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign, useRegenerateDesign, useSelectVersion } from '../hooks/useDesigns';
+import { useDesign, useCreateRevision, useAddChatMessage, useUpdateDesign, useRegenerateDesign, useSelectVersion, useDeleteVersion } from '../hooks/useDesigns';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
 import {
   ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download,
@@ -34,6 +34,7 @@ export function DesignDetail() {
   const updateDesign = useUpdateDesign();
   const regenerateDesign = useRegenerateDesign();
   const selectVersion = useSelectVersion();
+  const deleteVersion = useDeleteVersion();
 
   const { data: designQuote, refetch: refetchQuote } = useDesignQuote(designId || '');
   const deleteQuote = useDeleteDesignQuote();
@@ -98,6 +99,19 @@ export function DesignDetail() {
       await selectVersion.mutateAsync({ designId, versionId });
     } catch (error: any) {
       console.error('Error selecting version:', error);
+    }
+  };
+
+  const handleDeleteVersion = async (versionId: string) => {
+    if (!designId) return;
+    try {
+      await deleteVersion.mutateAsync({ designId, versionId });
+      if (selectedVersionId === versionId) {
+        setSelectedVersionId(null);
+      }
+      refetch();
+    } catch (error: any) {
+      alert(error?.response?.data?.detail || 'Failed to delete version');
     }
   };
 
@@ -318,6 +332,8 @@ export function DesignDetail() {
                 designNumber={design.design_number}
                 selectedVersionId={selectedVersionId}
                 onSelectVersion={handleSelectVersion}
+                onDeleteVersion={handleDeleteVersion}
+                deletingVersionId={deleteVersion.isPending ? (deleteVersion.variables?.versionId ?? null) : null}
                 isLoading={regenerateDesign.isPending}
               />
             </div>

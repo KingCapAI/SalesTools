@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { clsx } from 'clsx';
-import { AlertCircle, CheckCircle2, Loader, X, ZoomIn } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader, Trash2, X, ZoomIn } from 'lucide-react';
 import { uploadsApi } from '../../api/uploads';
 import type { DesignVersion } from '../../types/api';
 
@@ -9,6 +9,8 @@ interface VersionGalleryProps {
   designNumber: number;
   selectedVersionId: string | null;
   onSelectVersion: (versionId: string) => void;
+  onDeleteVersion?: (versionId: string) => void;
+  deletingVersionId?: string | null;
   isLoading?: boolean;
 }
 
@@ -17,9 +19,24 @@ export function VersionGallery({
   designNumber,
   selectedVersionId,
   onSelectVersion,
+  onDeleteVersion,
+  deletingVersionId,
   isLoading,
 }: VersionGalleryProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const handleDeleteClick = (e: React.MouseEvent, versionId: string, versionNumber: number) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!onDeleteVersion) return;
+    if (versions.length <= 1) {
+      alert('Cannot delete the last remaining version. Delete the entire design instead.');
+      return;
+    }
+    if (window.confirm(`Delete Option ${versionNumber}? This cannot be undone.`)) {
+      onDeleteVersion(versionId);
+    }
+  };
 
   if (isLoading && versions.length === 0) {
     return (
@@ -117,50 +134,74 @@ export function VersionGallery({
               const isFailed = version.generation_status === 'failed';
 
               return (
-                <button
-                  key={version.id}
-                  onClick={() => isCompleted && onSelectVersion(version.id)}
-                  disabled={!isCompleted}
-                  className={clsx(
-                    'relative rounded-lg border-2 overflow-hidden transition-all text-left',
-                    isSelected
-                      ? 'border-primary-500 ring-2 ring-primary-500/50 shadow-lg shadow-primary-500/20'
-                      : isCompleted
-                      ? 'border-gray-700 hover:border-gray-500 cursor-pointer'
-                      : 'border-gray-800 opacity-75 cursor-not-allowed'
+                <div key={version.id} className="relative group">
+                  <button
+                    type="button"
+                    onClick={() => isCompleted && onSelectVersion(version.id)}
+                    disabled={!isCompleted}
+                    className={clsx(
+                      'w-full rounded-lg border-2 overflow-hidden transition-all text-left',
+                      isSelected
+                        ? 'border-primary-500 ring-2 ring-primary-500/50 shadow-lg shadow-primary-500/20'
+                        : isCompleted
+                        ? 'border-gray-700 hover:border-gray-500 cursor-pointer'
+                        : 'border-gray-800 opacity-75 cursor-not-allowed'
+                    )}
+                  >
+                    <div className="aspect-square bg-gray-900 relative">
+                      {isCompleted && imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={`Option ${version.version_number}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : isFailed ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                          <AlertCircle className="w-5 h-5 text-red-500 mb-1" />
+                          <p className="text-[10px] text-red-400 text-center line-clamp-2">Failed</p>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Loader className="w-5 h-5 text-primary-500 animate-spin" />
+                        </div>
+                      )}
+
+                      {isSelected && (
+                        <div className="absolute top-1 right-1 bg-primary-500 rounded-full p-0.5">
+                          <CheckCircle2 className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="px-2 py-1.5 bg-gray-800/80">
+                      <p className="text-xs font-medium text-gray-300">
+                        Option {version.version_number}
+                      </p>
+                    </div>
+                  </button>
+
+                  {onDeleteVersion && versions.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteClick(e, version.id, version.version_number)}
+                      disabled={deletingVersionId === version.id}
+                      className={clsx(
+                        'absolute top-1 left-1 bg-red-600/90 hover:bg-red-500 text-white rounded-full p-1 transition-opacity z-10',
+                        deletingVersionId === version.id
+                          ? 'opacity-100 cursor-wait'
+                          : 'opacity-0 group-hover:opacity-100 focus:opacity-100'
+                      )}
+                      title={`Delete Option ${version.version_number}`}
+                      aria-label={`Delete Option ${version.version_number}`}
+                    >
+                      {deletingVersionId === version.id ? (
+                        <Loader className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3 h-3" />
+                      )}
+                    </button>
                   )}
-                >
-                  <div className="aspect-square bg-gray-900 relative">
-                    {isCompleted && imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={`Option ${version.version_number}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : isFailed ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-2">
-                        <AlertCircle className="w-5 h-5 text-red-500 mb-1" />
-                        <p className="text-[10px] text-red-400 text-center line-clamp-2">Failed</p>
-                      </div>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Loader className="w-5 h-5 text-primary-500 animate-spin" />
-                      </div>
-                    )}
-
-                    {isSelected && (
-                      <div className="absolute top-1 right-1 bg-primary-500 rounded-full p-0.5">
-                        <CheckCircle2 className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="px-2 py-1.5 bg-gray-800/80">
-                    <p className="text-xs font-medium text-gray-300">
-                      Option {version.version_number}
-                    </p>
-                  </div>
-                </button>
+                </div>
               );
             })}
           </div>

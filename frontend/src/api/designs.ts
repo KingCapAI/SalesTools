@@ -67,6 +67,10 @@ export const designsApi = {
     await api.post(`/designs/${designId}/versions/${versionId}/select`);
   },
 
+  deleteVersion: async (designId: string, versionId: string): Promise<void> => {
+    await api.delete(`/designs/${designId}/versions/${versionId}`);
+  },
+
   duplicate: async (designId: string): Promise<Design> => {
     const response = await api.post(`/designs/${designId}/duplicate`);
     return response.data;

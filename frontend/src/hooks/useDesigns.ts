@@ -111,6 +111,19 @@ export function useSelectVersion() {
   });
 }
 
+export function useDeleteVersion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ designId, versionId }: { designId: string; versionId: string }) =>
+      designsApi.deleteVersion(designId, versionId),
+    onSuccess: (_, { designId }) => {
+      queryClient.invalidateQueries({ queryKey: ['design', designId] });
+      queryClient.invalidateQueries({ queryKey: ['designs'] });
+    },
+  });
+}
+
 export function useDuplicateDesign() {
   const queryClient = useQueryClient();
 

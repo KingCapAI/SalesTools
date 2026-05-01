@@ -166,7 +166,7 @@ export function QuoteModal({ isOpen, onClose, designId, existingQuote, designDat
     }));
 
     setPreFilledFromDesign(true);
-  }, [isOpen, designData, selectedVersion]);
+  }, [isOpen, designData, selectedVersion, existingQuote]);
 
   // Reset form when existing quote changes
   useEffect(() => {
