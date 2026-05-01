@@ -467,7 +467,9 @@ async def generate_design_image(
                 }
             ],
             "generationConfig": {
-                "responseModalities": ["TEXT", "IMAGE"]
+                "responseModalities": ["TEXT", "IMAGE"],
+                "temperature": 0.2,
+                "topP": 0.7
             }
         }
 
@@ -667,7 +669,9 @@ IMPORTANT: Keep everything else exactly the same. Only modify what is specifical
         payload = {
             "contents": [{"parts": parts}],
             "generationConfig": {
-                "responseModalities": ["TEXT", "IMAGE"]
+                "responseModalities": ["TEXT", "IMAGE"],
+                "temperature": 0.2,
+                "topP": 0.7
             }
         }
 
@@ -866,7 +870,9 @@ async def generate_custom_design(
         payload = {
             "contents": [{"parts": parts}],
             "generationConfig": {
-                "responseModalities": ["TEXT", "IMAGE"]
+                "responseModalities": ["TEXT", "IMAGE"],
+                "temperature": 0.2,
+                "topP": 0.7
             }
         }
 
