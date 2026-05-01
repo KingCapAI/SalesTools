@@ -1,14 +1,16 @@
 """File upload routes."""
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import FileResponse, RedirectResponse
+import mimetypes
+from urllib.parse import quote
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 from pathlib import Path
 
 from ..database import get_db
 from ..config import get_settings
 from ..models import BrandAsset, Brand
-from ..services.storage_service import save_upload_file, get_file_url
+from ..services.storage_service import save_upload_file, get_file_url, read_file_bytes
 from ..utils.dependencies import require_auth
 
 router = APIRouter(prefix="/upload", tags=["Uploads"])
@@ -221,6 +223,36 @@ async def upload_design_asset(
 
 # Serve uploaded files
 uploads_router = APIRouter(prefix="/uploads", tags=["File Serving"])
+
+
+@uploads_router.get("/download/{file_path:path}")
+async def download_file(
+    file_path: str,
+    name: str = Query("download", description="Suggested filename for the browser"),
+):
+    """Stream a stored file with Content-Disposition: attachment.
+
+    Same-origin (no CORS issues) and forces a browser download with the given
+    filename. Used by the design pages' Download button so we don't have to
+    fetch+blob across the cross-origin redirect to R2.
+    """
+    data = await read_file_bytes(file_path)
+    if data is None:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    mime, _ = mimetypes.guess_type(file_path)
+    if not mime:
+        mime = "application/octet-stream"
+
+    safe_name = quote(name)
+    return Response(
+        content=data,
+        media_type=mime,
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{safe_name}\"; filename*=UTF-8''{safe_name}",
+            "Cache-Control": "private, no-store",
+        },
+    )
 
 
 @uploads_router.get("/{file_path:path}")

@@ -39,4 +39,13 @@ export const uploadsApi = {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     return `${apiUrl}/uploads/${path}`;
   },
+
+  // Stream a stored file as a blob with attachment disposition (same-origin, no CORS issues).
+  downloadFile: async (path: string, filename: string): Promise<Blob> => {
+    const response = await api.get(`/uploads/download/${path}`, {
+      params: { name: filename },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };

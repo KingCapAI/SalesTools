@@ -175,14 +175,10 @@ export function DesignDetail() {
       return;
     }
 
-    const designName = `King Cap Design ${design.design_number}`;
-    const fileName = `${designName}.png`;
+    const fileName = `King Cap Design ${design.design_number}.png`;
 
     try {
-      const imageUrl = uploadsApi.getFileUrl(selectedVersion.image_path);
-      const response = await fetch(imageUrl, { credentials: 'include' });
-      if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-      const blob = await response.blob();
+      const blob = await uploadsApi.downloadFile(selectedVersion.image_path, fileName);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;

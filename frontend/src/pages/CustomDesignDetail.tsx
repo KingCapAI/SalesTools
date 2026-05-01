@@ -32,9 +32,16 @@ const approvalStatusConfig: Record<ApprovalStatus, { label: string; icon: typeof
   rejected: { label: 'Rejected', icon: XCircle, color: 'text-red-400', bgColor: 'bg-red-900/30' },
 };
 
+// Side labels use WEARER's perspective to match the result template's
+// "WEARERS LEFT" / "WEARERS RIGHT" labels and the AI placement prompts.
 const LOCATION_LABELS: Record<string, string> = {
-  front: 'Front', front_lower_left: 'Front Lower Left', front_lower_right: 'Front Lower Right',
-  left: 'Left Side', right: 'Right Side', back: 'Back', visor: 'Visor',
+  front: 'Front',
+  front_lower_left: "Front Lower (Wearer's Left)",
+  front_lower_right: "Front Lower (Wearer's Right)",
+  left: "Wearer's Left",
+  right: "Wearer's Right",
+  back: 'Back',
+  visor: 'Visor',
 };
 
 const DECORATION_METHOD_LABELS: Record<string, string> = {
@@ -195,14 +202,10 @@ export function CustomDesignDetail() {
       return;
     }
 
-    const designName = `King Cap Custom Design ${design.design_number}`;
-    const fileName = `${designName}.png`;
+    const fileName = `King Cap Custom Design ${design.design_number}.png`;
 
     try {
-      const imageUrl = uploadsApi.getFileUrl(selectedVersion.image_path);
-      const response = await fetch(imageUrl, { credentials: 'include' });
-      if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-      const blob = await response.blob();
+      const blob = await uploadsApi.downloadFile(selectedVersion.image_path, fileName);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
