@@ -37,28 +37,66 @@ body {
 }
 
 @layer components {
+  /* HIG-flavored button primitives.
+     Press feedback is a transform/opacity scale — never transition-all. */
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-4 py-2 rounded-hig-md font-medium select-none
+           transition-[transform,opacity,background-color,box-shadow] duration-150 ease-hig
+           active:scale-[0.97] active:opacity-90
+           disabled:opacity-40 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700;
+    @apply bg-primary-600 text-white shadow-hig-1 hover:bg-primary-500 hover:shadow-hig-2;
   }
   .btn-secondary {
-    @apply bg-gray-700 text-gray-100 hover:bg-gray-600;
+    @apply bg-fill-tertiary text-gray-100 hover:bg-fill-secondary;
   }
   .btn-outline {
-    @apply border border-gray-600 bg-gray-900 text-gray-100 hover:bg-gray-800;
+    @apply border border-separator bg-fill-quaternary text-gray-100 hover:bg-fill-tertiary;
   }
+
+  /* HIG-flavored card: elevated surface, hairline border, layered shadow,
+     and a subtle inner top highlight that reads as "lit from above". */
   .card {
-    @apply bg-gray-900 rounded-xl shadow-lg border border-gray-800 p-6;
+    @apply bg-surface-elevated rounded-hig-lg border border-separator p-6
+           shadow-hig-2
+           shadow-[inset_0_1px_0_rgba(255,255,255,0.06)];
   }
+
+  /* HIG fill-style input: low-opacity system fill, hairline border that
+     strengthens on focus. Border-heavy "form input" look replaced. */
   .input {
-    @apply w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 rounded-hig-md text-gray-100 placeholder-gray-500
+           bg-fill-tertiary border border-separator
+           transition-[background-color,border-color,box-shadow] duration-150 ease-hig
+           focus:outline-none focus:bg-fill-secondary
+           focus:ring-2 focus:ring-primary-500/60 focus:border-primary-500/60;
   }
   .label {
     @apply block text-sm font-medium text-gray-300 mb-1;
   }
   .select {
-    @apply w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 rounded-hig-md text-gray-100
+           bg-fill-tertiary border border-separator
+           transition-[background-color,border-color,box-shadow] duration-150 ease-hig
+           focus:outline-none focus:bg-fill-secondary
+           focus:ring-2 focus:ring-primary-500/60 focus:border-primary-500/60;
+  }
+
+  /* Hairline separator utility — use for in-content dividers */
+  .hairline {
+    @apply border-t border-separator;
+  }
+
+  /* HIG translucent material — for floating panels (popovers, toolbars).
+     Falls back to opaque elevated surface if backdrop-filter unsupported. */
+  .material-thin {
+    @apply bg-surface-elevated/60 backdrop-blur-material-thin border border-white/10;
+  }
+  .material-regular {
+    @apply bg-surface-elevated/70 backdrop-blur-material-regular border border-white/10;
+  }
+  .material-thick {
+    @apply bg-surface-elevated/85 backdrop-blur-material-thick border border-white/10;
   }
 }
