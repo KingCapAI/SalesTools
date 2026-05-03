@@ -38,9 +38,16 @@ async def save_upload_file(
     subdir: str,
     allowed_types: Optional[list] = None,
     max_size_mb: Optional[int] = None,
+    convert_vectors: bool = False,
 ) -> Tuple[str, str, int]:
     """
     Save an uploaded file.
+
+    Args:
+        convert_vectors: If True, PDF/SVG/AI/EPS uploads are rasterized to PNG
+            before storage (so downstream Gemini calls can use them). Vector MIME
+            types must still be present in `allowed_types` for the upload to be
+            accepted.
 
     Returns:
         Tuple of (relative_path, mime_type, file_size)
@@ -55,15 +62,27 @@ async def save_upload_file(
     if file_size > max_size:
         raise ValueError(f"File size exceeds maximum allowed ({max_size_mb or settings.max_file_size_mb}MB)")
 
-    filename = generate_unique_filename(file.filename or "upload")
+    original_filename = file.filename or "upload"
+    content_type = file.content_type or "application/octet-stream"
+
+    if convert_vectors:
+        from . import vector_conversion_service as vcs
+        if vcs.is_vector_upload(original_filename, content_type):
+            try:
+                content, original_filename, content_type = vcs.convert_to_png(content, original_filename)
+                file_size = len(content)
+            except Exception as e:
+                raise ValueError(f"Could not convert vector logo to PNG: {e}") from e
+
+    filename = generate_unique_filename(original_filename)
     relative_path = f"{subdir}/{filename}"
 
     if r2_service._use_r2():
-        await r2_service.upload_bytes(relative_path, content, file.content_type or "application/octet-stream")
+        await r2_service.upload_bytes(relative_path, content, content_type)
     else:
         _save_local(relative_path, content)
 
-    return relative_path, file.content_type, file_size
+    return relative_path, content_type, file_size
 
 
 async def save_file_bytes(

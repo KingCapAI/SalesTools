@@ -893,28 +893,38 @@ async def upload_location_logo(
     db: Session = Depends(get_db),
     user=Depends(require_auth),
 ):
-    """Upload a logo for a specific location."""
+    """Upload a logo for a specific location.
+
+    Accepts raster (PNG/JPG/WEBP) and vector (PDF/SVG/AI/EPS) formats.
+    Vector uploads are rasterized to PNG at upload time.
+    """
     if location not in ["front", "front_lower_left", "front_lower_right", "left", "right", "back", "visor"]:
         raise HTTPException(status_code=400, detail="Invalid location")
 
-    # Validate file type (SVG not supported - Gemini API only accepts PNG/JPG/WEBP)
-    allowed_types = ["image/png", "image/jpeg", "image/jpg", "image/webp"]
-    if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid file type. Only PNG, JPG, and WEBP images are accepted. SVG files are not supported."
-        )
+    allowed_types = [
+        "image/png", "image/jpeg", "image/jpg", "image/webp",
+        "application/pdf", "image/svg+xml",
+        "application/postscript", "application/illustrator",
+        "application/eps", "image/x-eps",
+        "application/octet-stream",
+    ]
+    original_filename = file.filename or "upload"
 
-    # Save file
-    from ..services.storage_service import save_file_bytes, generate_unique_filename
-    ext = os.path.splitext(file.filename)[1] if file.filename else ".png"
-    unique_filename = generate_unique_filename(f"upload{ext}")
-    contents = await file.read()
-    relative_path = await save_file_bytes(contents, "location_logos", unique_filename, file.content_type or "image/png")
+    try:
+        from ..services.storage_service import save_upload_file
+        relative_path, _, _ = await save_upload_file(
+            file=file,
+            subdir="location_logos",
+            allowed_types=allowed_types,
+            max_size_mb=10,
+            convert_vectors=True,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     return {
         "logo_path": relative_path,
-        "logo_filename": file.filename or unique_filename,
+        "logo_filename": original_filename,
     }
 
 

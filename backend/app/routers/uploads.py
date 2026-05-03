@@ -16,8 +16,21 @@ from ..utils.dependencies import require_auth
 router = APIRouter(prefix="/upload", tags=["Uploads"])
 settings = get_settings()
 
-# Allowed MIME types (SVG not supported - Gemini API only accepts PNG/JPG/WEBP)
-LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"]
+# Logo MIME types: raster passes straight through; vector formats are
+# rasterized to PNG at upload time (see convert_vectors=True below).
+LOGO_TYPES = [
+    # Raster
+    "image/png", "image/jpeg", "image/webp",
+    # Vector — converted to PNG before storage
+    "application/pdf",          # .pdf, modern .ai
+    "image/svg+xml",            # .svg
+    "application/postscript",   # .eps, older .ai
+    "application/illustrator",  # some browsers report .ai as this
+    "application/eps",
+    "image/x-eps",
+    # Some browsers send empty content-type or octet-stream for .ai/.eps
+    "application/octet-stream",
+]
 BRAND_ASSET_TYPES = [
     "image/png",
     "image/jpeg",
@@ -45,6 +58,7 @@ async def upload_logo(
             subdir="logos",
             allowed_types=LOGO_TYPES,
             max_size_mb=10,
+            convert_vectors=True,
         )
 
         # Check if brand already has a logo
@@ -176,6 +190,7 @@ async def upload_design_logo(
             subdir="design_logos",
             allowed_types=LOGO_TYPES,
             max_size_mb=10,
+            convert_vectors=True,
         )
 
         return {

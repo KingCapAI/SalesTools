@@ -22,12 +22,14 @@ const SIZES: { value: DecorationSize; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ];
 
+// Side labels use WEARER's perspective so they match the result template's
+// "WEARERS LEFT" / "WEARERS RIGHT" angle labels and the AI placement prompts.
 const LOCATION_LABELS: Record<DecorationLocation, string> = {
   front: 'Front',
-  front_lower_left: 'Front Lower Left',
-  front_lower_right: 'Front Lower Right',
-  left: 'Left Side',
-  right: 'Right Side',
+  front_lower_left: "Front Lower (Wearer's Left)",
+  front_lower_right: "Front Lower (Wearer's Right)",
+  left: "Wearer's Left",
+  right: "Wearer's Right",
   back: 'Back',
   visor: 'Visor (Underbrim)',
 };
@@ -81,6 +83,10 @@ export function LocationLogoUpload({
       'image/png': ['.png'],
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/webp': ['.webp'],
+      'image/svg+xml': ['.svg'],
+      'application/pdf': ['.pdf'],
+      'application/postscript': ['.ai', '.eps'],
+      'application/illustrator': ['.ai'],
     },
     maxFiles: 1,
     disabled: disabled || isUploading,

@@ -7,13 +7,15 @@ import type { DesignLogoCreate } from '../../types/api';
 
 const MAX_LOGOS = 5;
 
+// Side labels use WEARER's perspective to match the result template's
+// "WEARERS LEFT" / "WEARERS RIGHT" angle labels (and the corresponding AI prompts).
 const LOCATION_OPTIONS = [
   { value: '', label: 'Let AI Decide' },
   { value: 'front', label: 'Front' },
-  { value: 'left', label: 'Left Side' },
-  { value: 'right', label: 'Right Side' },
+  { value: 'left', label: "Wearer's Left" },
+  { value: 'right', label: "Wearer's Right" },
   { value: 'back', label: 'Back' },
-  { value: 'visor', label: 'Visor' },
+  { value: 'visor', label: 'Visor (Underbrim)' },
 ];
 
 interface LogoEntry {
@@ -178,6 +180,10 @@ function LogoEntryRow({ entry, index, showRemove, disabled, onUpdate, onRemove }
       'image/png': ['.png'],
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/webp': ['.webp'],
+      'image/svg+xml': ['.svg'],
+      'application/pdf': ['.pdf'],
+      'application/postscript': ['.ai', '.eps'],
+      'application/illustrator': ['.ai'],
     },
     maxFiles: 1,
     disabled: disabled || entry.isUploading,
