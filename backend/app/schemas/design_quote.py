@@ -8,7 +8,10 @@ from datetime import datetime
 class DesignQuoteCreate(BaseModel):
     """Create a quote for a design."""
     quote_type: Literal["domestic", "overseas"]
-    quantity: int = Field(..., ge=24)
+    # Quantity is no longer collected from users — both domestic and overseas
+    # always show the full per-tier price-break table. Stored only because the
+    # DB column is NOT NULL; defaults to 0.
+    quantity: int = Field(0, ge=0)
 
     # Decoration fields (common)
     front_decoration: Optional[str] = None
@@ -32,7 +35,7 @@ class DesignQuoteCreate(BaseModel):
 
 class DesignQuoteUpdate(BaseModel):
     """Update an existing quote."""
-    quantity: Optional[int] = Field(None, ge=24)
+    quantity: Optional[int] = Field(None, ge=0)
     front_decoration: Optional[str] = None
     left_decoration: Optional[str] = None
     right_decoration: Optional[str] = None

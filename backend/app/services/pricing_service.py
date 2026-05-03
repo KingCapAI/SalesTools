@@ -43,7 +43,6 @@ def get_price_at_quantity(prices: dict, quantity: int, breaks: list[int]) -> flo
 
 def calculate_domestic_quote(
     style_number: str,
-    quantity: int,
     front_decoration: Optional[str] = None,
     left_decoration: Optional[str] = None,
     right_decoration: Optional[str] = None,
@@ -55,7 +54,9 @@ def calculate_domestic_quote(
     """
     Calculate a domestic quote.
 
-    Returns a dict with price breakdowns at each quantity break.
+    Returns per-piece pricing at every quantity break (no quantity input
+    required; matches the overseas behavior). Each row's `total` is what
+    you'd pay if you ordered exactly that tier amount.
     """
     if style_number not in DOMESTIC_BLANK_PRICES:
         raise ValueError(f"Unknown style number: {style_number}")
@@ -64,9 +65,6 @@ def calculate_domestic_quote(
     results = []
 
     for qty_break in DOMESTIC_QUANTITY_BREAKS:
-        if quantity < qty_break and qty_break != DOMESTIC_QUANTITY_BREAKS[0]:
-            continue
-
         # Base hat price
         blank_price = DOMESTIC_BLANK_PRICES[style_number].get(qty_break, 0)
 
@@ -100,21 +98,21 @@ def calculate_domestic_quote(
         # One-time charges
         digitizing_fee = DOMESTIC_ADDITIONAL_CHARGES["Embroidery Digitizing Fee"].get(qty_break, 0) * num_dst_files
 
-        # Total
-        total = (per_piece * quantity) + digitizing_fee
+        # Total at this exact tier amount
+        total = (per_piece * qty_break) + digitizing_fee
 
         results.append({
             "quantity_break": qty_break,
-            "blank_price": blank_price,
-            "front_decoration_price": front_deco_price,
-            "left_decoration_price": left_deco_price,
-            "right_decoration_price": right_deco_price,
-            "back_decoration_price": back_deco_price,
-            "rush_fee": rush_fee,
-            "rope_price": rope_price,
+            "blank_price": round(blank_price, 2),
+            "front_decoration_price": round(front_deco_price, 2),
+            "left_decoration_price": round(left_deco_price, 2),
+            "right_decoration_price": round(right_deco_price, 2),
+            "back_decoration_price": round(back_deco_price, 2),
+            "rush_fee": round(rush_fee, 2),
+            "rope_price": round(rope_price, 2),
             "per_piece_price": round(per_piece, 2),
-            "digitizing_fee": digitizing_fee,
-            "subtotal": round(per_piece * quantity, 2),
+            "digitizing_fee": round(digitizing_fee, 2),
+            "subtotal": round(per_piece * qty_break, 2),
             "total": round(total, 2),
         })
 
@@ -123,7 +121,6 @@ def calculate_domestic_quote(
         "style_number": style_number,
         "style_name": style_info.get("name", ""),
         "collection": style_info.get("collection", ""),
-        "quantity": quantity,
         "front_decoration": front_decoration,
         "left_decoration": left_decoration,
         "right_decoration": right_decoration,

@@ -72,7 +72,6 @@ async def calculate_domestic(request: DomesticQuoteRequest):
     try:
         result = calculate_domestic_quote(
             style_number=request.style_number,
-            quantity=request.quantity,
             front_decoration=request.front_decoration,
             left_decoration=request.left_decoration,
             right_decoration=request.right_decoration,
@@ -124,13 +123,74 @@ def style_currency_cell(cell, value):
         cell.number_format = '"$"#,##0.00'
 
 
+def _write_domestic_tier_table(ws, result: dict, start_row: int) -> int:
+    """Write a per-tier domestic price table starting at start_row.
+
+    Returns the next row to write. Layout matches overseas:
+    a Line Item column followed by one column per quantity break.
+    Rows: each component (blank, decorations, rush, rope), then Per-Piece Total,
+    then Digitizing Fee (one-time).
+    """
+    def is_valid(val):
+        return isinstance(val, str) and val.strip() and val != "0"
+
+    breaks = result.get("price_breaks") or []
+    if not breaks:
+        return start_row
+
+    # Header row
+    row = start_row
+    ws.cell(row=row, column=1, value="Line Item")
+    style_header_cell(ws.cell(row=row, column=1))
+    for col, pb in enumerate(breaks, 2):
+        cell = ws.cell(row=row, column=col, value=f"{pb['quantity_break']:,}+")
+        style_header_cell(cell)
+
+    # Component rows — each row is one line item across all tiers
+    component_rows = [("Blank Hat", "blank_price")]
+    if is_valid(result.get("front_decoration")):
+        component_rows.append((f"Front ({result['front_decoration']})", "front_decoration_price"))
+    if is_valid(result.get("left_decoration")):
+        component_rows.append((f"Left ({result['left_decoration']})", "left_decoration_price"))
+    if is_valid(result.get("right_decoration")):
+        component_rows.append((f"Right ({result['right_decoration']})", "right_decoration_price"))
+    if is_valid(result.get("back_decoration")):
+        component_rows.append((f"Back ({result['back_decoration']})", "back_decoration_price"))
+    if any((pb.get("rush_fee") or 0) > 0 for pb in breaks):
+        component_rows.append(("Rush Fee", "rush_fee"))
+    if result.get("include_rope") and any((pb.get("rope_price") or 0) > 0 for pb in breaks):
+        component_rows.append(("Rope", "rope_price"))
+
+    for label, key in component_rows:
+        row += 1
+        ws.cell(row=row, column=1, value=label)
+        for col, pb in enumerate(breaks, 2):
+            style_currency_cell(ws.cell(row=row, column=col), pb.get(key) or 0)
+
+    # Per-Piece Total row (bold)
+    row += 1
+    ws.cell(row=row, column=1, value="Per-Piece Total").font = Font(bold=True)
+    for col, pb in enumerate(breaks, 2):
+        style_currency_cell(ws.cell(row=row, column=col), pb.get("per_piece_price"))
+        ws.cell(row=row, column=col).font = Font(bold=True)
+
+    # Digitizing fee (one-time, scales with num_dst_files; doesn't vary per tier
+    # in our pricing but show as a separate annotated row for clarity)
+    if any((pb.get("digitizing_fee") or 0) > 0 for pb in breaks):
+        row += 1
+        ws.cell(row=row, column=1, value="Digitizing Fee (one-time)")
+        for col, pb in enumerate(breaks, 2):
+            style_currency_cell(ws.cell(row=row, column=col), pb.get("digitizing_fee") or 0)
+
+    return row + 1
+
+
 @router.post("/domestic/export")
 async def export_domestic_quote(request: DomesticQuoteRequest):
     """Export a domestic quote to Excel."""
     try:
         result = calculate_domestic_quote(
             style_number=request.style_number,
-            quantity=request.quantity,
             front_decoration=request.front_decoration,
             left_decoration=request.left_decoration,
             right_decoration=request.right_decoration,
@@ -142,13 +202,17 @@ async def export_domestic_quote(request: DomesticQuoteRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    breaks = result.get("price_breaks") or []
+    table_width = max(2, len(breaks) + 1)
+    last_col_letter = get_column_letter(table_width)
+
     # Create workbook
     wb = Workbook()
     ws = wb.active
     ws.title = "Domestic Quote"
 
     # Title
-    ws.merge_cells("A1:D1")
+    ws.merge_cells(f"A1:{last_col_letter}1")
     ws["A1"] = "King Cap - Domestic Quote"
     ws["A1"].font = Font(bold=True, size=14)
 
@@ -160,7 +224,6 @@ async def export_domestic_quote(request: DomesticQuoteRequest):
     details.extend([
         ("Style:", f"{result['style_number']} - {result['style_name']}"),
         ("Collection:", result["collection"]),
-        ("Quantity:", f"{result['quantity']:,}"),
         ("Shipping:", result["shipping_speed"]),
     ])
     for label, value in details:
@@ -169,62 +232,18 @@ async def export_domestic_quote(request: DomesticQuoteRequest):
         ws[f"B{row}"] = value
         row += 1
 
-    # Price table header
+    # Per-tier price table
     row += 1
-    headers = ["Line Item", "Per Piece", "Qty", "Total"]
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=row, column=col, value=header)
-        style_header_cell(cell)
+    row = _write_domestic_tier_table(ws, result, row)
 
-    # Get the applicable price break
-    pb = result["price_breaks"][-1] if result["price_breaks"] else None
-    if not pb:
-        raise HTTPException(status_code=400, detail="No price breaks available")
-
-    # Helper to check valid decoration
-    def is_valid(val):
-        return isinstance(val, str) and val.strip() and val != "0"
-
-    # Price rows
+    # Footer
     row += 1
-    line_items = [("Blank Hat", pb["blank_price"], result["quantity"])]
-
-    if is_valid(result.get("front_decoration")):
-        line_items.append((f"Front Decoration ({result['front_decoration']})", pb["front_decoration_price"], result["quantity"]))
-    if is_valid(result.get("left_decoration")):
-        line_items.append((f"Left Decoration ({result['left_decoration']})", pb["left_decoration_price"], result["quantity"]))
-    if is_valid(result.get("right_decoration")):
-        line_items.append((f"Right Decoration ({result['right_decoration']})", pb["right_decoration_price"], result["quantity"]))
-    if is_valid(result.get("back_decoration")):
-        line_items.append((f"Back Decoration ({result['back_decoration']})", pb["back_decoration_price"], result["quantity"]))
-    if pb.get("rush_fee", 0) > 0:
-        line_items.append(("Rush Fee", pb["rush_fee"], result["quantity"]))
-    if result.get("include_rope") and pb.get("rope_price", 0) > 0:
-        line_items.append(("Rope", pb["rope_price"], result["quantity"]))
-    if pb.get("digitizing_fee", 0) > 0:
-        line_items.append(("Digitizing Fee", pb["digitizing_fee"], 1))
-
-    for label, per_piece, qty in line_items:
-        ws.cell(row=row, column=1, value=label)
-        style_currency_cell(ws.cell(row=row, column=2), per_piece)
-        ws.cell(row=row, column=3, value=qty)
-        total = per_piece * qty if per_piece else 0
-        style_currency_cell(ws.cell(row=row, column=4), total)
-        row += 1
-
-    # Total row
-    ws.cell(row=row, column=1, value="Total")
-    ws.cell(row=row, column=1).font = Font(bold=True)
-    style_currency_cell(ws.cell(row=row, column=2), pb["per_piece_price"])
-    ws.cell(row=row, column=3, value=result["quantity"])
-    style_currency_cell(ws.cell(row=row, column=4), pb["total"])
-    ws.cell(row=row, column=4).font = Font(bold=True)
+    ws.cell(row=row, column=1, value="* All prices shown are per piece at each quantity break").font = Font(italic=True, color="666666")
 
     # Adjust column widths
-    ws.column_dimensions["A"].width = 35
-    ws.column_dimensions["B"].width = 15
-    ws.column_dimensions["C"].width = 10
-    ws.column_dimensions["D"].width = 15
+    ws.column_dimensions["A"].width = 30
+    for col in range(2, table_width + 1):
+        ws.column_dimensions[get_column_letter(col)].width = 14
 
     # Save to bytes
     output = BytesIO()
@@ -232,7 +251,7 @@ async def export_domestic_quote(request: DomesticQuoteRequest):
     output.seek(0)
 
     design_part = f"_{request.design_number}" if request.design_number else ""
-    filename = f"domestic_quote{design_part}_{result['style_number']}_{result['quantity']}.xlsx"
+    filename = f"domestic_quote{design_part}_{result['style_number']}.xlsx"
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -389,11 +408,9 @@ async def export_quote_sheet(request: QuoteSheetExportRequest):
     for quote_item in request.quotes:
         try:
             if quote_item.type == "domestic":
-                # Parse request
                 req = quote_item.request
                 result = calculate_domestic_quote(
                     style_number=req.get("style_number"),
-                    quantity=req.get("quantity"),
                     front_decoration=req.get("front_decoration"),
                     left_decoration=req.get("left_decoration"),
                     right_decoration=req.get("right_decoration"),
@@ -406,7 +423,7 @@ async def export_quote_sheet(request: QuoteSheetExportRequest):
                 # Design header
                 ws.cell(row=current_row, column=1, value=f"Design: {quote_item.design_number}")
                 ws.cell(row=current_row, column=1).font = Font(bold=True, size=12)
-                ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=4)
+                ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=len(result["price_breaks"]) + 1)
                 current_row += 1
 
                 # Details
@@ -420,60 +437,14 @@ async def export_quote_sheet(request: QuoteSheetExportRequest):
                 ws.cell(row=current_row, column=2, value=f"{result['style_number']} - {result['style_name']}")
                 current_row += 1
 
-                ws.cell(row=current_row, column=1, value="Quantity:")
+                ws.cell(row=current_row, column=1, value="Shipping:")
                 ws.cell(row=current_row, column=1).font = Font(bold=True)
-                ws.cell(row=current_row, column=2, value=f"{result['quantity']:,}")
+                ws.cell(row=current_row, column=2, value=result["shipping_speed"])
                 current_row += 1
 
-                # Price table header
+                # Per-tier price table
                 current_row += 1
-                headers = ["Line Item", "Per Piece", "Qty", "Total"]
-                for col, header in enumerate(headers, 1):
-                    cell = ws.cell(row=current_row, column=col, value=header)
-                    style_header_cell(cell)
-
-                # Get the applicable price break
-                pb = result["price_breaks"][-1] if result["price_breaks"] else None
-                if pb:
-                    # Helper to check valid decoration
-                    def is_valid(val):
-                        return isinstance(val, str) and val.strip() and val != "0"
-
-                    # Price rows
-                    current_row += 1
-                    line_items = [("Blank Hat", pb["blank_price"], result["quantity"])]
-
-                    if is_valid(result.get("front_decoration")):
-                        line_items.append((f"Front Decoration ({result['front_decoration']})", pb["front_decoration_price"], result["quantity"]))
-                    if is_valid(result.get("left_decoration")):
-                        line_items.append((f"Left Decoration ({result['left_decoration']})", pb["left_decoration_price"], result["quantity"]))
-                    if is_valid(result.get("right_decoration")):
-                        line_items.append((f"Right Decoration ({result['right_decoration']})", pb["right_decoration_price"], result["quantity"]))
-                    if is_valid(result.get("back_decoration")):
-                        line_items.append((f"Back Decoration ({result['back_decoration']})", pb["back_decoration_price"], result["quantity"]))
-                    if pb.get("rush_fee", 0) > 0:
-                        line_items.append(("Rush Fee", pb["rush_fee"], result["quantity"]))
-                    if result.get("include_rope") and pb.get("rope_price", 0) > 0:
-                        line_items.append(("Rope", pb["rope_price"], result["quantity"]))
-                    if pb.get("digitizing_fee", 0) > 0:
-                        line_items.append(("Digitizing Fee", pb["digitizing_fee"], 1))
-
-                    for label, per_piece, qty in line_items:
-                        ws.cell(row=current_row, column=1, value=label)
-                        style_currency_cell(ws.cell(row=current_row, column=2), per_piece)
-                        ws.cell(row=current_row, column=3, value=qty)
-                        total = per_piece * qty if per_piece else 0
-                        style_currency_cell(ws.cell(row=current_row, column=4), total)
-                        current_row += 1
-
-                    # Total row
-                    ws.cell(row=current_row, column=1, value="Total")
-                    ws.cell(row=current_row, column=1).font = Font(bold=True)
-                    style_currency_cell(ws.cell(row=current_row, column=2), pb["per_piece_price"])
-                    ws.cell(row=current_row, column=3, value=result["quantity"])
-                    style_currency_cell(ws.cell(row=current_row, column=4), pb["total"])
-                    ws.cell(row=current_row, column=4).font = Font(bold=True)
-                    current_row += 1
+                current_row = _write_domestic_tier_table(ws, result, current_row)
 
             else:  # overseas
                 req = quote_item.request

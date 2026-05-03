@@ -105,14 +105,13 @@ async def create_design_quote(
         db.delete(existing)
         db.flush()
 
-    # Calculate quote
+    # Calculate quote (always returns full per-tier breakdown for both types)
     try:
         if quote_data.quote_type == "domestic":
             if not quote_data.style_number:
                 raise HTTPException(status_code=400, detail="style_number is required for domestic quotes")
             result = calculate_domestic_quote(
                 style_number=quote_data.style_number,
-                quantity=quote_data.quantity,
                 front_decoration=quote_data.front_decoration,
                 left_decoration=quote_data.left_decoration,
                 right_decoration=quote_data.right_decoration,
@@ -121,14 +120,12 @@ async def create_design_quote(
                 include_rope=quote_data.include_rope or False,
                 num_dst_files=quote_data.num_dst_files or 1,
             )
-            price_breaks = result["price_breaks"]
-            applicable_break = price_breaks[-1] if price_breaks else None
         else:
             if not quote_data.hat_type:
                 raise HTTPException(status_code=400, detail="hat_type is required for overseas quotes")
             result = calculate_overseas_quote(
                 hat_type=quote_data.hat_type,
-                quantity=quote_data.quantity,
+                quantity=5040,  # always max-tier so all breaks are returned
                 front_decoration=quote_data.front_decoration,
                 left_decoration=quote_data.left_decoration,
                 right_decoration=quote_data.right_decoration,
@@ -138,13 +135,11 @@ async def create_design_quote(
                 accessories=quote_data.accessories,
                 shipping_method=quote_data.shipping_method or "FOB CA",
             )
-            price_breaks = result["price_breaks"]
-            # Find the applicable price break for the requested quantity
-            applicable_break = None
-            for pb in reversed(price_breaks):
-                if pb["quantity_break"] <= quote_data.quantity and pb.get("per_piece_price"):
-                    applicable_break = pb
-                    break
+        price_breaks = result["price_breaks"]
+        # No "applicable break" anymore — display is always full tier table.
+        # cached_total / cached_per_piece left as None since they no longer
+        # represent a meaningful single value.
+        applicable_break = None
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -198,12 +193,11 @@ async def update_design_quote(
         else:
             setattr(quote, field, value)
 
-    # Recalculate
+    # Recalculate (always full per-tier breakdown for both types)
     try:
         if quote.quote_type == "domestic":
             result = calculate_domestic_quote(
                 style_number=quote.style_number,
-                quantity=quote.quantity,
                 front_decoration=quote.front_decoration,
                 left_decoration=quote.left_decoration,
                 right_decoration=quote.right_decoration,
@@ -212,12 +206,10 @@ async def update_design_quote(
                 include_rope=quote.include_rope or False,
                 num_dst_files=quote.num_dst_files or 1,
             )
-            price_breaks = result["price_breaks"]
-            applicable_break = price_breaks[-1] if price_breaks else None
         else:
             result = calculate_overseas_quote(
                 hat_type=quote.hat_type,
-                quantity=quote.quantity,
+                quantity=5040,
                 front_decoration=quote.front_decoration,
                 left_decoration=quote.left_decoration,
                 right_decoration=quote.right_decoration,
@@ -227,18 +219,13 @@ async def update_design_quote(
                 accessories=_parse_json_field(quote.accessories),
                 shipping_method=quote.shipping_method or "FOB CA",
             )
-            price_breaks = result["price_breaks"]
-            applicable_break = None
-            for pb in reversed(price_breaks):
-                if pb["quantity_break"] <= quote.quantity and pb.get("per_piece_price"):
-                    applicable_break = pb
-                    break
+        price_breaks = result["price_breaks"]
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
     quote.cached_price_breaks = json.dumps(price_breaks)
-    quote.cached_total = int(applicable_break["total"] * 100) if applicable_break and applicable_break.get("total") else None
-    quote.cached_per_piece = int(applicable_break["per_piece_price"] * 100) if applicable_break and applicable_break.get("per_piece_price") else None
+    quote.cached_total = None
+    quote.cached_per_piece = None
 
     db.commit()
     db.refresh(quote)
@@ -348,8 +335,10 @@ def _generate_pdf_export(design: Design, quote: DesignQuote) -> StreamingRespons
     elements.append(Paragraph("Quote Details", section_style))
     quote_data = [
         ["Quote Type:", quote.quote_type.title()],
-        ["Quantity:", f"{quote.quantity:,}"],
     ]
+    # Quantity is no longer collected — show only if a legacy quote stored a real value
+    if quote.quantity:
+        quote_data.append(["Quantity:", f"{quote.quantity:,}"])
 
     if quote.quote_type == "domestic":
         quote_data.extend([
@@ -507,8 +496,9 @@ async def export_design_with_quote(
     # Quote info
     quote_info = [
         ("Quote Type:", quote.quote_type.title()),
-        ("Quantity:", f"{quote.quantity:,}"),
     ]
+    if quote.quantity:
+        quote_info.append(("Quantity:", f"{quote.quantity:,}"))
 
     if quote.quote_type == "domestic":
         quote_info.extend([

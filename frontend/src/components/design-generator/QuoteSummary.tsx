@@ -62,12 +62,13 @@ export function QuoteSummary({ quote, onEdit, onDelete, onExport, isDeleting, is
     return formatCurrency(value);
   };
 
-  // Check if we have price breaks data for overseas display
-  const hasOverseasPriceBreaks =
-    quote.quote_type === 'overseas' &&
-    'cached_price_breaks' in quote &&
-    quote.cached_price_breaks &&
-    quote.cached_price_breaks.length > 0;
+  // Both quote types now use the per-tier price-breaks display
+  const priceBreaks =
+    'cached_price_breaks' in quote && quote.cached_price_breaks && quote.cached_price_breaks.length > 0
+      ? quote.cached_price_breaks
+      : null;
+  const hasOverseasPriceBreaks = quote.quote_type === 'overseas' && priceBreaks;
+  const hasDomesticPriceBreaks = quote.quote_type === 'domestic' && priceBreaks;
 
   return (
     <div>
@@ -85,11 +86,6 @@ export function QuoteSummary({ quote, onEdit, onDelete, onExport, isDeleting, is
         }`}>
           {quote.quote_type.charAt(0).toUpperCase() + quote.quote_type.slice(1)}
         </span>
-        {quote.quote_type === 'domestic' && (
-          <span className="text-sm text-gray-400">
-            {quote.quantity.toLocaleString()} pcs
-          </span>
-        )}
       </div>
 
       {/* Pricing - Different display for domestic vs overseas */}
@@ -138,8 +134,35 @@ export function QuoteSummary({ quote, onEdit, onDelete, onExport, isDeleting, is
           </table>
           <p className="text-xs text-gray-500 mt-2">* Per piece at each quantity break</p>
         </div>
+      ) : hasDomesticPriceBreaks ? (
+        // Domestic: per-piece price across quantity breaks
+        <div className="bg-gray-800 rounded-lg p-3 mb-4 overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-gray-700">
+                <th className="text-left py-2 px-1 text-gray-400">Item</th>
+                {priceBreaks!.map((pb) => (
+                  <th key={pb.quantity_break} className="text-right py-2 px-1 text-gray-400">
+                    {pb.quantity_break.toLocaleString()}+
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="py-2 px-1 text-gray-300">Per Piece</td>
+                {priceBreaks!.map((pb) => (
+                  <td key={pb.quantity_break} className="py-2 px-1 text-right text-primary-400 font-semibold">
+                    {pb.per_piece_price != null ? formatCurrency(pb.per_piece_price) : <span className="text-gray-500 text-xs">N/A</span>}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-xs text-gray-500 mt-2">* Per piece at each quantity break</p>
+        </div>
       ) : (
-        // Domestic: Show per-piece and total
+        // Legacy single-quantity quote (cached_per_piece/cached_total set, no breaks)
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-gray-400">Per Piece</span>

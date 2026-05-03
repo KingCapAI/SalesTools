@@ -4,6 +4,8 @@ export interface DesignQuote {
   id: string;
   design_id: string;
   quote_type: 'domestic' | 'overseas';
+  // Quantity is no longer collected from users (always full per-tier table).
+  // Stored as 0 for new quotes, may be a real value for legacy rows.
   quantity: number;
 
   // Decorations
@@ -41,7 +43,7 @@ export interface DesignQuote {
 
 export interface DesignQuoteCreate {
   quote_type: 'domestic' | 'overseas';
-  quantity: number;
+  quantity?: number;
   front_decoration?: string | null;
   left_decoration?: string | null;
   right_decoration?: string | null;
@@ -62,7 +64,8 @@ export interface DesignQuoteCreate {
 }
 
 export interface DesignQuoteUpdate {
-  quantity?: number;
+  quantity?: number;  // optional, no longer collected
+
   front_decoration?: string | null;
   left_decoration?: string | null;
   right_decoration?: string | null;

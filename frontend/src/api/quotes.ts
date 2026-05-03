@@ -3,7 +3,6 @@ import { api } from './client';
 export interface DomesticQuoteRequest {
   design_number?: string;
   style_number: string;
-  quantity: number;
   front_decoration?: string | null;
   left_decoration?: string | null;
   right_decoration?: string | null;
@@ -52,7 +51,6 @@ export interface DomesticQuoteResponse {
   style_number: string;
   style_name: string;
   collection: string;
-  quantity: number;
   front_decoration: string | null;
   left_decoration: string | null;
   right_decoration: string | null;

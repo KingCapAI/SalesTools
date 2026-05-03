@@ -10,7 +10,6 @@ class DomesticQuoteRequest(BaseModel):
     """Request schema for domestic quote calculation."""
     design_number: Optional[str] = Field(None, description="Optional design number for quote sheet")
     style_number: str = Field(..., description="Hat style number (e.g., '250', '360-T')")
-    quantity: int = Field(..., ge=24, description="Order quantity (minimum 24)")
     front_decoration: Optional[str] = Field(None, description="Front decoration method")
     left_decoration: Optional[str] = Field(None, description="Left side decoration method")
     right_decoration: Optional[str] = Field(None, description="Right side decoration method")
@@ -62,7 +61,6 @@ class DomesticQuoteResponse(BaseModel):
     style_number: str
     style_name: str
     collection: str
-    quantity: int
     front_decoration: Optional[str]
     left_decoration: Optional[str]
     right_decoration: Optional[str]

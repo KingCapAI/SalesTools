@@ -11,6 +11,7 @@ import type {
   OverseasQuoteRequest,
   DomesticQuoteResponse,
   OverseasQuoteResponse,
+  PriceBreak,
 } from '../api/quotes';
 import clsx from 'clsx';
 
@@ -36,7 +37,6 @@ export function QuoteEstimator() {
   const [domesticForm, setDomesticForm] = useState<DomesticQuoteRequest>({
     design_number: '',
     style_number: '',
-    quantity: 144,
     front_decoration: null,
     left_decoration: null,
     right_decoration: null,
@@ -353,7 +353,7 @@ export function QuoteEstimator() {
                         </div>
                         <div className="text-sm text-gray-400 mt-1">
                           {quote.type === 'domestic'
-                            ? `${(quote.result as DomesticQuoteResponse).style_number} - ${(quote.result as DomesticQuoteResponse).quantity.toLocaleString()} pcs`
+                            ? `${(quote.result as DomesticQuoteResponse).style_number} — ${(quote.result as DomesticQuoteResponse).style_name}`
                             : `${(quote.result as OverseasQuoteResponse).hat_type}`
                           }
                         </div>
@@ -437,21 +437,6 @@ function DomesticForm({ form, setForm, options }: DomesticFormProps) {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Quantity */}
-      <div className="card">
-        <h2 className="text-lg font-semibold text-gray-100 mb-4">Quantity</h2>
-        <Input
-          type="number"
-          value={form.quantity}
-          onChange={(e) => setForm((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 24 }))}
-          min={24}
-          placeholder="Enter quantity (min 24)"
-        />
-        <p className="text-xs text-gray-500 mt-2">
-          Quantity breaks: {options.quantity_breaks.join(', ')}
-        </p>
       </div>
 
       {/* Decoration Methods */}
@@ -784,20 +769,9 @@ function isValidDecoration(value: string | null | undefined): boolean {
   return typeof value === 'string' && value.trim().length > 0 && value !== '0';
 }
 
-// Domestic Results Component
+// Domestic Results Component — multi-tier table (matches overseas layout)
 function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; formData: DomesticQuoteRequest }) {
   const [isExporting, setIsExporting] = useState(false);
-
-  // Get the applicable price break (the last one that applies to the quantity)
-  const pb = result.price_breaks[result.price_breaks.length - 1];
-
-  // Check for valid decoration values
-  const hasFront = isValidDecoration(result.front_decoration);
-  const hasLeft = isValidDecoration(result.left_decoration);
-  const hasRight = isValidDecoration(result.right_decoration);
-  const hasBack = isValidDecoration(result.back_decoration);
-  const hasRushFee = pb?.rush_fee && pb.rush_fee > 0;
-  const hasRope = result.include_rope && pb?.rope_price && pb.rope_price > 0;
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -806,7 +780,7 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `domestic_quote_${result.style_number}_${result.quantity}.xlsx`;
+      a.download = `domestic_quote_${result.style_number}.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -818,7 +792,33 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
     }
   };
 
-  if (!pb) return null;
+  const breaks = result.price_breaks;
+  if (!breaks || breaks.length === 0) return null;
+
+  // Build the row list once — only include rows that have any non-zero data
+  const componentRows: Array<{ label: string; sublabel?: string; key: keyof PriceBreak }> = [
+    { label: 'Blank Hat', key: 'blank_price' },
+  ];
+  if (isValidDecoration(result.front_decoration)) {
+    componentRows.push({ label: 'Front', sublabel: result.front_decoration!, key: 'front_decoration_price' });
+  }
+  if (isValidDecoration(result.left_decoration)) {
+    componentRows.push({ label: 'Left Side', sublabel: result.left_decoration!, key: 'left_decoration_price' });
+  }
+  if (isValidDecoration(result.right_decoration)) {
+    componentRows.push({ label: 'Right Side', sublabel: result.right_decoration!, key: 'right_decoration_price' });
+  }
+  if (isValidDecoration(result.back_decoration)) {
+    componentRows.push({ label: 'Back', sublabel: result.back_decoration!, key: 'back_decoration_price' });
+  }
+  if (breaks.some(pb => (pb.rush_fee ?? 0) > 0)) {
+    componentRows.push({ label: 'Rush Fee', key: 'rush_fee' });
+  }
+  if (result.include_rope && breaks.some(pb => (pb.rope_price ?? 0) > 0)) {
+    componentRows.push({ label: 'Rope', key: 'rope_price' });
+  }
+
+  const hasDigitizingFee = breaks.some(pb => (pb.digitizing_fee ?? 0) > 0);
 
   return (
     <div className="card">
@@ -834,17 +834,11 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <span className="text-gray-400">Style:</span>
-            <span className="text-gray-100 ml-2">
-              {result.style_number} - {result.style_name}
-            </span>
+            <span className="text-gray-100 ml-2">{result.style_number} - {result.style_name}</span>
           </div>
           <div>
             <span className="text-gray-400">Collection:</span>
             <span className="text-gray-100 ml-2">{result.collection}</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Quantity:</span>
-            <span className="text-gray-100 ml-2">{result.quantity.toLocaleString()}</span>
           </div>
           <div>
             <span className="text-gray-400">Shipping:</span>
@@ -858,116 +852,59 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
           <thead>
             <tr className="border-b border-gray-700">
               <th className="text-left py-3 px-3 text-gray-400">Line Item</th>
-              <th className="text-right py-3 px-3 text-gray-400">Per Piece</th>
-              <th className="text-right py-3 px-3 text-gray-400">Qty</th>
-              <th className="text-right py-3 px-3 text-gray-400">Total</th>
+              {breaks.map(pb => (
+                <th key={pb.quantity_break} className="text-right py-3 px-3 text-gray-400">
+                  {pb.quantity_break.toLocaleString()}+
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {/* Blank Hat */}
-            <tr className="border-b border-gray-800">
-              <td className="py-3 px-3 text-gray-100">Blank Hat</td>
-              <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.blank_price || 0)}</td>
-              <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-              <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.blank_price || 0) * result.quantity)}</td>
-            </tr>
-
-            {/* Front Decoration */}
-            {hasFront && (
-              <tr className="border-b border-gray-800">
+            {componentRows.map((row) => (
+              <tr key={row.label} className="border-b border-gray-800">
                 <td className="py-3 px-3 text-gray-100">
-                  <div>Front Decoration</div>
-                  <div className="text-xs text-gray-400">{result.front_decoration}</div>
+                  <div>{row.label}</div>
+                  {row.sublabel && <div className="text-xs text-gray-400">{row.sublabel}</div>}
                 </td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.front_decoration_price || 0)}</td>
-                <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.front_decoration_price || 0) * result.quantity)}</td>
+                {breaks.map((pb) => (
+                  <td key={pb.quantity_break} className="py-3 px-3 text-right text-gray-100">
+                    ${formatCurrency((pb[row.key] as number) ?? 0)}
+                  </td>
+                ))}
               </tr>
-            )}
+            ))}
 
-            {/* Left Decoration */}
-            {hasLeft && (
-              <tr className="border-b border-gray-800">
-                <td className="py-3 px-3 text-gray-100">
-                  <div>Left Side Decoration</div>
-                  <div className="text-xs text-gray-400">{result.left_decoration}</div>
-                </td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.left_decoration_price || 0)}</td>
-                <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.left_decoration_price || 0) * result.quantity)}</td>
-              </tr>
-            )}
-
-            {/* Right Decoration */}
-            {hasRight && (
-              <tr className="border-b border-gray-800">
-                <td className="py-3 px-3 text-gray-100">
-                  <div>Right Side Decoration</div>
-                  <div className="text-xs text-gray-400">{result.right_decoration}</div>
-                </td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.right_decoration_price || 0)}</td>
-                <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.right_decoration_price || 0) * result.quantity)}</td>
-              </tr>
-            )}
-
-            {/* Back Decoration */}
-            {hasBack && (
-              <tr className="border-b border-gray-800">
-                <td className="py-3 px-3 text-gray-100">
-                  <div>Back Decoration</div>
-                  <div className="text-xs text-gray-400">{result.back_decoration}</div>
-                </td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.back_decoration_price || 0)}</td>
-                <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.back_decoration_price || 0) * result.quantity)}</td>
-              </tr>
-            )}
-
-            {/* Rush Fee */}
-            {hasRushFee && (
-              <tr className="border-b border-gray-800">
-                <td className="py-3 px-3 text-gray-100">Rush Fee</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.rush_fee || 0)}</td>
-                <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.rush_fee || 0) * result.quantity)}</td>
-              </tr>
-            )}
-
-            {/* Rope */}
-            {hasRope && (
-              <tr className="border-b border-gray-800">
-                <td className="py-3 px-3 text-gray-100">Rope</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.rope_price || 0)}</td>
-                <td className="py-3 px-3 text-right text-gray-100">{result.quantity.toLocaleString()}</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency((pb.rope_price || 0) * result.quantity)}</td>
-              </tr>
-            )}
-
-            {/* Digitizing Fee */}
-            {(pb.digitizing_fee ?? 0) > 0 && (
-              <tr className="border-b border-gray-800">
-                <td className="py-3 px-3 text-gray-100">Digitizing Fee</td>
-                <td className="py-3 px-3 text-right text-gray-400">-</td>
-                <td className="py-3 px-3 text-right text-gray-400">1</td>
-                <td className="py-3 px-3 text-right text-gray-100">${formatCurrency(pb.digitizing_fee ?? 0)}</td>
-              </tr>
-            )}
-
-            {/* Grand Total */}
+            {/* Per-piece total — bold, accent color */}
             <tr className="bg-gray-800/50">
-              <td className="py-3 px-3 text-gray-100 font-semibold">Total</td>
-              <td className="py-3 px-3 text-right text-gray-100 font-semibold">${formatCurrency(pb.per_piece_price || 0)}</td>
-              <td className="py-3 px-3 text-right text-gray-100 font-semibold">{result.quantity.toLocaleString()}</td>
-              <td className="py-3 px-3 text-right text-primary-400 font-semibold">${formatCurrency(pb.total || 0)}</td>
+              <td className="py-3 px-3 text-gray-100 font-semibold">Per-Piece Total</td>
+              {breaks.map(pb => (
+                <td key={pb.quantity_break} className="py-3 px-3 text-right text-primary-400 font-semibold">
+                  ${formatCurrency(pb.per_piece_price ?? 0)}
+                </td>
+              ))}
             </tr>
+
+            {/* Digitizing Fee — one-time, annotated */}
+            {hasDigitizingFee && (
+              <tr className="border-t border-gray-700">
+                <td className="py-3 px-3 text-gray-100">
+                  <div>Digitizing Fee</div>
+                  <div className="text-xs text-gray-400">one-time</div>
+                </td>
+                {breaks.map(pb => (
+                  <td key={pb.quantity_break} className="py-3 px-3 text-right text-gray-100">
+                    ${formatCurrency(pb.digitizing_fee ?? 0)}
+                  </td>
+                ))}
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       <div className="mt-4 p-3 bg-gray-800 rounded-lg">
         <p className="text-sm text-gray-400">
-          * Pricing based on {pb.quantity_break.toLocaleString()}+ quantity break. Digitizing fee is waived at 144+ quantity.
+          * Per-piece pricing at each quantity break. Digitizing fee is waived at 144+ pieces.
         </p>
       </div>
     </div>
