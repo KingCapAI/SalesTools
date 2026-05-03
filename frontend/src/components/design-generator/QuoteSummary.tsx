@@ -96,7 +96,7 @@ export function QuoteSummary({ quote, onEdit, onDelete, onExport, isDeleting, is
             <thead>
               <tr className="border-b border-gray-700">
                 <th className="text-left py-2 px-1 text-gray-400">Item</th>
-                {quote.cached_price_breaks!.map((pb) => (
+                {priceBreaks!.map((pb) => (
                   <th key={pb.quantity_break} className="text-right py-2 px-1 text-gray-400">
                     {pb.quantity_break.toLocaleString()}+
                   </th>
@@ -107,7 +107,7 @@ export function QuoteSummary({ quote, onEdit, onDelete, onExport, isDeleting, is
               {/* Hat Cost Row */}
               <tr className="border-b border-gray-700/50">
                 <td className="py-2 px-1 text-gray-300">Hat</td>
-                {quote.cached_price_breaks!.map((pb) => {
+                {priceBreaks!.map((pb) => {
                   const hatCost = getHatCost(pb as Record<string, unknown>);
                   return (
                     <td key={pb.quantity_break} className="py-2 px-1 text-right text-gray-100">
@@ -119,7 +119,7 @@ export function QuoteSummary({ quote, onEdit, onDelete, onExport, isDeleting, is
               {/* Shipping Cost Row */}
               <tr>
                 <td className="py-2 px-1 text-gray-300">Shipping</td>
-                {quote.cached_price_breaks!.map((pb) => {
+                {priceBreaks!.map((pb) => {
                   const shippingCost = meetsMoq(pb as { per_piece_price: number | null })
                     ? ((pb as Record<string, unknown>).shipping_price as number || 0)
                     : null;
