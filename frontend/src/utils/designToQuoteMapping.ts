@@ -125,6 +125,8 @@ const CUSTOM_TO_DOMESTIC_MAP: Record<string, string> = {
   heat_transfer: 'Heat Transfer',
   laser_cut: 'Faux Leather Laser Patch',
   patch: 'Faux Leather Laser Patch',
+  hd_print: 'High Density Print',
+  sublimated_embroidery: 'Embroidered Patch',
 };
 
 // CustomDesign decoration_method enum -> overseas decoration name
@@ -136,6 +138,8 @@ const CUSTOM_TO_OVERSEAS_MAP: Record<string, string> = {
   sublimation: 'Sublimated Patch',
   screen_print: 'High Density Print',
   patch: 'Embroidered Patch',
+  hd_print: 'High Density Print',
+  sublimated_embroidery: 'Embroidered Patch',
 };
 
 

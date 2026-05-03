@@ -5,14 +5,21 @@ import type { DesignChat } from '../../types/api';
 
 interface RevisionChatProps {
   chats: DesignChat[];
+  // Kept for API compatibility — no longer used (every submit triggers a revision now).
   onSendMessage: (message: string) => void;
   onRequestRevision: (notes: string) => void;
   isLoading?: boolean;
 }
 
+const QUICK_PROMPTS = [
+  'Make the front logo larger',
+  'Try a different color scheme',
+  'Use a darker hat color',
+  'Remove the back decoration',
+];
+
 export function RevisionChat({
   chats,
-  onSendMessage,
   onRequestRevision,
   isLoading,
 }: RevisionChatProps) {
@@ -23,35 +30,30 @@ export function RevisionChat({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chats]);
 
+  // Every submit triggers a revision — the previous keyword-based routing dropped
+  // any message that didn't contain words like "change" or "remove" into a
+  // chat-only path that produced no new design, which looked broken to users.
+  const submitRevision = (text: string) => {
+    if (!text.trim() || isLoading) return;
+    onRequestRevision(text);
+    setMessage('');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isLoading) return;
-
-    // Check if message looks like a revision request
-    const revisionKeywords = ['change', 'make', 'update', 'modify', 'add', 'remove', 'revise', 'different', 'instead', 'try'];
-    const isRevisionRequest = revisionKeywords.some((keyword) =>
-      message.toLowerCase().includes(keyword)
-    );
-
-    if (isRevisionRequest) {
-      onRequestRevision(message);
-    } else {
-      onSendMessage(message);
-    }
-
-    setMessage('');
+    submitRevision(message);
   };
 
   return (
     <div className="flex flex-col h-full">
-      <h3 className="font-semibold text-white mb-3">Revisions & Chat</h3>
+      <h3 className="font-semibold text-white mb-3">Request a Revision</h3>
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 mb-4 min-h-[200px] max-h-[400px] pr-2">
         {chats.length === 0 ? (
           <div className="text-center py-8 text-gray-400 text-sm">
-            <p>No messages yet.</p>
-            <p className="mt-1">Request changes to generate new versions.</p>
+            <p>No revisions yet.</p>
+            <p className="mt-1">Each request generates a new version.</p>
           </div>
         ) : (
           chats.map((chat) => (
@@ -91,13 +93,29 @@ export function RevisionChat({
         <div ref={chatEndRef} />
       </div>
 
+      {/* Quick prompts */}
+      {chats.length === 0 && !isLoading && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {QUICK_PROMPTS.map((q) => (
+            <button
+              key={q}
+              type="button"
+              onClick={() => setMessage(q)}
+              className="text-xs px-2.5 py-1 rounded-full bg-fill-tertiary text-gray-200 hover:bg-fill-secondary transition-colors"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Input */}
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Request changes or ask questions..."
+          placeholder="Describe what to change…"
           className="input flex-1"
           disabled={isLoading}
         />
@@ -107,7 +125,7 @@ export function RevisionChat({
       </form>
 
       <p className="text-xs text-gray-400 mt-2">
-        Tip: Describe changes like "Make the logo larger" or "Use a different color scheme" to generate a new version.
+        Phrase as an edit instruction, e.g. "make the logo larger" or "change the hat to navy". Each submit generates a new version.
       </p>
     </div>
   );

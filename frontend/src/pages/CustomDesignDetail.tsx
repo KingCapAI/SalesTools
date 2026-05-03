@@ -47,6 +47,7 @@ const LOCATION_LABELS: Record<string, string> = {
 const DECORATION_METHOD_LABELS: Record<string, string> = {
   embroidery: 'Embroidery', screen_print: 'Screen Print', patch: 'Patch',
   '3d_puff': '3D Puff', laser_cut: 'Laser Cut', heat_transfer: 'Heat Transfer', sublimation: 'Sublimation',
+  hd_print: 'HD Print', sublimated_embroidery: 'Sublimated Embroidery',
 };
 
 export function CustomDesignDetail() {

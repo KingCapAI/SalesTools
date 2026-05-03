@@ -13,6 +13,8 @@ const DECORATION_METHODS: { value: DecorationMethod; label: string }[] = [
   { value: 'laser_cut', label: 'Laser Cut' },
   { value: 'heat_transfer', label: 'Heat Transfer' },
   { value: 'sublimation', label: 'Sublimation' },
+  { value: 'hd_print', label: 'HD Print' },
+  { value: 'sublimated_embroidery', label: 'Sublimated Embroidery' },
 ];
 
 const SIZES: { value: DecorationSize; label: string }[] = [

@@ -24,6 +24,8 @@ class DecorationMethod(str, Enum):
     LASER_CUT = "laser_cut"
     HEAT_TRANSFER = "heat_transfer"
     SUBLIMATION = "sublimation"
+    HD_PRINT = "hd_print"
+    SUBLIMATED_EMBROIDERY = "sublimated_embroidery"
 
 
 class DecorationSize(str, Enum):

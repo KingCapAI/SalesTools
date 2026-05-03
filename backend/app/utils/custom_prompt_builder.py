@@ -13,6 +13,8 @@ DECORATION_METHODS = {
     "laser_cut": "laser-cut applique",
     "heat_transfer": "heat transfer vinyl",
     "sublimation": "sublimation printing",
+    "hd_print": "high-density print (raised, glossy 3D-look ink that stands proud of the fabric — similar to 3D printing)",
+    "sublimated_embroidery": "sublimated embroidery (an embroidered patch where the thread surface is dye-sublimated for full-color photographic detail)",
 }
 
 # Size display names

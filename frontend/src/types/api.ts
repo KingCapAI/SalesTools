@@ -256,7 +256,9 @@ export type DecorationMethod =
   | '3d_puff'
   | 'laser_cut'
   | 'heat_transfer'
-  | 'sublimation';
+  | 'sublimation'
+  | 'hd_print'
+  | 'sublimated_embroidery';
 
 export type DecorationSize = 'small' | 'medium' | 'large' | 'custom';
 
