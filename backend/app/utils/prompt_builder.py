@@ -84,6 +84,21 @@ def format_closure(closure: Optional[str]) -> Optional[str]:
     return CLOSURES.get(closure, closure)
 
 
+# Map internal location codes (used in form values) to the canonical
+# wearer-perspective label used in prompts and the result template.
+# IMPORTANT: "left" and "right" in the form mean "wearer's left/right" —
+# the side facing the camera in the WEARERS LEFT / WEARERS RIGHT views
+# of the result template.
+LOCATION_PROMPT_LABELS: Dict[str, str] = {
+    "front": "FRONT",
+    "back": "BACK",
+    "left": "WEARER'S LEFT side (the side facing the camera in the WEARERS LEFT view of the result template)",
+    "right": "WEARER'S RIGHT side (the side facing the camera in the WEARERS RIGHT view of the result template)",
+    "visor": "UNDERBILL (inside the visor/brim)",
+    "underbill": "UNDERBILL (inside the visor/brim)",
+}
+
+
 def build_logo_placement_instructions(logos: List[Dict[str, Any]]) -> str:
     """Build prompt section describing how to place multiple named logos."""
     lines = []
@@ -94,28 +109,37 @@ def build_logo_placement_instructions(logos: List[Dict[str, Any]]) -> str:
 
     for logo in logos:
         name = logo.get('name', 'Logo')
-        location = logo.get('location')
+        location = (logo.get('location') or '').lower().strip()
         if location:
+            label = LOCATION_PROMPT_LABELS.get(location, location.upper())
             assigned_logos.append((name, location))
-            lines.append(f"- '{name}' → Place at the **{location.upper()}** of the hat")
+            lines.append(f"- '{name}' → Place on the **{label}** of the hat")
         else:
             unassigned_logos.append(name)
             lines.append(f"- '{name}' → Place at the best location (AI's choice)")
 
     lines.append("")
     lines.append("IMPORTANT - LOGO USAGE: Use ONLY the provided logo images labeled above. Do NOT search for or use any other logos from the internet. Each logo image is labeled with its name.")
+    lines.append(
+        "IMPORTANT - SIDE PERSPECTIVE: All references to 'left' and 'right' are from the WEARER's perspective, "
+        "not the viewer's. The wearer's left side is on the right side of the image when viewing the FRONT view. "
+        "This must match the WEARERS LEFT / WEARERS RIGHT labels in the result template's 6-view layout."
+    )
 
     if unassigned_logos:
         names = ", ".join(f"'{n}'" for n in unassigned_logos)
-        lines.append(f"\nFor logos marked as AI's choice ({names}), place them at appropriate locations that complement the overall design. Choose from: front, left side, right side, back, or underbrim.")
+        lines.append(
+            f"\nFor logos marked as AI's choice ({names}), place them at appropriate locations that complement "
+            f"the overall design. Choose from: front, wearer's left side, wearer's right side, back, or underbrim."
+        )
 
     lines.append("""
 DECORATION RULES — MAXIMUM 3 LOCATIONS:
 Use no more than 3 decoration locations total. Keep the design clean and professional.
 Allowed methods per location:
 - FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
-- LEFT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
-- RIGHT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
+- WEARER'S LEFT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
+- WEARER'S RIGHT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - BACK: flat embroidery ONLY.
 - UNDERBILL (inside visor): sublimated print ONLY.
 Do NOT use decoration methods not listed for a given location.""")
@@ -182,9 +206,11 @@ HAT CONSTRUCTION:
     else:
         logo_section = """IMPORTANT - LOGO USAGE: If a logo image has been provided with this prompt, you MUST use that exact logo in your design. Do NOT search for or use any other logos from the internet. Use ONLY the submitted logo artwork. If no logo is provided, create a simple text-based design using the brand name.
 
+IMPORTANT - SIDE PERSPECTIVE: All references to 'left' and 'right' are from the WEARER's perspective, not the viewer's. This must match the WEARERS LEFT / WEARERS RIGHT labels in the result template's 6-view layout.
+
 DECORATION LOCATIONS — MAXIMUM 3 locations. Choose up to 3 from the following:
 1. FRONT: Always include a decoration on the front. Methods: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
-2. SIDE (choose ONE — left or right, not both): Methods: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
+2. SIDE (choose ONE — wearer's left or wearer's right, not both): Methods: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 3. BACK: Method: flat embroidery ONLY.
 4. UNDERBILL (inside visor): Method: sublimated print ONLY.
 
@@ -193,7 +219,14 @@ STRICT: Do NOT use more than 3 decoration locations. Do NOT use decoration metho
     # Get variation hint
     variation_hint = VARIATION_HINTS[variation_index % len(VARIATION_HINTS)]
 
-    prompt = f"""A photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.{construction_details}
+    prompt = f"""RENDERING STYLE — READ FIRST:
+The output is a PHOTOREALISTIC studio product photograph composed in a 3x2 grid.
+- All six cells must look like real photographs of a real physical hat (and a real human in cell 6).
+- DO NOT produce cartoon, illustration, line-art, vector-flat, watercolor, painted, sketched, or otherwise stylized output.
+- The layout template image provided alongside this prompt is itself a cartoon line-art illustration — that is for STRUCTURE ONLY. Its art style must NOT appear in your output.
+- Lighting: soft professional studio lighting. Background: clean neutral white (#f5f5f7-ish). Materials: realistic fabric weave, stitching, and shadow detail.
+
+A photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.{construction_details}
 
 The brand is **{client_name}**.
 
@@ -222,7 +255,7 @@ Top row:
 Bottom row:
 4. **BACK** (bottom-left) — hat rotated 180°, back panel and closure visible
 5. **UNDERVISOR** (bottom-center) — hat flipped to show the underside of the visor/brim and the sweatband
-6. **MODEL** (bottom-right) — hat worn on a white male model, portrait angle
+6. **MODEL** (bottom-right) — PHOTOREALISTIC professional studio photograph of a real adult male model wearing the hat, head-and-shoulders portrait. This must look like an actual photo of a real person — NOT a cartoon, NOT an illustration, NOT a stylized drawing, NOT line-art. Skin, hair, fabric textures must all read as photographic. Ignore the cartoon person shown in the layout template — the template's art style is for layout reference only and must NOT be reproduced in this cell.
 
 Place the angle labels (FRONT, WEARERS RIGHT, WEARERS LEFT, BACK, UNDERVISOR, MODEL) under each box exactly as shown in the LAYOUT TEMPLATE.
 

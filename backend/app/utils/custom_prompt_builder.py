@@ -145,7 +145,14 @@ def build_custom_design_prompt(
 
     if reference_hat_path:
         # Reference hat recreation mode
-        prompt = f"""Recreate this reference hat design with the customer's branding.
+        prompt = f"""RENDERING STYLE — READ FIRST:
+The output is a PHOTOREALISTIC studio product photograph composed in a 3x2 grid.
+- All six cells must look like real photographs of a real physical hat (and a real human in cell 6).
+- DO NOT produce cartoon, illustration, line-art, vector-flat, watercolor, painted, sketched, or otherwise stylized output.
+- The layout template image provided alongside this prompt is itself a cartoon line-art illustration — that is for STRUCTURE ONLY. Its art style must NOT appear in your output.
+- Lighting: soft professional studio lighting. Background: clean neutral white. Materials: realistic fabric weave, stitching, and shadow detail.
+
+Recreate this reference hat design with the customer's branding.
 
 REFERENCE HAT: An image of a reference hat has been provided. Match the following aspects:
 - Overall hat shape and style
@@ -200,7 +207,7 @@ Top row:
 Bottom row:
 4. **BACK** (bottom-left) — hat rotated 180°, back panel and closure visible
 5. **UNDERVISOR** (bottom-center) — hat flipped to show the underside of the visor/brim and the sweatband
-6. **MODEL** (bottom-right) — hat worn on a white male model, portrait angle
+6. **MODEL** (bottom-right) — PHOTOREALISTIC professional studio photograph of a real adult male model wearing the hat, head-and-shoulders portrait. This must look like an actual photo of a real person — NOT a cartoon, NOT an illustration, NOT a stylized drawing, NOT line-art. Skin, hair, fabric textures must all read as photographic. Ignore the cartoon person shown in the layout template — the template's art style is for layout reference only and must NOT be reproduced in this cell.
 
 Place the angle labels (FRONT, WEARERS RIGHT, WEARERS LEFT, BACK, UNDERVISOR, MODEL) under each box exactly as shown in the LAYOUT TEMPLATE.
 
@@ -215,7 +222,14 @@ Professional studio lighting, white background, 4k resolution.
 Add the following legal language to the bottom of the image: {LEGAL_TEXT}"""
     else:
         # Standard custom design mode
-        prompt = f"""Create a photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.
+        prompt = f"""RENDERING STYLE — READ FIRST:
+The output is a PHOTOREALISTIC studio product photograph composed in a 3x2 grid.
+- All six cells must look like real photographs of a real physical hat (and a real human in cell 6).
+- DO NOT produce cartoon, illustration, line-art, vector-flat, watercolor, painted, sketched, or otherwise stylized output.
+- The layout template image provided alongside this prompt is itself a cartoon line-art illustration — that is for STRUCTURE ONLY. Its art style must NOT appear in your output.
+- Lighting: soft professional studio lighting. Background: clean neutral white. Materials: realistic fabric weave, stitching, and shadow detail.
+
+Create a photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.
 
 HAT CONSTRUCTION:
 - Structure: **{formatted_structure}**
@@ -270,7 +284,7 @@ Top row:
 Bottom row:
 4. **BACK** (bottom-left) — hat rotated 180°, back panel and closure visible
 5. **UNDERVISOR** (bottom-center) — hat flipped to show the underside of the visor/brim and the sweatband
-6. **MODEL** (bottom-right) — hat worn on a white male model, portrait angle
+6. **MODEL** (bottom-right) — PHOTOREALISTIC professional studio photograph of a real adult male model wearing the hat, head-and-shoulders portrait. This must look like an actual photo of a real person — NOT a cartoon, NOT an illustration, NOT a stylized drawing, NOT line-art. Skin, hair, fabric textures must all read as photographic. Ignore the cartoon person shown in the layout template — the template's art style is for layout reference only and must NOT be reproduced in this cell.
 
 Place the angle labels (FRONT, WEARERS RIGHT, WEARERS LEFT, BACK, UNDERVISOR, MODEL) under each box exactly as shown in the LAYOUT TEMPLATE.
 

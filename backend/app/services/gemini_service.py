@@ -50,9 +50,15 @@ def _get_layout_template_part() -> Optional[Dict[str, Any]]:
 
 
 _LAYOUT_TEMPLATE_LABEL = (
-    "LAYOUT TEMPLATE (reference only): Use this image ONLY to determine the 3x2 grid composition and the six "
-    "angle labels (FRONT, WEARERS RIGHT, WEARERS LEFT, BACK, UNDERVISOR, MODEL). Do NOT copy the hat shape, "
-    "colors, or any design details from this template. Match the box positions and label placement exactly."
+    "LAYOUT TEMPLATE (structural reference only — DO NOT IMITATE ITS ART STYLE): "
+    "This template is a flat cartoon line-art illustration drawn for clarity. "
+    "It exists ONLY to show: (1) the 3x2 grid composition, (2) the six box positions, "
+    "and (3) the six angle labels (FRONT, WEARERS RIGHT, WEARERS LEFT, BACK, UNDERVISOR, MODEL). "
+    "The OUTPUT image must be a PHOTOREALISTIC studio product photograph — NOT cartoon, "
+    "NOT illustration, NOT line-art, NOT stylized drawing. "
+    "Do NOT copy the template's hat shape, colors, design details, line-art rendering, "
+    "flat coloring, or the cartoon person in the MODEL cell. Replicate ONLY the grid "
+    "layout and the angle labels."
 )
 
 # Retry configuration for 503 errors
@@ -468,8 +474,10 @@ async def generate_design_image(
             ],
             "generationConfig": {
                 "responseModalities": ["TEXT", "IMAGE"],
-                "temperature": 0.2,
-                "topP": 0.7
+                # Low-but-not-too-low temp keeps view consistency without making the
+                # model latch onto the cartoon template style.
+                "temperature": 0.4,
+                "topP": 0.85
             }
         }
 
@@ -670,8 +678,10 @@ IMPORTANT: Keep everything else exactly the same. Only modify what is specifical
             "contents": [{"parts": parts}],
             "generationConfig": {
                 "responseModalities": ["TEXT", "IMAGE"],
-                "temperature": 0.2,
-                "topP": 0.7
+                # Low-but-not-too-low temp keeps view consistency without making the
+                # model latch onto the cartoon template style.
+                "temperature": 0.4,
+                "topP": 0.85
             }
         }
 
@@ -871,8 +881,10 @@ async def generate_custom_design(
             "contents": [{"parts": parts}],
             "generationConfig": {
                 "responseModalities": ["TEXT", "IMAGE"],
-                "temperature": 0.2,
-                "topP": 0.7
+                # Low-but-not-too-low temp keeps view consistency without making the
+                # model latch onto the cartoon template style.
+                "temperature": 0.4,
+                "topP": 0.85
             }
         }
 
