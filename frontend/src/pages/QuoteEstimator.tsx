@@ -289,8 +289,9 @@ export function QuoteEstimator() {
             </Button>
           </div>
 
-          {/* Results Section */}
-          <div className="space-y-6">
+          {/* Results Section — sticky on lg+ so it stays visible while the form scrolls.
+              self-start is required: grid items default to stretch, which defeats sticky. */}
+          <div className="space-y-6 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
             {domesticResult && <DomesticResults result={domesticResult} formData={domesticForm} />}
             {overseasResult && <OverseasResults result={overseasResult} formData={overseasForm} />}
             {!domesticResult && !overseasResult && (
