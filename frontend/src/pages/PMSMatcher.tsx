@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { jsPDF } from 'jspdf';
 import { Header } from '../components/layout/Header';
 import './PMSMatcher.css';
 
@@ -251,6 +252,206 @@ export function PMSMatcher() {
   };
   const clearPicks = () => setPicks([]);
 
+  // ---- PDF export ----
+  // Composites the canvas with numbered pin overlays into a fresh offscreen
+  // canvas, then builds a HIG-styled PDF with the marked-up logo on page 1
+  // and a list of pick → PMS → thread matches below (paginating as needed).
+  const handleExportPDF = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || picks.length === 0) return;
+
+    // 1. Build a composite canvas: original logo + numbered pin overlays
+    const out = document.createElement('canvas');
+    out.width = canvas.width;
+    out.height = canvas.height;
+    const octx = out.getContext('2d');
+    if (!octx) return;
+    octx.drawImage(canvas, 0, 0);
+
+    const pinR = Math.max(canvas.width * 0.025, 16);
+    picks.forEach((p, i) => {
+      const cx = p.xPct * canvas.width;
+      const cy = p.yPct * canvas.height;
+      const lum = luminance(...p.rgb);
+      // Filled pin in pick color
+      octx.beginPath();
+      octx.arc(cx, cy, pinR, 0, Math.PI * 2);
+      octx.fillStyle = rgbToHex(...p.rgb);
+      octx.fill();
+      // Hairline outline for contrast on similar-color backgrounds
+      octx.lineWidth = Math.max(pinR * 0.08, 1.5);
+      octx.strokeStyle = lum > 0.55 ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.85)';
+      octx.stroke();
+      // Number
+      octx.fillStyle = lum > 0.55 ? '#1d1d1f' : '#ffffff';
+      octx.textAlign = 'center';
+      octx.textBaseline = 'middle';
+      octx.font = `bold ${Math.round(pinR * 1.05)}px -apple-system, "SF Pro Display", system-ui, sans-serif`;
+      octx.fillText(String(i + 1).padStart(2, '0'), cx, cy);
+    });
+    const compositeDataUrl = out.toDataURL('image/png');
+
+    // 2. Build the PDF (US Letter, points)
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 48;
+    const contentW = pageW - margin * 2;
+
+    // ---- HIG palette (matches the on-screen tool) ----
+    const C_LABEL_1: [number, number, number] = [29, 29, 31];   // #1d1d1f
+    const C_LABEL_2: [number, number, number] = [99, 99, 103];  // ~0.6 alpha label
+    const C_LABEL_3: [number, number, number] = [142, 142, 147]; // softer
+    const C_HAIRLINE: [number, number, number] = [220, 220, 224];
+
+    const drawHairline = (y: number) => {
+      doc.setDrawColor(...C_HAIRLINE);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageW - margin, y);
+    };
+
+    // ---- Header ----
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(...C_LABEL_1);
+    doc.text('PMS Match Report', margin, margin + 6);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...C_LABEL_3);
+    const dateStr = new Date().toLocaleDateString(undefined, {
+      year: 'numeric', month: 'long', day: 'numeric',
+    });
+    const subtitle = `${dateStr}  ·  ${picks.length} pick${picks.length === 1 ? '' : 's'}`;
+    doc.text(subtitle, margin, margin + 22);
+
+    drawHairline(margin + 34);
+
+    // ---- Marked-up logo image ----
+    // Fit within content width and ~38% of page height
+    const maxImgH = pageH * 0.38;
+    const aspect = out.width / out.height;
+    let imgW = contentW;
+    let imgH = imgW / aspect;
+    if (imgH > maxImgH) {
+      imgH = maxImgH;
+      imgW = imgH * aspect;
+    }
+    const imgX = margin + (contentW - imgW) / 2;
+    const imgY = margin + 50;
+    doc.addImage(compositeDataUrl, 'PNG', imgX, imgY, imgW, imgH);
+
+    // ---- Picks list ----
+    let cursorY = imgY + imgH + 32;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...C_LABEL_1);
+    doc.text('Picks', margin, cursorY);
+    cursorY += 8;
+    drawHairline(cursorY);
+    cursorY += 18;
+
+    const visibleBrandKeys = BRAND_KEYS.filter(b => brands[b]);
+
+    const ensureSpace = (needed: number) => {
+      if (cursorY + needed > pageH - margin) {
+        doc.addPage();
+        cursorY = margin;
+      }
+    };
+
+    picks.forEach((pick, i) => {
+      const top = nearestPMS(pick.lab, 1);
+      const best = top[0];
+      if (!best) return;
+
+      // Estimate space needed (~ 14pt header + 12pt per visible brand row)
+      const blockHeight = 36 + visibleBrandKeys.length * 14 + 14;
+      ensureSpace(blockHeight);
+
+      // Pin number swatch
+      const swX = margin;
+      const swY = cursorY - 10;
+      const swSize = 22;
+      const lum = luminance(...pick.rgb);
+      doc.setFillColor(...pick.rgb);
+      doc.roundedRect(swX, swY, swSize, swSize, 5, 5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(lum > 0.55 ? 29 : 255, lum > 0.55 ? 29 : 255, lum > 0.55 ? 31 : 255);
+      doc.text(String(i + 1).padStart(2, '0'), swX + swSize / 2, swY + swSize / 2 + 4, { align: 'center' });
+
+      // Pick label (hex, ΔE, nearest PMS)
+      const labelX = swX + swSize + 12;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(...C_LABEL_1);
+      doc.text(`PMS ${best.code}`, labelX, cursorY);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...C_LABEL_2);
+      const meta = `${rgbToHex(...pick.rgb).toUpperCase()}  ·  RGB ${pick.rgb.map(v => Math.round(v)).join(', ')}  ·  ΔE ${best.de.toFixed(1)}`;
+      doc.text(meta, labelX, cursorY + 14);
+
+      cursorY += 32;
+
+      // Per-brand thread matches
+      if (visibleBrandKeys.length === 0) {
+        doc.setFontSize(9);
+        doc.setTextColor(...C_LABEL_3);
+        doc.text('(No thread brands selected)', labelX, cursorY);
+        cursorY += 14;
+      } else {
+        visibleBrandKeys.forEach(brand => {
+          const m = brandMatch(brand, pick.lab, best.code);
+          ensureSpace(14);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(9);
+          doc.setTextColor(...C_LABEL_2);
+          doc.text(`${BRAND_LABELS[brand]}:`, labelX, cursorY);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...C_LABEL_1);
+          let txt: string;
+          if (m.type === 'empty') {
+            doc.setTextColor(...C_LABEL_3);
+            txt = 'Awaiting import';
+          } else {
+            const codes = m.threads.map(t => `${t.code} ${t.name}`).join(', ');
+            txt = m.type === 'approx'
+              ? `${codes}  (via ${m.pmsCode}, ΔE ${m.de.toFixed(1)})`
+              : codes;
+          }
+          // Wrap long thread lists across multiple lines
+          const wrapped = doc.splitTextToSize(txt, contentW - (labelX - margin) - 70) as string[];
+          doc.text(wrapped, labelX + 70, cursorY);
+          cursorY += 12 * Math.max(wrapped.length, 1);
+        });
+      }
+
+      // Spacer + hairline between picks
+      cursorY += 6;
+      if (i < picks.length - 1) {
+        drawHairline(cursorY);
+        cursorY += 16;
+      }
+    });
+
+    // ---- Footer disclaimer ----
+    cursorY = pageH - margin + 4;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(...C_LABEL_3);
+    doc.text(
+      'PMS values are public approximations. Confirm against a physical thread book before production.',
+      margin, cursorY
+    );
+
+    doc.save(`pms-match-${Date.now()}.pdf`);
+  }, [picks, brands, nearestPMS, brandMatch]);
+
   const removePick = (id: number) => setPicks(ps => ps.filter(p => p.id !== id));
 
   /* ========== drag pin ========== */
@@ -336,12 +537,21 @@ export function PMSMatcher() {
                   <span className="lbl">Replace</span>
                 </button>
                 {picks.length > 0 && (
-                  <button className="pm-btn pm-btn-gray" onClick={clearPicks} aria-label="Clear picks">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                      <path d="M4 5h8M5.5 5l.5 8h4l.5-8M6.5 3h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span className="lbl">Clear picks</span>
-                  </button>
+                  <>
+                    <button className="pm-btn pm-btn-gray" onClick={clearPicks} aria-label="Clear picks">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 5h8M5.5 5l.5 8h4l.5-8M6.5 3h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <span className="lbl">Clear picks</span>
+                    </button>
+                    <button className="pm-btn pm-btn-filled" onClick={handleExportPDF} aria-label="Export PDF">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 2v8m0 0L5 7m3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M3 12v1.5A1.5 1.5 0 0 0 4.5 15h7A1.5 1.5 0 0 0 13 13.5V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                      <span className="lbl">Export PDF</span>
+                    </button>
+                  </>
                 )}
               </>
             )}
