@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Dict
 
-from .prompt_builder import LEGAL_TEXT, format_hat_style, format_material
+from .prompt_builder import LEGAL_TEXT, format_hat_style, format_material, format_construction
 
 # Decoration method display names
 DECORATION_METHODS = {
@@ -127,6 +127,7 @@ def build_custom_design_prompt(
     """
     formatted_style = format_hat_style(hat_style)
     formatted_material = format_material(material)
+    construction_sentence = format_construction(hat_style, material)
     formatted_crown_color = format_color(crown_color)
     formatted_visor_color = format_color(visor_color)
     formatted_structure = format_structure(structure)
@@ -162,7 +163,8 @@ REFERENCE HAT: An image of a reference hat has been provided. Match the followin
 - Any distinctive design elements (stitching patterns, contrast elements, etc.)
 
 TARGET HAT SPECIFICATIONS:
-- Hat type: **{formatted_style}** made of **{formatted_material}**
+- Hat type: **{formatted_style}**
+- Construction & materials: {construction_sentence}
 - Structure: **{formatted_structure}**
 - Closure: **{formatted_closure}**
 - Crown color: **{formatted_crown_color}**
@@ -231,9 +233,10 @@ The output is a PHOTOREALISTIC studio product photograph composed in a 3x2 grid.
 - The layout template image provided alongside this prompt is itself a cartoon line-art illustration — that is for STRUCTURE ONLY. Its art style must NOT appear in your output.
 - Lighting: soft professional studio lighting. Background: clean neutral white. Materials: realistic fabric weave, stitching, and shadow detail.
 
-Create a photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.
+Create a photorealistic product shot of a **{formatted_style}**.
 
 HAT CONSTRUCTION:
+- Materials: {construction_sentence}
 - Structure: **{formatted_structure}**
 - Closure: **{formatted_closure}**
 

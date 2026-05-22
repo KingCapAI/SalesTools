@@ -65,6 +65,30 @@ def format_material(material: str) -> str:
     return MATERIALS.get(material, material)
 
 
+def is_trucker_style(hat_style: str) -> bool:
+    """True if the style is a trucker (structured fabric front, mesh back)."""
+    return "trucker" in (hat_style or "").lower()
+
+
+def format_construction(hat_style: str, material: str) -> str:
+    """Describe what each part of the hat is made of.
+
+    Trucker styles need explicit mesh-back language: applying the single
+    `material` field to the whole hat erases the mesh back panels that
+    define a trucker, so the model renders a solid-fabric cap instead.
+    """
+    fmt_material = format_material(material)
+    if is_trucker_style(hat_style):
+        return (
+            f"TRUCKER CONSTRUCTION (critical — this defines the hat): the FRONT panels "
+            f"are made of {fmt_material}; the BACK panels are open-weave polyester MESH. "
+            f"The mesh back is the single most defining feature of a trucker hat and MUST "
+            f"be clearly visible in the side, back, and model views. Do NOT render a "
+            f"solid-fabric back — the back panels must read unmistakably as mesh."
+        )
+    return f"The entire hat is made of {fmt_material}."
+
+
 def format_style_direction(direction: str) -> str:
     """Convert style direction code to display name."""
     return STYLE_DIRECTIONS.get(direction, direction)
@@ -177,6 +201,7 @@ def build_design_prompt(
     """
     formatted_style = format_hat_style(hat_style)
     formatted_material = format_material(material)
+    construction_sentence = format_construction(hat_style, material)
     formatted_direction = format_style_direction(style_direction)
     formatted_structure = format_structure(structure)
     formatted_closure = format_closure(closure)
@@ -226,7 +251,9 @@ The output is a PHOTOREALISTIC studio product photograph composed in a 3x2 grid.
 - The layout template image provided alongside this prompt is itself a cartoon line-art illustration — that is for STRUCTURE ONLY. Its art style must NOT appear in your output.
 - Lighting: soft professional studio lighting. Background: clean neutral white (#f5f5f7-ish). Materials: realistic fabric weave, stitching, and shadow detail.
 
-A photorealistic product shot of a **{formatted_style}** made of **{formatted_material}**.{construction_details}
+A photorealistic product shot of a **{formatted_style}**.
+
+CONSTRUCTION & MATERIALS: {construction_sentence}{construction_details}
 
 The brand is **{client_name}**.
 
