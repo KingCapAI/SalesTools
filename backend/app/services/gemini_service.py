@@ -159,7 +159,7 @@ async def _call_gemini_text(prompt: str, image_parts: Optional[List[Dict]] = Non
     paid-tier AI Studio has higher RPM than a fresh Vertex project's default quotas.
     """
     init_gemini()
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    model = genai.GenerativeModel("gemini-flash-latest")
     if image_parts:
         sdk_parts = []
         for p in image_parts:

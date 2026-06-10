@@ -78,7 +78,7 @@ Generate exactly 2 distinct caption variations for the topic provided. Separate 
 Output ONLY the raw captions. No labels, no explanations."""
 
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_prompt)
+        model = genai.GenerativeModel("gemini-flash-latest", system_instruction=system_prompt)
         response = model.generate_content(f"Write captions about: {req.context}")
         text = response.text.strip()
         captions = [s.strip() for s in text.split("|||") if s.strip()]
