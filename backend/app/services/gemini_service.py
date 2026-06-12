@@ -22,7 +22,7 @@ SUPPORTED_IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
 settings = get_settings()
 
 # Layout template — 6-view grid reference image bundled with the backend
-_LAYOUT_TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "assets" / "ai_design_template.jpeg"
+_LAYOUT_TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "assets" / "ai_design_template_v2.jpeg"
 _layout_template_part_cache: Optional[Dict[str, Any]] = None
 
 
