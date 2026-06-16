@@ -281,6 +281,17 @@ export function DesignDetail() {
                 <Download className="w-4 h-4 mr-2" />
                 Download
               </Button>
+              {design.published_to_library ? (
+                <Button variant="outline" size="sm" onClick={handleUnpublish} isLoading={unpublish.isPending} title="Remove from shared library">
+                  <EyeOff className="w-4 h-4 mr-2" />
+                  Remove from Library
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => setPublishModalOpen(true)} disabled={!selectedVersion?.image_path} title="Share with all teammates">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Publish to Library
+                </Button>
+              )}
             </div>
 
             {/* Tablet: icon-only */}
@@ -296,6 +307,15 @@ export function DesignDetail() {
               <Button variant="outline" size="sm" onClick={handleDownload} disabled={!selectedVersion?.image_path} title="Download">
                 <Download className="w-4 h-4" />
               </Button>
+              {design.published_to_library ? (
+                <Button variant="outline" size="sm" onClick={handleUnpublish} isLoading={unpublish.isPending} title="Remove from Library">
+                  <EyeOff className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => setPublishModalOpen(true)} disabled={!selectedVersion?.image_path} title="Publish to Library">
+                  <Upload className="w-4 h-4" />
+                </Button>
+              )}
             </div>
 
             {/* Mobile: overflow menu */}
