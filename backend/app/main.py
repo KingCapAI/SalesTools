@@ -15,7 +15,7 @@ from .routers import store_auth, store_products, store_cart, store_orders, store
 from .routers import admin_analytics, admin_cms, admin_customers, admin_pricing, sales, sample_requests, design_requests
 from .routers import cms_public, shipping_agent
 from .routers import purchasing, contact, sync, webhooks, store_returns, store_quotes
-from .routers import social_media, pipeline, customizer, library
+from .routers import social_media, library
 from .services.store_seed_service import seed_store_data
 
 settings = get_settings()
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     seed_default_data()
     seed_store()
     seed_test_customer()
-    seed_pipeline_stages()
+    # seed_pipeline_stages()  # disabled until routers/pipeline.py + models/job.py are committed
     yield
     # Shutdown
     pass
@@ -268,11 +268,10 @@ app.include_router(sample_requests.router, prefix="/api")
 # Include routers - Design Requests
 app.include_router(design_requests.router, prefix="/api")
 
-# Include routers - Pipeline (Kanban Board)
-app.include_router(pipeline.router, prefix="/api")
-
-# Include routers - 3D Customizer
-app.include_router(customizer.router, prefix="/api")
+# Pipeline (Kanban Board) + 3D Customizer routers are disabled in
+# production until their router/model/service files are committed.
+# app.include_router(pipeline.router, prefix="/api")
+# app.include_router(customizer.router, prefix="/api")
 
 # Include routers - Sync Management (BC, Pipedrive, etc.)
 app.include_router(sync.router, prefix="/api")
