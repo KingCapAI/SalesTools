@@ -48,6 +48,11 @@ export const designsApi = {
     return response.data;
   },
 
+  createRevisionV2: async (designId: string, data: RevisionCreate): Promise<DesignVersion[]> => {
+    const response = await api.post(`/designs/${designId}/versions/v2`, data);
+    return response.data;
+  },
+
   getChat: async (designId: string): Promise<DesignChat[]> => {
     const response = await api.get(`/designs/${designId}/chat`);
     return response.data;

@@ -11,7 +11,7 @@ import { QuoteSummary } from '../components/design-generator/QuoteSummary';
 import { ProductionTimeline } from '../components/design-generator/ProductionTimeline';
 import {
   useCustomDesign,
-  useCreateCustomDesignRevision,
+  useCreateCustomDesignRevisionV2,
   useAddCustomDesignChatMessage,
   useRegenerateCustomDesign,
   useSelectCustomVersion,
@@ -54,7 +54,7 @@ export function CustomDesignDetail() {
   const navigate = useNavigate();
 
   const { data: design, isLoading, refetch } = useCustomDesign(designId || '');
-  const createRevision = useCreateCustomDesignRevision();
+  const createRevision = useCreateCustomDesignRevisionV2();
   const addChatMessage = useAddCustomDesignChatMessage();
   const regenerateDesign = useRegenerateCustomDesign();
   const selectVersion = useSelectCustomVersion();
@@ -146,17 +146,13 @@ export function CustomDesignDetail() {
 
   const handleRequestRevision = async (notes: string) => {
     if (!designId) return;
-    const newVersion = await createRevision.mutateAsync({
+    // v2 returns 3 fresh variants — the user must pick one to base further edits on.
+    await createRevision.mutateAsync({
       designId,
       data: { revision_notes: notes },
     });
-    const result = await refetch();
-    if (newVersion?.id) {
-      setSelectedVersionId(newVersion.id);
-    } else if (result.data?.versions?.length) {
-      const versions = result.data.versions;
-      setSelectedVersionId(versions[versions.length - 1].id);
-    }
+    setSelectedVersionId(null);
+    await refetch();
   };
 
   const handleRegenerate = async () => {

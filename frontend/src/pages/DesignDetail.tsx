@@ -9,7 +9,7 @@ import { RevisionChat } from '../components/design-generator/RevisionChat';
 import { QuoteModal } from '../components/design-generator/QuoteModal';
 import { QuoteSummary } from '../components/design-generator/QuoteSummary';
 import { ProductionTimeline } from '../components/design-generator/ProductionTimeline';
-import { useDesign, useCreateRevision, useAddChatMessage, useRegenerateDesign, useSelectVersion, useDeleteVersion } from '../hooks/useDesigns';
+import { useDesign, useCreateRevisionV2, useAddChatMessage, useRegenerateDesign, useSelectVersion, useDeleteVersion } from '../hooks/useDesigns';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
 import {
   ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download,
@@ -29,7 +29,7 @@ export function DesignDetail() {
   const navigate = useNavigate();
 
   const { data: design, isLoading, refetch } = useDesign(designId || '');
-  const createRevision = useCreateRevision();
+  const createRevision = useCreateRevisionV2();
   const addChatMessage = useAddChatMessage();
   const regenerateDesign = useRegenerateDesign();
   const selectVersion = useSelectVersion();
@@ -122,17 +122,13 @@ export function DesignDetail() {
 
   const handleRequestRevision = async (notes: string) => {
     if (!designId) return;
-    const newVersion = await createRevision.mutateAsync({
+    // v2 returns 3 fresh variants — the user must pick one to base further edits on.
+    await createRevision.mutateAsync({
       designId,
       data: { revision_notes: notes },
     });
-    const result = await refetch();
-    if (newVersion?.id) {
-      setSelectedVersionId(newVersion.id);
-    } else if (result.data?.versions?.length) {
-      const versions = result.data.versions;
-      setSelectedVersionId(versions[versions.length - 1].id);
-    }
+    setSelectedVersionId(null);
+    await refetch();
   };
 
   const handleRegenerate = async () => {

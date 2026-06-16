@@ -115,6 +115,19 @@ export function useCreateCustomDesignRevision() {
   });
 }
 
+export function useCreateCustomDesignRevisionV2() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ designId, data }: { designId: string; data: RevisionCreate }) =>
+      customDesignsApi.createRevisionV2(designId, data),
+    onSuccess: (_, { designId }) => {
+      queryClient.invalidateQueries({ queryKey: ['custom-design', designId] });
+      queryClient.invalidateQueries({ queryKey: ['custom-designs'] });
+    },
+  });
+}
+
 export function useCustomDesignChat(designId: string) {
   return useQuery({
     queryKey: ['custom-design-chat', designId],

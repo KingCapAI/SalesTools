@@ -53,7 +53,7 @@ export function RevisionChat({
         {chats.length === 0 ? (
           <div className="text-center py-8 text-gray-400 text-sm">
             <p>No revisions yet.</p>
-            <p className="mt-1">Each request generates a new version.</p>
+            <p className="mt-1">Each request generates 3 fresh options to pick from.</p>
           </div>
         ) : (
           chats.map((chat) => (
@@ -125,7 +125,7 @@ export function RevisionChat({
       </form>
 
       <p className="text-xs text-gray-400 mt-2">
-        Phrase as an edit instruction, e.g. "make the logo larger" or "change the hat to navy". Each submit generates a new version.
+        Phrase as an edit instruction, e.g. "make the logo larger" or "change the hat to navy". Each submit generates <strong>3 fresh options</strong> — pick the cleanest one to base further edits on.
       </p>
     </div>
   );

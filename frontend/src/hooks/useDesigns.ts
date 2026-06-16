@@ -66,6 +66,19 @@ export function useCreateRevision() {
   });
 }
 
+export function useCreateRevisionV2() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ designId, data }: { designId: string; data: RevisionCreate }) =>
+      designsApi.createRevisionV2(designId, data),
+    onSuccess: (_, { designId }) => {
+      queryClient.invalidateQueries({ queryKey: ['design', designId] });
+      queryClient.invalidateQueries({ queryKey: ['designs'] });
+    },
+  });
+}
+
 export function useDesignChat(designId: string) {
   return useQuery({
     queryKey: ['design-chat', designId],
