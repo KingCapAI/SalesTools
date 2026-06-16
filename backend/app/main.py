@@ -15,7 +15,7 @@ from .routers import store_auth, store_products, store_cart, store_orders, store
 from .routers import admin_analytics, admin_cms, admin_customers, admin_pricing, sales, sample_requests, design_requests
 from .routers import cms_public, shipping_agent
 from .routers import purchasing, contact, sync, webhooks, store_returns, store_quotes
-from .routers import social_media
+from .routers import social_media, pipeline, customizer, library
 from .services.store_seed_service import seed_store_data
 
 settings = get_settings()
@@ -29,6 +29,7 @@ async def lifespan(app: FastAPI):
     seed_default_data()
     seed_store()
     seed_test_customer()
+    seed_pipeline_stages()
     yield
     # Shutdown
     pass
@@ -175,6 +176,53 @@ def seed_test_customer():
         db.close()
 
 
+def seed_pipeline_stages():
+    """Seed default pipeline stages for the Kanban board."""
+    from .models.job import PipelineStage
+
+    db = SessionLocal()
+    try:
+        existing = db.query(PipelineStage).first()
+        if existing:
+            print("Pipeline stages already seeded, skipping")
+            return
+
+        import json
+        default_stages = [
+            {"name": "Quote", "slug": "quote", "position": 1, "color": "#3B82F6", "sla_hours": 48},
+            {"name": "Design", "slug": "design", "position": 2, "color": "#8B5CF6", "sla_hours": 72},
+            {"name": "Sample Review", "slug": "sample_review", "position": 3, "color": "#F59E0B", "sla_hours": 96},
+            {"name": "Order Placed", "slug": "order_placed", "position": 4, "color": "#10B981", "sla_hours": 24,
+             "auto_rules": json.dumps({"triggers": [
+                 {"entity": "quote", "field": "status", "value": "converted", "action": "move_to_stage", "target_stage_slug": "order_placed"},
+                 {"entity": "order", "field": "status", "value": "confirmed", "action": "move_to_stage", "target_stage_slug": "order_placed"},
+             ]})},
+            {"name": "In Production", "slug": "in_production", "position": 5, "color": "#6366F1", "sla_hours": 240,
+             "auto_rules": json.dumps({"triggers": [
+                 {"entity": "order", "field": "status", "value": "in_production", "action": "move_to_stage", "target_stage_slug": "in_production"},
+             ]})},
+            {"name": "Shipped", "slug": "shipped", "position": 6, "color": "#06B6D4", "sla_hours": 48,
+             "auto_rules": json.dumps({"triggers": [
+                 {"entity": "order", "field": "status", "value": "shipped", "action": "move_to_stage", "target_stage_slug": "shipped"},
+             ]})},
+            {"name": "Complete", "slug": "complete", "position": 7, "color": "#22C55E", "sla_hours": None,
+             "auto_rules": json.dumps({"triggers": [
+                 {"entity": "order", "field": "status", "value": "delivered", "action": "move_to_stage", "target_stage_slug": "complete"},
+             ]})},
+        ]
+
+        for stage_data in default_stages:
+            db.add(PipelineStage(**stage_data))
+
+        db.commit()
+        print("Pipeline stages seeded successfully")
+    except Exception as e:
+        db.rollback()
+        print(f"Pipeline stage seed error (non-fatal): {e}")
+    finally:
+        db.close()
+
+
 # Include routers - HQ internal
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
@@ -183,6 +231,7 @@ app.include_router(brands.router, prefix="/api")
 app.include_router(designs.router, prefix="/api")
 app.include_router(design_quotes.router, prefix="/api")
 app.include_router(custom_designs.router, prefix="/api")
+app.include_router(library.router, prefix="/api")
 app.include_router(uploads.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(quotes.router, prefix="/api")
@@ -218,6 +267,12 @@ app.include_router(sample_requests.router, prefix="/api")
 
 # Include routers - Design Requests
 app.include_router(design_requests.router, prefix="/api")
+
+# Include routers - Pipeline (Kanban Board)
+app.include_router(pipeline.router, prefix="/api")
+
+# Include routers - 3D Customizer
+app.include_router(customizer.router, prefix="/api")
 
 # Include routers - Sync Management (BC, Pipedrive, etc.)
 app.include_router(sync.router, prefix="/api")
