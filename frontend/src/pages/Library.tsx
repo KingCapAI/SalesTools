@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wand2, Library as LibraryIcon, X, ZoomIn } from 'lucide-react';
+import { ArrowLeft, Wand2, Library as LibraryIcon, X, ZoomIn, Search } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
@@ -19,6 +19,8 @@ const HAT_STYLE_LABEL: Record<string, string> = {
 
 export function Library() {
   const [activeIndustry, setActiveIndustry] = useState<string>('all');
+  const [brandFilter, setBrandFilter] = useState('');
+  const [customerFilter, setCustomerFilter] = useState('');
   const [remixDesignId, setRemixDesignId] = useState<string | null>(null);
   const [remixMode, setRemixMode] = useState<ReferenceMatchMode>('close');
   const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
@@ -28,6 +30,18 @@ export function Library() {
   const { data: designs, isLoading } = useLibraryDesigns(activeIndustry);
   const { data: industries } = useLibraryIndustries();
   const { data: remixData } = useRemixData(remixDesignId);
+
+  // Client-side brand / customer filter — substring match, case-insensitive.
+  // Backend already filtered by industry, so we just further narrow here.
+  const filteredDesigns = (designs || []).filter((d) => {
+    const matchesBrand =
+      !brandFilter || d.brand_name?.toLowerCase().includes(brandFilter.toLowerCase());
+    const matchesCustomer =
+      !customerFilter || d.customer_name?.toLowerCase().includes(customerFilter.toLowerCase());
+    return matchesBrand && matchesCustomer;
+  });
+
+  const hasAnyFilter = brandFilter.trim() !== '' || customerFilter.trim() !== '';
 
   const handleRemix = (designId: string) => {
     setRemixDesignId(designId);
@@ -79,6 +93,30 @@ export function Library() {
           </div>
         </div>
 
+        {/* Brand + Customer search inputs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Filter by brand..."
+              value={brandFilter}
+              onChange={(e) => setBrandFilter(e.target.value)}
+              className="input pl-10 w-full"
+            />
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Filter by customer..."
+              value={customerFilter}
+              onChange={(e) => setCustomerFilter(e.target.value)}
+              className="input pl-10 w-full"
+            />
+          </div>
+        </div>
+
         {/* Industry filter chips */}
         <div className="flex flex-wrap gap-2 mb-6">
           {(industries || []).map((chip) => (
@@ -114,17 +152,19 @@ export function Library() {
               <div key={i} className="aspect-square rounded-xl bg-gray-800 animate-pulse" />
             ))}
           </div>
-        ) : !designs || designs.length === 0 ? (
+        ) : filteredDesigns.length === 0 ? (
           <div className="text-center py-16 bg-gray-900/40 rounded-xl">
             <p className="text-gray-400">
-              {activeIndustry === 'all'
+              {hasAnyFilter
+                ? 'No published designs match those filters.'
+                : activeIndustry === 'all'
                 ? 'No published designs yet. Publish one of your own designs to seed the library.'
                 : `No published designs in this industry yet.`}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {designs.map((d) => {
+            {filteredDesigns.map((d) => {
               const imageUrl = d.latest_image_path
                 ? uploadsApi.getFileUrl(d.latest_image_path)
                 : null;
@@ -172,7 +212,11 @@ export function Library() {
                     <h3 className="text-sm font-semibold text-gray-100 truncate">
                       {d.design_name || d.brand_name}
                     </h3>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">
+                      {d.brand_name}
+                      {d.customer_name ? ` · ${d.customer_name}` : ''}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">
                       {HAT_STYLE_LABEL[d.hat_style] || d.hat_style}
                       {d.published_by_name ? ` · by ${d.published_by_name}` : ''}
                     </p>

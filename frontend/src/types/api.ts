@@ -148,6 +148,7 @@ export const INDUSTRY_OPTIONS: { value: Industry; label: string }[] = [
 export interface LibraryDesignListItem {
   id: string;
   design_number: number;
+  customer_name: string;
   brand_name: string;
   design_name?: string | null;
   hat_style: string;

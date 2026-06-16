@@ -143,9 +143,10 @@ class PublishToLibraryRequest(BaseModel):
 
 
 class LibraryDesignListItem(BaseModel):
-    """List card for a published library design — does not expose customer info."""
+    """List card for a published library design."""
     id: str
     design_number: int
+    customer_name: str
     brand_name: str
     design_name: Optional[str] = None
     hat_style: str

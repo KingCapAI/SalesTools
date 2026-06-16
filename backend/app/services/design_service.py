@@ -745,6 +745,7 @@ def list_library_designs(
         results.append({
             "id": design.id,
             "design_number": design.design_number,
+            "customer_name": design.customer_name,
             "brand_name": design.brand_name,
             "design_name": design.design_name,
             "hat_style": design.hat_style,
