@@ -13,12 +13,15 @@ import {
   ArrowLeft,
   Calculator,
   Layers,
+  Pencil,
 } from 'lucide-react';
+import { RenameDesignModal } from '../components/design-generator/RenameDesignModal';
 import type { CustomDesignListItem } from '../types/api';
 
 export function CustomDesignDashboard() {
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [renameTarget, setRenameTarget] = useState<CustomDesignListItem | null>(null);
 
   // Fetch all custom designs
   const { data: designs = [], isLoading } = useCustomDesigns({});
@@ -144,12 +147,24 @@ export function CustomDesignDashboard() {
                 key={design.id}
                 design={design}
                 onDelete={() => handleDelete(design.id)}
+                onRename={() => setRenameTarget(design)}
                 isDeleting={deleteId === design.id}
               />
             ))}
           </div>
         )}
       </main>
+
+      {renameTarget && (
+        <RenameDesignModal
+          designId={renameTarget.id}
+          designKind="custom"
+          initialName={renameTarget.design_name || ''}
+          fallbackLabel={`Custom Design #${renameTarget.design_number}`}
+          isOpen={true}
+          onClose={() => setRenameTarget(null)}
+        />
+      )}
     </div>
   );
 }
@@ -157,10 +172,11 @@ export function CustomDesignDashboard() {
 interface CustomDesignCardProps {
   design: CustomDesignListItem;
   onDelete: () => void;
+  onRename: () => void;
   isDeleting: boolean;
 }
 
-function CustomDesignCard({ design, onDelete, isDeleting }: CustomDesignCardProps) {
+function CustomDesignCard({ design, onDelete, onRename, isDeleting }: CustomDesignCardProps) {
   return (
     <div className="card overflow-hidden group">
       {/* Image */}
@@ -211,9 +227,24 @@ function CustomDesignCard({ design, onDelete, isDeleting }: CustomDesignCardProp
 
       {/* Content */}
       <div>
-        <h3 className="font-semibold text-gray-100 truncate">
-          {design.design_name || `Custom Design #${design.design_number}`}
-        </h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="font-semibold text-gray-100 truncate flex-1">
+            {design.design_name || `Custom Design #${design.design_number}`}
+          </h3>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRename();
+            }}
+            className="p-1 rounded-md text-gray-500 hover:text-gray-200 hover:bg-gray-800 transition-colors flex-shrink-0"
+            title="Rename design"
+            aria-label="Rename design"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        </div>
         <p className="text-sm text-gray-400 truncate">{design.brand_name}</p>
         {design.customer_name && (
           <p className="text-xs text-gray-500 truncate">for {design.customer_name}</p>

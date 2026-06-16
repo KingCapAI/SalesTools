@@ -90,6 +90,8 @@ class CustomDesignCreate(BaseModel):
 class CustomDesignUpdate(BaseModel):
     """Update a custom design."""
     design_name: Optional[str] = None
+    customer_name: Optional[str] = None
+    brand_name: Optional[str] = None
     approval_status: Optional[ApprovalStatus] = None
     shared_with_team: Optional[bool] = None
 

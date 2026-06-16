@@ -332,6 +332,10 @@ async def update_custom_design(
 
     if update_data.design_name is not None:
         design.design_name = update_data.design_name
+    if update_data.customer_name is not None:
+        design.customer_name = update_data.customer_name
+    if update_data.brand_name is not None:
+        design.brand_name = update_data.brand_name
     if update_data.approval_status is not None:
         design.approval_status = update_data.approval_status.value
     if update_data.shared_with_team is not None:

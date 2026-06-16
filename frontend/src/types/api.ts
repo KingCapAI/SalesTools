@@ -284,6 +284,8 @@ export interface DesignCreate {
 
 export interface DesignUpdate {
   design_name?: string;
+  customer_name?: string;
+  brand_name?: string;
   approval_status?: ApprovalStatus;
   shared_with_team?: boolean;
 }
@@ -432,6 +434,8 @@ export interface CustomDesignCreate {
 
 export interface CustomDesignUpdate {
   design_name?: string;
+  customer_name?: string;
+  brand_name?: string;
   approval_status?: ApprovalStatus;
   shared_with_team?: boolean;
 }

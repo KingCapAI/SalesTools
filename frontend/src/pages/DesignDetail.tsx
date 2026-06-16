@@ -418,6 +418,10 @@ export function DesignDetail() {
       {designId && (
         <PublishToLibraryModal
           designId={designId}
+          designKind="ai"
+          initialCustomerName={design.customer_name}
+          initialBrandName={design.brand_name}
+          initialDesignName={design.design_name || ''}
           isOpen={publishModalOpen}
           onClose={() => setPublishModalOpen(false)}
           onPublished={() => refetch()}
