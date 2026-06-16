@@ -60,6 +60,13 @@ def run_migrations(engine):
                 conn.commit()
                 print("Migration: Added reference_hat_path column to designs table")
 
+            if 'reference_match_mode' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE designs ADD COLUMN reference_match_mode VARCHAR(20)"
+                ))
+                conn.commit()
+                print("Migration: Added reference_match_mode column to designs table")
+
             if 'crown_color' not in columns:
                 conn.execute(text(
                     "ALTER TABLE designs ADD COLUMN crown_color VARCHAR(100)"

@@ -39,6 +39,9 @@ async def create_design(
 
     # Create design record
     design_number = get_next_design_number(db, design_data.brand_name)
+    # A match mode without an image (or vice versa) is a no-op — only persist when both are set.
+    has_reference = bool(design_data.reference_image_path) and bool(design_data.reference_match_mode)
+
     design = Design(
         customer_name=design_data.customer_name,
         brand_name=design_data.brand_name,
@@ -51,6 +54,8 @@ async def create_design(
         style_directions=style_directions_str,
         custom_description=design_data.custom_description,
         logo_path=design_data.logo_path,  # Keep for backward compat
+        reference_hat_path=design_data.reference_image_path if has_reference else None,
+        reference_match_mode=design_data.reference_match_mode.value if has_reference else None,
         created_by_id=user_id,
     )
     db.add(design)
@@ -113,6 +118,8 @@ async def create_design(
                 logo_path=design_data.logo_path if not design_logos else None,
                 brand_assets=[],
                 variation_index=i,
+                reference_image_path=design_data.reference_image_path if has_reference else None,
+                reference_match_mode=design_data.reference_match_mode.value if has_reference else None,
             )
         )
 
@@ -324,6 +331,8 @@ def get_design_with_versions(db: Session, design_id: str) -> Optional[Dict[str, 
         "closure": design.closure,
         "style_directions": style_directions,
         "custom_description": design.custom_description,
+        "reference_image_path": design.reference_hat_path,
+        "reference_match_mode": design.reference_match_mode,
         "status": design.status,
         "approval_status": design.approval_status,
         "shared_with_team": design.shared_with_team,

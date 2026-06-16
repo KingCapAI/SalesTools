@@ -8,12 +8,16 @@ interface ReferenceHatUploadProps {
   value: string | null;
   onChange: (path: string | null) => void;
   disabled?: boolean;
+  title?: string;
+  description?: string;
 }
 
 export function ReferenceHatUpload({
   value,
   onChange,
   disabled,
+  title = 'Reference Hat (Optional)',
+  description = "Have a hat you want to recreate? Upload an image and we'll match the style with your customer's logos.",
 }: ReferenceHatUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,12 +59,10 @@ export function ReferenceHatUpload({
     <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
       <div className="flex items-center gap-2 mb-3">
         <RefreshCcw className="w-5 h-5 text-purple-400" />
-        <h4 className="font-medium text-white">Reference Hat (Optional)</h4>
+        <h4 className="font-medium text-white">{title}</h4>
       </div>
 
-      <p className="text-sm text-gray-400 mb-4">
-        Have a hat you want to recreate? Upload an image and we'll match the style with your customer's logos.
-      </p>
+      <p className="text-sm text-gray-400 mb-4">{description}</p>
 
       <div
         {...getRootProps()}

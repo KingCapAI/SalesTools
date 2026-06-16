@@ -106,6 +106,8 @@ export interface DesignLogoCreate {
   location?: string | null;
 }
 
+export type ReferenceMatchMode = 'close' | 'inspiration';
+
 export interface Design {
   id: string;
   customer_name: string;
@@ -119,6 +121,8 @@ export interface Design {
   closure?: string;
   style_directions: string[];
   custom_description?: string;
+  reference_image_path?: string | null;
+  reference_match_mode?: ReferenceMatchMode | null;
   selected_version_id?: string | null;
   status: string;
   approval_status: ApprovalStatus;
@@ -204,6 +208,8 @@ export interface DesignCreate {
   custom_description?: string;
   logo_path?: string;
   logos?: DesignLogoCreate[];
+  reference_image_path?: string | null;
+  reference_match_mode?: ReferenceMatchMode | null;
 }
 
 export interface DesignUpdate {

@@ -341,6 +341,7 @@ async def generate_design_image(
     logos: Optional[List] = None,
     brand_assets: Optional[List[str]] = None,
     original_image_path: Optional[str] = None,
+    reference_image_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Generate a hat design image using Gemini 3 Pro Image (Nano Banana Pro).
@@ -374,6 +375,30 @@ async def generate_design_image(
             if template_part:
                 parts.append({"text": _LAYOUT_TEMPLATE_LABEL})
                 parts.append(template_part)
+
+        # User-supplied reference image (existing hat/design to riff on).
+        # Placed BEFORE logos so the model anchors silhouette/composition first,
+        # then drops the brand's logos onto that base.
+        if reference_image_path:
+            try:
+                ref_bytes = await read_file_bytes(reference_image_path)
+                if ref_bytes:
+                    ref_base64 = base64.b64encode(ref_bytes).decode("utf-8")
+                    ref_mime = "image/png"
+                    lower = reference_image_path.lower()
+                    if lower.endswith((".jpg", ".jpeg")):
+                        ref_mime = "image/jpeg"
+                    elif lower.endswith(".webp"):
+                        ref_mime = "image/webp"
+                    parts.append({"text": "USER REFERENCE IMAGE (the existing design the user wants to reference — see the REFERENCE IMAGE section of the prompt for how strictly to follow it):"})
+                    parts.append({
+                        "inlineData": {
+                            "mimeType": ref_mime,
+                            "data": ref_base64,
+                        }
+                    })
+            except Exception as e:
+                print(f"Warning: Could not load reference image: {e}")
 
         # Multi-logo support: add each logo with a label
         if logos:
@@ -562,6 +587,8 @@ async def generate_design(
     logos_data: Optional[List[Dict[str, Any]]] = None,
     brand_assets: Optional[List[str]] = None,
     variation_index: int = 0,
+    reference_image_path: Optional[str] = None,
+    reference_match_mode: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Generate a complete hat design.
@@ -594,6 +621,7 @@ async def generate_design(
         closure=closure,
         logos=logos_data,
         variation_index=variation_index,
+        reference_match_mode=reference_match_mode if reference_image_path else None,
     )
 
     # Generate the image
@@ -602,6 +630,7 @@ async def generate_design(
         logo_path=logo_path,
         logos=logos,
         brand_assets=brand_assets,
+        reference_image_path=reference_image_path,
     )
 
     return {

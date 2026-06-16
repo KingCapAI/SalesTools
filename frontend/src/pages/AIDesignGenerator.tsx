@@ -8,9 +8,11 @@ import { BrandGuidelines } from '../components/design-generator/BrandGuidelines'
 import { StyleSelector } from '../components/design-generator/StyleSelector';
 import { HatStyleSelector } from '../components/design-generator/HatStyleSelector';
 import { MaterialSelector } from '../components/design-generator/MaterialSelector';
+import { ReferenceHatUpload } from '../components/custom-design/ReferenceHatUpload';
 import { useCreateDesign } from '../hooks/useDesigns';
 import { ArrowLeft, Sparkles } from 'lucide-react';
-import type { HatStyle, Material, StyleDirection, BrandScrapedData, HatStructure, ClosureType, DesignLogoCreate } from '../types/api';
+import { clsx } from 'clsx';
+import type { HatStyle, Material, StyleDirection, BrandScrapedData, HatStructure, ClosureType, DesignLogoCreate, ReferenceMatchMode } from '../types/api';
 
 interface UploadedAsset {
   id: string;
@@ -56,6 +58,8 @@ export function AIDesignGenerator() {
   const [manualGuidelines, setManualGuidelines] = useState('');
   const [structure, setStructure] = useState<HatStructure | ''>((prefill?.structure as HatStructure) || '');
   const [closure, setClosure] = useState<ClosureType | ''>((prefill?.closure as ClosureType) || '');
+  const [referenceImagePath, setReferenceImagePath] = useState<string | null>(null);
+  const [referenceMatchMode, setReferenceMatchMode] = useState<ReferenceMatchMode>('inspiration');
 
   const handleAssetUpload = (asset: UploadedAsset) => {
     setUploadedAssets((prev) => [...prev, asset]);
@@ -105,6 +109,8 @@ export function AIDesignGenerator() {
         style_directions: styleDirections,
         custom_description: customDescription.trim() || undefined,
         logos: logos,
+        reference_image_path: referenceImagePath || undefined,
+        reference_match_mode: referenceImagePath ? referenceMatchMode : undefined,
       });
 
       // Navigate to design detail page
@@ -192,6 +198,56 @@ export function AIDesignGenerator() {
                 onManualGuidelinesChange={setManualGuidelines}
               />
             </div>
+          </div>
+
+          {/* Reference Image Section (optional) */}
+          <div className="card">
+            <ReferenceHatUpload
+              value={referenceImagePath}
+              onChange={setReferenceImagePath}
+              title="Reference Image (Optional)"
+              description="Upload an existing hat, design, or image you want to riff on. The AI will use it as a starting point."
+            />
+
+            {referenceImagePath && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  How should the AI use this reference?
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setReferenceMatchMode('inspiration')}
+                    className={clsx(
+                      'p-4 rounded-lg border text-left transition-all',
+                      referenceMatchMode === 'inspiration'
+                        ? 'border-primary-500 bg-primary-900/30 ring-2 ring-primary-500'
+                        : 'border-gray-700 hover:border-gray-600 bg-gray-800'
+                    )}
+                  >
+                    <div className="font-medium text-gray-100">Use as inspiration</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Borrow mood, palette, and vibe — fresh composition
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReferenceMatchMode('close')}
+                    className={clsx(
+                      'p-4 rounded-lg border text-left transition-all',
+                      referenceMatchMode === 'close'
+                        ? 'border-primary-500 bg-primary-900/30 ring-2 ring-primary-500'
+                        : 'border-gray-700 hover:border-gray-600 bg-gray-800'
+                    )}
+                  >
+                    <div className="font-medium text-gray-100">Match closely</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Reproduce silhouette + placements; swap in the brand's logos
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Design Options Section */}

@@ -185,6 +185,21 @@ Do NOT use decoration methods not listed for a given location.""")
     return "\n".join(lines)
 
 
+REFERENCE_INSTRUCTION_BLOCKS = {
+    "close": """REFERENCE IMAGE — MATCH CLOSELY (a user-supplied reference image has been included with this prompt):
+- Treat the reference image as a near-target. Reproduce its silhouette, panel structure, color blocking, and decoration placement as faithfully as possible.
+- The customer's logos REPLACE any logos/branding visible in the reference. Drop the supplied logos into the same placements the reference uses.
+- Keep the reference's color palette unless it directly conflicts with the brand's logos.
+- DO NOT copy any literal text/wordmark/icon from the reference — those are placeholders. The output must use the provided logos only.
+- The output must still be a 6-view layout matching the layout template — apply the reference's design across all 6 views consistently.""",
+    "inspiration": """REFERENCE IMAGE — USE AS INSPIRATION (a user-supplied reference image has been included with this prompt):
+- Treat the reference image as MOOD and DIRECTION only — borrow its overall feel, color sensibility, and material/finish vibe.
+- DO NOT copy its exact silhouette, panel layout, decoration placement, or logos. Create a fresh design that captures the same spirit.
+- The customer's brand and logos drive the final composition; the reference simply informs the aesthetic.
+- The output must still be a 6-view layout matching the layout template.""",
+}
+
+
 def build_design_prompt(
     hat_style: str,
     material: str,
@@ -195,6 +210,7 @@ def build_design_prompt(
     closure: Optional[str] = None,
     logos: Optional[List[Dict[str, Any]]] = None,
     variation_index: int = 0,
+    reference_match_mode: Optional[str] = None,
 ) -> str:
     """
     Build the full prompt for Gemini image generation.
@@ -270,6 +286,13 @@ DECORATION LOCATIONS — MAXIMUM 3 locations. Choose up to 3 from the following:
 
 STRICT: Do NOT use more than 3 decoration locations. Do NOT use decoration methods not listed for a given location. Keep the design clean and professional."""
 
+    # Reference image instruction block — empty unless a reference image was uploaded.
+    reference_block = ""
+    if reference_match_mode:
+        mode_block = REFERENCE_INSTRUCTION_BLOCKS.get(reference_match_mode.lower())
+        if mode_block:
+            reference_block = f"\n\n{mode_block}\n"
+
     # Get variation hint
     variation_hint = VARIATION_HINTS[variation_index % len(VARIATION_HINTS)]
 
@@ -287,7 +310,7 @@ CONSTRUCTION & MATERIALS: {construction_sentence}{construction_details}
 The brand is **{client_name}**.
 
 The overall design vibe is **{style_desc}**.
-
+{reference_block}
 {logo_section}
 
 DECORATION METHOD CALLOUTS:

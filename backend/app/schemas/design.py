@@ -112,6 +112,12 @@ class DesignChatResponse(BaseModel):
         from_attributes = True
 
 
+class ReferenceMatchMode(str, Enum):
+    """How strictly the AI should follow the uploaded reference image."""
+    CLOSE = "close"
+    INSPIRATION = "inspiration"
+
+
 class DesignCreate(BaseModel):
     customer_name: str  # Text field for filtering/tracking
     brand_name: str  # Text field for filtering/tracking and Gemini prompt
@@ -124,6 +130,8 @@ class DesignCreate(BaseModel):
     custom_description: Optional[str] = None
     logo_path: Optional[str] = None  # DEPRECATED: use logos instead
     logos: Optional[List[DesignLogoCreate]] = None  # Named logos with optional location
+    reference_image_path: Optional[str] = None  # Optional reference image (existing hat/design to riff on)
+    reference_match_mode: Optional[ReferenceMatchMode] = None  # Required when reference_image_path is set
 
     @field_validator('style_directions')
     @classmethod
@@ -172,6 +180,8 @@ class DesignResponse(BaseModel):
     closure: Optional[str] = None
     style_directions: List[str]
     custom_description: Optional[str] = None
+    reference_image_path: Optional[str] = None
+    reference_match_mode: Optional[str] = None
     status: str
     approval_status: str
     shared_with_team: bool
