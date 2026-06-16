@@ -41,7 +41,10 @@ class Design(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    created_by = relationship("User", back_populates="designs")
+    # Explicit foreign_keys: Design has two FKs to users.id (created_by_id and
+    # library_published_by_id), so SQLAlchemy needs to be told which one this
+    # relationship uses, or it raises AmbiguousForeignKeysError at import time.
+    created_by = relationship("User", back_populates="designs", foreign_keys=[created_by_id])
     versions = relationship("DesignVersion", back_populates="design", cascade="all, delete-orphan")
     chats = relationship("DesignChat", back_populates="design", cascade="all, delete-orphan")
     quote = relationship("DesignQuote", back_populates="design", uselist=False, cascade="all, delete-orphan")

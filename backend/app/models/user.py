@@ -23,7 +23,7 @@ class User(Base):
     team = relationship("Team", back_populates="users")
     customers = relationship("Customer", back_populates="created_by")
     brands = relationship("Brand", back_populates="created_by")
-    designs = relationship("Design", back_populates="created_by")
+    designs = relationship("Design", back_populates="created_by", foreign_keys="Design.created_by_id")
 
     def __repr__(self):
         return f"<User {self.email}>"
