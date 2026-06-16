@@ -639,6 +639,63 @@ async def generate_design(
     }
 
 
+async def generate_revision_v2(
+    base_prompt: str,
+    edit_notes: str,
+    logos: Optional[List] = None,
+    logo_path: Optional[str] = None,
+    brand_assets: Optional[List[str]] = None,
+    reference_image_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Generate a revision by regenerating the design from scratch with an edit block.
+
+    Critically, this DOES NOT feed the prior generated image back to the model.
+    Image-to-image revisions degrade quality over rounds and tend to drift on
+    accuracy because the model fights between "preserve" and "change." This
+    function instead takes the prior prompt, appends a focused EDIT INSTRUCTIONS
+    block, and produces a fresh generation. Quality stays at first-gen level.
+
+    Args:
+        base_prompt: The prior version's prompt (whose spec we want to inherit).
+        edit_notes: User-supplied free-text feedback.
+        logos: DesignLogo objects to pass alongside the prompt.
+        logo_path: Backward-compat single logo path.
+        brand_assets: Brand asset paths.
+        reference_image_path: Optional reference image (carry through from creation).
+
+    Returns:
+        Dict with prompt, success, image_data or error — identical shape to
+        generate_design's return.
+    """
+    revised_prompt = f"""{base_prompt}
+
+
+EDIT INSTRUCTIONS — APPLY THESE CHANGES TO THE DESIGN ABOVE:
+{edit_notes.strip()}
+
+CRITICAL: Apply ONLY the changes listed above. Every other aspect of the
+design (colors not mentioned, decorations not mentioned, logos, hat style,
+materials, layout, model, lighting) must stay EXACTLY as the original
+description specifies. Do not introduce new design elements. Do not change
+anything that was not requested. The result must still be a 6-view layout
+matching the layout template.
+"""
+
+    result = await generate_design_image(
+        prompt=revised_prompt,
+        logo_path=logo_path,
+        logos=logos,
+        brand_assets=brand_assets,
+        reference_image_path=reference_image_path,
+    )
+
+    return {
+        "prompt": revised_prompt,
+        **result,
+    }
+
+
 async def generate_revision(
     original_prompt: str,
     revision_notes: str,

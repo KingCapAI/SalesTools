@@ -21,7 +21,7 @@ from ..schemas.custom_design import (
 )
 from ..schemas.design import DesignVersionResponse, DesignChatCreate, DesignChatResponse, RevisionCreate
 import asyncio
-from ..services.gemini_service import generate_custom_design, generate_revision
+from ..services.gemini_service import generate_custom_design, generate_revision, generate_revision_v2
 from ..services.storage_service import save_generated_image, delete_file
 
 VERSIONS_PER_BATCH = 3
@@ -830,6 +830,144 @@ async def create_custom_design_revision(
     db.refresh(version)
 
     return version
+
+
+@router.post("/{design_id}/versions/v2", response_model=List[DesignVersionResponse])
+async def create_custom_design_revision_v2(
+    design_id: str,
+    revision_data: RevisionCreate,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """v2 revision for Mockup Builder: 3 fresh variants, no image-feedback.
+
+    See create_version_v2 in routers/designs.py for the rationale. Mockup
+    Builder uses DesignLocationLogo records (per-location); we convert them
+    to logo dicts before handing off to generate_revision_v2.
+    """
+    design = db.query(Design).filter(
+        Design.id == design_id,
+        Design.design_type == "custom",
+    ).first()
+
+    if not design:
+        raise HTTPException(status_code=404, detail="Custom design not found")
+
+    if design.selected_version_id:
+        base_version = db.query(DesignVersion).filter(
+            DesignVersion.id == design.selected_version_id
+        ).first()
+    else:
+        base_version = (
+            db.query(DesignVersion)
+            .filter(
+                DesignVersion.design_id == design_id,
+                DesignVersion.generation_status == "completed",
+            )
+            .order_by(DesignVersion.version_number.desc())
+            .first()
+        )
+
+    if not base_version:
+        raise HTTPException(status_code=400, detail="No existing version found to revise")
+    if not base_version.prompt:
+        raise HTTPException(status_code=400, detail="Base version is missing its prompt; cannot revise.")
+
+    chat_message = DesignChat(
+        design_id=design_id,
+        message=revision_data.revision_notes,
+        is_user=True,
+        user_id=str(user.id),
+    )
+    db.add(chat_message)
+
+    location_logos_for_gen = [
+        {
+            "name": f"{(ll.location or 'Logo').upper()} Logo",
+            "logo_path": ll.logo_path,
+            "location": ll.location,
+        }
+        for ll in design.location_logos
+    ]
+
+    max_batch = db.query(func.max(DesignVersion.batch_number)).filter(
+        DesignVersion.design_id == design_id
+    ).scalar() or 0
+    new_batch = max_batch + 1
+    current_max_version = design.current_version
+
+    tasks = [
+        generate_revision_v2(
+            base_prompt=base_version.prompt,
+            edit_notes=revision_data.revision_notes,
+            logos=location_logos_for_gen if location_logos_for_gen else None,
+            logo_path=None,
+            brand_assets=[],
+            reference_image_path=design.reference_hat_path,
+        )
+        for _ in range(VERSIONS_PER_BATCH)
+    ]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    versions: List[DesignVersion] = []
+    any_success = False
+    for i, result in enumerate(results):
+        v_num = current_max_version + i + 1
+        is_exception = isinstance(result, Exception)
+
+        version = DesignVersion(
+            design_id=design.id,
+            version_number=v_num,
+            batch_number=new_batch,
+            prompt=result.get("prompt", "") if not is_exception else "",
+        )
+
+        if not is_exception and result.get("success") and result.get("image_data"):
+            image_path = await save_generated_image(
+                image_data=result["image_data"],
+                design_id=design.id,
+                version_number=v_num,
+            )
+            version.image_path = image_path
+            version.generation_status = "completed"
+            any_success = True
+        else:
+            version.generation_status = "failed"
+            if is_exception:
+                version.error_message = str(result)
+            else:
+                version.error_message = result.get("error", "Unknown error")
+
+        db.add(version)
+        versions.append(version)
+
+    design.current_version = current_max_version + VERSIONS_PER_BATCH
+    design.selected_version_id = None
+    db.query(DesignVersion).filter(
+        DesignVersion.design_id == design_id,
+        DesignVersion.is_selected == True,  # noqa: E712
+    ).update({"is_selected": False})
+
+    if any_success:
+        ai_response = DesignChat(
+            design_id=design_id,
+            message="Generated 3 fresh options. Pick the one closest to what you wanted — it will become the base for any further edits.",
+            is_user=False,
+        )
+    else:
+        ai_response = DesignChat(
+            design_id=design_id,
+            message="All 3 generations failed. Try again or refine the edit.",
+            is_user=False,
+        )
+    db.add(ai_response)
+
+    design.updated_at = datetime.utcnow()
+    db.commit()
+    for v in versions:
+        db.refresh(v)
+
+    return versions
 
 
 @router.get("/{design_id}/chat", response_model=List[DesignChatResponse])

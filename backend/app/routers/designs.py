@@ -26,6 +26,7 @@ from ..services.design_service import (
     create_design,
     update_design,
     create_revision,
+    create_revision_v2,
     get_design_with_versions,
     search_designs,
     VERSIONS_PER_BATCH,
@@ -544,6 +545,43 @@ async def create_version(
             user_id=user.id,
         )
         return version
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create revision: {str(e)}")
+
+
+@router.post("/{design_id}/versions/v2", response_model=List[DesignVersionResponse])
+async def create_version_v2(
+    design_id: str,
+    revision_data: RevisionCreate,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """v2 revision: 3 fresh variants from a clean prompt + edit instructions.
+
+    Does NOT feed the prior image back to Gemini (no image-to-image
+    degradation). Returns 3 new versions sharing one batch_number.
+    The user is expected to pick one to base further edits on.
+    """
+    design = db.query(Design).filter(Design.id == design_id).first()
+    if not design:
+        raise HTTPException(status_code=404, detail="Design not found")
+
+    if not design.selected_version_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Please select a version before requesting revisions."
+        )
+
+    try:
+        versions = await create_revision_v2(
+            db=db,
+            design_id=design_id,
+            revision_data=revision_data,
+            user_id=user.id,
+        )
+        return versions
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

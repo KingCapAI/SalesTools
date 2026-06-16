@@ -9,7 +9,7 @@ from sqlalchemy import func, or_
 from ..models import Design, DesignVersion, DesignChat, DesignQuote
 from ..models.design import DesignLogo
 from ..schemas.design import DesignCreate, DesignUpdate, RevisionCreate
-from .gemini_service import generate_design, generate_revision
+from .gemini_service import generate_design, generate_revision, generate_revision_v2
 from .storage_service import save_generated_image
 
 # Number of parallel versions to generate per batch
@@ -183,6 +183,142 @@ def update_design(
     db.commit()
     db.refresh(design)
     return design
+
+
+async def create_revision_v2(
+    db: Session,
+    design_id: str,
+    revision_data: RevisionCreate,
+    user_id: Optional[str] = None,
+) -> List[DesignVersion]:
+    """
+    v2 revision: produce 3 fresh variants from a clean prompt + edit instructions.
+
+    Unlike create_revision (which feeds the prior image back to Gemini and
+    generates a single new version), this:
+
+    - Uses the selected version's PROMPT as the base spec — no image is sent.
+    - Appends a focused EDIT INSTRUCTIONS block from the user's feedback.
+    - Runs 3 parallel generations so the user can pick the cleanest output.
+    - Reuses the design's logos + reference image (if any) — carrying forward
+      the full spec from creation.
+
+    Returns the list of new DesignVersion records (all sharing one batch_number).
+    """
+    design = db.query(Design).filter(Design.id == design_id).first()
+    if not design:
+        raise ValueError("Design not found")
+
+    if design.selected_version_id:
+        base_version = db.query(DesignVersion).filter(
+            DesignVersion.id == design.selected_version_id
+        ).first()
+    else:
+        base_version = (
+            db.query(DesignVersion)
+            .filter(
+                DesignVersion.design_id == design_id,
+                DesignVersion.generation_status == "completed",
+            )
+            .order_by(DesignVersion.version_number.desc())
+            .first()
+        )
+
+    if not base_version:
+        raise ValueError("No existing version found to revise")
+    if not base_version.prompt:
+        raise ValueError("Base version is missing its prompt; cannot revise.")
+
+    chat_message = DesignChat(
+        design_id=design_id,
+        message=revision_data.revision_notes,
+        is_user=True,
+        user_id=user_id,
+    )
+    db.add(chat_message)
+
+    max_batch = db.query(func.max(DesignVersion.batch_number)).filter(
+        DesignVersion.design_id == design_id
+    ).scalar() or 0
+    new_batch = max_batch + 1
+    current_max_version = design.current_version
+
+    # All 3 variants use the SAME prompt — variance comes from model sampling,
+    # not prompt steering. The user's expectation is "3 near-identical options
+    # so I can pick the cleanest," not "3 distinct interpretations."
+    tasks = [
+        generate_revision_v2(
+            base_prompt=base_version.prompt,
+            edit_notes=revision_data.revision_notes,
+            logos=design.logos if design.logos else None,
+            logo_path=None,
+            brand_assets=[],
+            reference_image_path=design.reference_hat_path,
+        )
+        for _ in range(VERSIONS_PER_BATCH)
+    ]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    versions: List[DesignVersion] = []
+    any_success = False
+    for i, result in enumerate(results):
+        v_num = current_max_version + i + 1
+        is_exception = isinstance(result, Exception)
+
+        version = DesignVersion(
+            design_id=design.id,
+            version_number=v_num,
+            batch_number=new_batch,
+            prompt=result.get("prompt", "") if not is_exception else "",
+        )
+
+        if not is_exception and result.get("success") and result.get("image_data"):
+            image_path = await save_generated_image(
+                image_data=result["image_data"],
+                design_id=design.id,
+                version_number=v_num,
+            )
+            version.image_path = image_path
+            version.generation_status = "completed"
+            any_success = True
+        else:
+            version.generation_status = "failed"
+            if is_exception:
+                version.error_message = str(result)
+            else:
+                version.error_message = result.get("error", "Unknown error")
+
+        db.add(version)
+        versions.append(version)
+
+    design.current_version = current_max_version + VERSIONS_PER_BATCH
+    # Clear selection — user must pick one of the 3 new variants.
+    design.selected_version_id = None
+    db.query(DesignVersion).filter(
+        DesignVersion.design_id == design_id,
+        DesignVersion.is_selected == True,  # noqa: E712
+    ).update({"is_selected": False})
+
+    if any_success:
+        ai_response = DesignChat(
+            design_id=design_id,
+            message=f"Generated 3 fresh options. Pick the one closest to what you wanted — it will become the base for any further edits.",
+            is_user=False,
+        )
+    else:
+        ai_response = DesignChat(
+            design_id=design_id,
+            message="All 3 generations failed. Try again or refine the edit.",
+            is_user=False,
+        )
+    db.add(ai_response)
+
+    design.updated_at = datetime.utcnow()
+    db.commit()
+    for v in versions:
+        db.refresh(v)
+
+    return versions
 
 
 async def create_revision(
