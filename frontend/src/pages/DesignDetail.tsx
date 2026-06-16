@@ -14,18 +14,11 @@ import { useUnpublishFromLibrary } from '../hooks/useLibrary';
 import { PublishToLibraryModal } from '../components/design-generator/PublishToLibraryModal';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
 import {
-  ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download,
+  ArrowLeft, Plus, Download,
   Calculator, RefreshCw, Pencil, MessageSquare, CalendarDays,
   Upload, EyeOff,
 } from 'lucide-react';
 import { uploadsApi } from '../api/uploads';
-import type { ApprovalStatus } from '../types/api';
-
-const approvalStatusConfig: Record<ApprovalStatus, { label: string; icon: typeof Clock; color: string; bgColor: string }> = {
-  pending: { label: 'Pending', icon: Clock, color: 'text-yellow-400', bgColor: 'bg-yellow-900/30' },
-  approved: { label: 'Approved', icon: CheckCircle, color: 'text-green-400', bgColor: 'bg-green-900/30' },
-  rejected: { label: 'Rejected', icon: XCircle, color: 'text-red-400', bgColor: 'bg-red-900/30' },
-};
 
 export function DesignDetail() {
   const { designId } = useParams<{ designId: string }>();
@@ -92,9 +85,6 @@ export function DesignDetail() {
     : null;
 
   const hasRevisions = chats.some((c) => c.is_user);
-
-  const statusConfig = approvalStatusConfig[design.approval_status];
-  const StatusIcon = statusConfig.icon;
 
   const handleSelectVersion = async (versionId: string) => {
     if (!designId) return;
@@ -266,10 +256,6 @@ export function DesignDetail() {
                 <h1 className="text-xl lg:text-2xl font-bold text-gray-100 truncate">
                   {design.design_name || `Design #${design.design_number}`}
                 </h1>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 flex-shrink-0 ${statusConfig.bgColor} ${statusConfig.color}`}>
-                  <StatusIcon className="w-3 h-3" />
-                  {statusConfig.label}
-                </span>
               </div>
               <p className="text-gray-400 text-sm truncate">
                 {design.brand_name} • {design.style_directions.join(', ')} • {design.hat_style.replace(/-/g, ' ')}

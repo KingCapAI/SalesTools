@@ -8,26 +8,15 @@ import { format } from 'date-fns';
 import {
   Plus,
   Search,
-  Filter,
   Eye,
   Trash2,
-  CheckCircle,
-  XCircle,
-  Clock,
   ArrowLeft,
   Calculator,
 } from 'lucide-react';
-import type { DesignListItem, ApprovalStatus } from '../types/api';
-
-const approvalStatusConfig: Record<ApprovalStatus, { label: string; icon: typeof Clock; color: string }> = {
-  pending: { label: 'Pending', icon: Clock, color: 'text-yellow-400 bg-yellow-900/30' },
-  approved: { label: 'Approved', icon: CheckCircle, color: 'text-green-400 bg-green-900/30' },
-  rejected: { label: 'Rejected', icon: XCircle, color: 'text-red-400 bg-red-900/30' },
-};
+import type { DesignListItem } from '../types/api';
 
 export function DesignerDashboard() {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ApprovalStatus | ''>('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Fetch all designs
@@ -43,9 +32,7 @@ export function DesignerDashboard() {
       design.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
       design.design_name?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesStatus = !statusFilter || design.approval_status === statusFilter;
-
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   const handleDelete = (id: string) => {
@@ -60,9 +47,6 @@ export function DesignerDashboard() {
 
   const stats = {
     total: designs.length,
-    pending: designs.filter((d) => d.approval_status === 'pending').length,
-    approved: designs.filter((d) => d.approval_status === 'approved').length,
-    rejected: designs.filter((d) => d.approval_status === 'rejected').length,
   };
 
   return (
@@ -92,27 +76,15 @@ export function DesignerDashboard() {
           </Link>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* Stats */}
+        <div className="grid grid-cols-1 gap-4 mb-8">
           <div className="card">
             <div className="text-sm text-gray-400">Total Designs</div>
             <div className="text-2xl font-bold text-gray-100">{stats.total}</div>
           </div>
-          <div className="card">
-            <div className="text-sm text-yellow-400">Pending Review</div>
-            <div className="text-2xl font-bold text-yellow-400">{stats.pending}</div>
-          </div>
-          <div className="card">
-            <div className="text-sm text-green-400">Approved</div>
-            <div className="text-2xl font-bold text-green-400">{stats.approved}</div>
-          </div>
-          <div className="card">
-            <div className="text-sm text-red-400">Rejected</div>
-            <div className="text-2xl font-bold text-red-400">{stats.rejected}</div>
-          </div>
         </div>
 
-        {/* Filters */}
+        {/* Search */}
         <div className="flex gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -123,19 +95,6 @@ export function DesignerDashboard() {
               onChange={(e) => setSearch(e.target.value)}
               className="input pl-10"
             />
-          </div>
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as ApprovalStatus | '')}
-              className="input pl-10 pr-8 appearance-none cursor-pointer"
-            >
-              <option value="">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
           </div>
         </div>
 
@@ -156,14 +115,14 @@ export function DesignerDashboard() {
               <Search className="w-12 h-12 mx-auto" />
             </div>
             <h3 className="text-lg font-medium text-gray-100 mb-2">
-              {search || statusFilter ? 'No designs found' : 'No designs yet'}
+              {search ? 'No designs found' : 'No designs yet'}
             </h3>
             <p className="text-gray-400 mb-4">
-              {search || statusFilter
-                ? 'Try adjusting your search or filters'
+              {search
+                ? 'Try adjusting your search'
                 : 'Create your first design to get started'}
             </p>
-            {!search && !statusFilter && (
+            {!search && (
               <Link to="/ai-design-generator/new">
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
@@ -196,9 +155,6 @@ interface DesignCardProps {
 }
 
 function DesignCard({ design, onDelete, isDeleting }: DesignCardProps) {
-  const statusConfig = approvalStatusConfig[design.approval_status];
-  const StatusIcon = statusConfig.icon;
-
   return (
     <div className="card overflow-hidden group">
       {/* Image */}
@@ -230,14 +186,6 @@ function DesignCard({ design, onDelete, isDeleting }: DesignCardProps) {
           >
             <Trash2 className="w-4 h-4" />
           </Button>
-        </div>
-
-        {/* Status Badge */}
-        <div
-          className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${statusConfig.color}`}
-        >
-          <StatusIcon className="w-3 h-3" />
-          {statusConfig.label}
         </div>
 
         {/* Quote Badge */}
