@@ -32,6 +32,9 @@ interface PrefillData {
   styleDirections?: string[];
   customDescription?: string;
   logos?: DesignLogoCreate[];
+  referenceImagePath?: string | null;
+  referenceMatchMode?: ReferenceMatchMode;
+  remixedFromDesignId?: string;
 }
 
 export function AIDesignGenerator() {
@@ -58,8 +61,8 @@ export function AIDesignGenerator() {
   const [manualGuidelines, setManualGuidelines] = useState('');
   const [structure, setStructure] = useState<HatStructure | ''>((prefill?.structure as HatStructure) || '');
   const [closure, setClosure] = useState<ClosureType | ''>((prefill?.closure as ClosureType) || '');
-  const [referenceImagePath, setReferenceImagePath] = useState<string | null>(null);
-  const [referenceMatchMode, setReferenceMatchMode] = useState<ReferenceMatchMode>('inspiration');
+  const [referenceImagePath, setReferenceImagePath] = useState<string | null>(prefill?.referenceImagePath || null);
+  const [referenceMatchMode, setReferenceMatchMode] = useState<ReferenceMatchMode>(prefill?.referenceMatchMode || 'inspiration');
 
   const handleAssetUpload = (asset: UploadedAsset) => {
     setUploadedAssets((prev) => [...prev, asset]);

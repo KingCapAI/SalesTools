@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { useAuth } from '../context/AuthContext';
-import { Palette, Calculator, Megaphone, FileText, Layers, CalendarDays } from 'lucide-react';
+import { Palette, Calculator, Megaphone, FileText, Layers, CalendarDays, Pipette, Library } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 
@@ -42,6 +42,20 @@ const groups: AppGroup[] = [
         description: 'Build hat mockups with specific logo placements. Upload logos for each location and recreate reference hats.',
         icon: Layers,
         to: '/custom-design-builder',
+      },
+      {
+        id: 'pms-matcher',
+        title: 'PMS Matcher',
+        description: 'Identify Pantone colors and the matching embroidery thread codes from any logo. Click each color to drop a numbered pin.',
+        icon: Pipette,
+        to: '/pms-matcher',
+      },
+      {
+        id: 'design-library',
+        title: 'Design Library',
+        description: 'Browse designs other teammates have published. Filter by industry and remix any design with your customer’s logos.',
+        icon: Library,
+        to: '/library',
       },
     ],
   },
@@ -93,7 +107,7 @@ const groups: AppGroup[] = [
   },
 ];
 
-const alwaysAvailable = ['production-planner', 'quote-estimator'];
+const alwaysAvailable = ['production-planner', 'quote-estimator', 'pms-matcher', 'design-library'];
 
 export function Dashboard() {
   const { user } = useAuth();

@@ -10,10 +10,13 @@ import { QuoteModal } from '../components/design-generator/QuoteModal';
 import { QuoteSummary } from '../components/design-generator/QuoteSummary';
 import { ProductionTimeline } from '../components/design-generator/ProductionTimeline';
 import { useDesign, useCreateRevisionV2, useAddChatMessage, useRegenerateDesign, useSelectVersion, useDeleteVersion } from '../hooks/useDesigns';
+import { useUnpublishFromLibrary } from '../hooks/useLibrary';
+import { PublishToLibraryModal } from '../components/design-generator/PublishToLibraryModal';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
 import {
   ArrowLeft, Plus, CheckCircle, XCircle, Clock, Download,
   Calculator, RefreshCw, Pencil, MessageSquare, CalendarDays,
+  Upload, EyeOff,
 } from 'lucide-react';
 import { uploadsApi } from '../api/uploads';
 import type { ApprovalStatus } from '../types/api';
@@ -43,6 +46,8 @@ export function DesignDetail() {
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [sidebarTab, setSidebarTab] = useState('chat');
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const unpublish = useUnpublishFromLibrary();
 
   useEffect(() => {
     if (design?.selected_version_id && !selectedVersionId) {
@@ -216,10 +221,24 @@ export function DesignDetail() {
     }
   };
 
+  const handleUnpublish = async () => {
+    if (!designId) return;
+    if (!confirm('Remove this design from the shared library?')) return;
+    try {
+      await unpublish.mutateAsync(designId);
+      refetch();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Failed to unpublish design');
+    }
+  };
+
   const actionItems = [
     { icon: RefreshCw, label: 'Regenerate', onClick: handleRegenerate, loading: regenerateDesign.isPending, hidden: hasRevisions },
     { icon: Pencil, label: 'Copy & Edit', onClick: handleCopyAndEdit },
     { icon: Download, label: 'Download', onClick: handleDownload, disabled: !selectedVersion?.image_path },
+    design.published_to_library
+      ? { icon: EyeOff, label: 'Remove from Library', onClick: handleUnpublish, loading: unpublish.isPending }
+      : { icon: Upload, label: 'Publish to Library', onClick: () => setPublishModalOpen(true), disabled: !selectedVersion?.image_path },
   ];
 
   const sidebarTabs = [
@@ -386,6 +405,16 @@ export function DesignDetail() {
             refetchQuote();
             refetch();
           }}
+        />
+      )}
+
+      {/* Publish to Library Modal */}
+      {designId && (
+        <PublishToLibraryModal
+          designId={designId}
+          isOpen={publishModalOpen}
+          onClose={() => setPublishModalOpen(false)}
+          onPublished={() => refetch()}
         />
       )}
     </div>

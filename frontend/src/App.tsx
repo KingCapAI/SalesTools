@@ -19,6 +19,8 @@ import { Policies } from './pages/Policies';
 import { CustomDesignDashboard } from './pages/CustomDesignDashboard';
 import { CustomDesignBuilder } from './pages/CustomDesignBuilder';
 import { CustomDesignDetail } from './pages/CustomDesignDetail';
+import { PMSMatcher } from './pages/PMSMatcher';
+import { Library } from './pages/Library';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -104,6 +106,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <CustomDesignDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pms-matcher"
+              element={
+                <ProtectedRoute>
+                  <PMSMatcher />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/library"
+              element={
+                <ProtectedRoute>
+                  <Library />
                 </ProtectedRoute>
               }
             />

@@ -108,6 +108,74 @@ export interface DesignLogoCreate {
 
 export type ReferenceMatchMode = 'close' | 'inspiration';
 
+export type Industry =
+  | 'sports'
+  | 'construction'
+  | 'education'
+  | 'healthcare'
+  | 'energy_oil'
+  | 'technology'
+  | 'hospitality'
+  | 'retail'
+  | 'manufacturing'
+  | 'nonprofit'
+  | 'government'
+  | 'real_estate'
+  | 'automotive'
+  | 'finance'
+  | 'food_beverage'
+  | 'other';
+
+export const INDUSTRY_OPTIONS: { value: Industry; label: string }[] = [
+  { value: 'sports', label: 'Sports' },
+  { value: 'construction', label: 'Construction' },
+  { value: 'education', label: 'Education' },
+  { value: 'healthcare', label: 'Healthcare' },
+  { value: 'energy_oil', label: 'Energy & Oil' },
+  { value: 'technology', label: 'Technology' },
+  { value: 'hospitality', label: 'Hospitality' },
+  { value: 'retail', label: 'Retail' },
+  { value: 'manufacturing', label: 'Manufacturing' },
+  { value: 'nonprofit', label: 'Nonprofit' },
+  { value: 'government', label: 'Government' },
+  { value: 'real_estate', label: 'Real Estate' },
+  { value: 'automotive', label: 'Automotive' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'food_beverage', label: 'Food & Beverage' },
+  { value: 'other', label: 'Other' },
+];
+
+export interface LibraryDesignListItem {
+  id: string;
+  design_number: number;
+  brand_name: string;
+  design_name?: string | null;
+  hat_style: string;
+  material: string;
+  design_type: 'ai_generated' | 'custom';
+  library_industry: Industry;
+  library_published_at: string;
+  published_by_name?: string | null;
+  latest_image_path?: string | null;
+}
+
+export interface IndustryCount {
+  industry: string;  // slug or "all"
+  label: string;
+  count: number;
+}
+
+export interface LibraryRemixData {
+  id: string;
+  hat_style: string;
+  material: string;
+  structure?: string | null;
+  closure?: string | null;
+  style_directions: string[];
+  library_industry: Industry;
+  reference_image_path?: string | null;
+}
+
 export interface Design {
   id: string;
   customer_name: string;
@@ -127,6 +195,8 @@ export interface Design {
   status: string;
   approval_status: ApprovalStatus;
   shared_with_team: boolean;
+  published_to_library?: boolean;
+  library_industry?: Industry | null;
   created_by_id?: string;
   created_at: string;
   updated_at: string;
@@ -310,6 +380,8 @@ export interface CustomDesign {
   status: string;
   approval_status: ApprovalStatus;
   shared_with_team: boolean;
+  published_to_library?: boolean;
+  library_industry?: Industry | null;
   created_by_id?: string;
   created_at: string;
   updated_at: string;
