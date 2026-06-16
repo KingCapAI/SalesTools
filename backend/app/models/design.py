@@ -31,11 +31,6 @@ class Design(Base):
     design_type = Column(String(50), nullable=False, default="ai_generated")  # "ai_generated" or "custom"
     reference_hat_path = Column(String(500), nullable=True)  # Path to reference hat image (Mockup Builder + AI Conceptor)
     reference_match_mode = Column(String(20), nullable=True)  # "close" or "inspiration" — controls how strictly the reference is followed
-    # Shared design library — opt-in publish, industry tag is mandatory at publish time.
-    published_to_library = Column(Boolean, nullable=False, default=False, index=True)
-    library_industry = Column(String(50), nullable=True, index=True)
-    library_published_at = Column(DateTime, nullable=True)
-    library_published_by_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     created_by_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

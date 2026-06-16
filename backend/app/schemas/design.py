@@ -118,54 +118,6 @@ class ReferenceMatchMode(str, Enum):
     INSPIRATION = "inspiration"
 
 
-class Industry(str, Enum):
-    """Industry tag for shared design library."""
-    SPORTS = "sports"
-    CONSTRUCTION = "construction"
-    EDUCATION = "education"
-    HEALTHCARE = "healthcare"
-    ENERGY_OIL = "energy_oil"
-    TECHNOLOGY = "technology"
-    HOSPITALITY = "hospitality"
-    RETAIL = "retail"
-    MANUFACTURING = "manufacturing"
-    NONPROFIT = "nonprofit"
-    GOVERNMENT = "government"
-    REAL_ESTATE = "real_estate"
-    AUTOMOTIVE = "automotive"
-    FINANCE = "finance"
-    FOOD_BEVERAGE = "food_beverage"
-    OTHER = "other"
-
-
-class PublishToLibraryRequest(BaseModel):
-    industry: Industry
-
-
-class LibraryDesignListItem(BaseModel):
-    """List card for a published library design — does not expose customer info."""
-    id: str
-    design_number: int
-    brand_name: str
-    design_name: Optional[str] = None
-    hat_style: str
-    material: str
-    design_type: str  # ai_generated or custom
-    library_industry: str
-    library_published_at: datetime
-    published_by_name: Optional[str] = None  # Display name of publisher
-    latest_image_path: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-
-class IndustryCount(BaseModel):
-    industry: str
-    label: str
-    count: int
-
-
 class DesignCreate(BaseModel):
     customer_name: str  # Text field for filtering/tracking
     brand_name: str  # Text field for filtering/tracking and Gemini prompt

@@ -67,40 +67,6 @@ def run_migrations(engine):
                 conn.commit()
                 print("Migration: Added reference_match_mode column to designs table")
 
-            if 'published_to_library' not in columns:
-                conn.execute(text(
-                    "ALTER TABLE designs ADD COLUMN published_to_library BOOLEAN NOT NULL DEFAULT FALSE"
-                ))
-                conn.execute(text(
-                    "CREATE INDEX IF NOT EXISTS ix_designs_published_to_library ON designs(published_to_library)"
-                ))
-                conn.commit()
-                print("Migration: Added published_to_library column to designs table")
-
-            if 'library_industry' not in columns:
-                conn.execute(text(
-                    "ALTER TABLE designs ADD COLUMN library_industry VARCHAR(50)"
-                ))
-                conn.execute(text(
-                    "CREATE INDEX IF NOT EXISTS ix_designs_library_industry ON designs(library_industry)"
-                ))
-                conn.commit()
-                print("Migration: Added library_industry column to designs table")
-
-            if 'library_published_at' not in columns:
-                conn.execute(text(
-                    "ALTER TABLE designs ADD COLUMN library_published_at TIMESTAMP"
-                ))
-                conn.commit()
-                print("Migration: Added library_published_at column to designs table")
-
-            if 'library_published_by_id' not in columns:
-                conn.execute(text(
-                    "ALTER TABLE designs ADD COLUMN library_published_by_id VARCHAR(36)"
-                ))
-                conn.commit()
-                print("Migration: Added library_published_by_id column to designs table")
-
             if 'crown_color' not in columns:
                 conn.execute(text(
                     "ALTER TABLE designs ADD COLUMN crown_color VARCHAR(100)"
