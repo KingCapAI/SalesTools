@@ -16,6 +16,7 @@ from .storage_service import save_generated_image
 # Human-readable labels for industry tags (frontend uses these for display).
 INDUSTRY_LABELS = {
     Industry.SPORTS.value: "Sports",
+    Industry.FITNESS.value: "Fitness",
     Industry.CONSTRUCTION.value: "Construction",
     Industry.EDUCATION.value: "Education",
     Industry.HEALTHCARE.value: "Healthcare",

@@ -121,6 +121,7 @@ class ReferenceMatchMode(str, Enum):
 class Industry(str, Enum):
     """Industry tag for shared design library."""
     SPORTS = "sports"
+    FITNESS = "fitness"
     CONSTRUCTION = "construction"
     EDUCATION = "education"
     HEALTHCARE = "healthcare"

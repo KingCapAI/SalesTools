@@ -110,6 +110,7 @@ export type ReferenceMatchMode = 'close' | 'inspiration';
 
 export type Industry =
   | 'sports'
+  | 'fitness'
   | 'construction'
   | 'education'
   | 'healthcare'
@@ -128,6 +129,7 @@ export type Industry =
 
 export const INDUSTRY_OPTIONS: { value: Industry; label: string }[] = [
   { value: 'sports', label: 'Sports' },
+  { value: 'fitness', label: 'Fitness' },
   { value: 'construction', label: 'Construction' },
   { value: 'education', label: 'Education' },
   { value: 'healthcare', label: 'Healthcare' },
