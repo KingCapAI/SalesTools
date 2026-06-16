@@ -45,10 +45,10 @@ async def publish_design(
         publish_design_to_library(
             db=db,
             design_id=design_id,
-            industry=body.industry,
+            industries=body.industries,
             user_id=str(user.id),
         )
-        return {"success": True, "industry": body.industry.value}
+        return {"success": True, "industries": [i.value for i in body.industries]}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

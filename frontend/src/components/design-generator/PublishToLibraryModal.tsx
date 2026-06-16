@@ -32,7 +32,7 @@ export function PublishToLibraryModal({
   const [customerName, setCustomerName] = useState(initialCustomerName);
   const [brandName, setBrandName] = useState(initialBrandName);
   const [designName, setDesignName] = useState(initialDesignName);
-  const [selected, setSelected] = useState<Industry | null>(null);
+  const [selected, setSelected] = useState<Industry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const publish = usePublishToLibrary();
   const updateAi = useUpdateDesign();
@@ -45,10 +45,16 @@ export function PublishToLibraryModal({
       setCustomerName(initialCustomerName);
       setBrandName(initialBrandName);
       setDesignName(initialDesignName);
-      setSelected(null);
+      setSelected([]);
       setError(null);
     }
   }, [isOpen, initialCustomerName, initialBrandName, initialDesignName]);
+
+  const toggleIndustry = (value: Industry) => {
+    setSelected((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : prev.length >= 5 ? prev : [...prev, value]
+    );
+  };
 
   if (!isOpen) return null;
 
@@ -60,8 +66,8 @@ export function PublishToLibraryModal({
       setError('Brand name is required.');
       return;
     }
-    if (!selected) {
-      setError('Please pick an industry first.');
+    if (selected.length === 0) {
+      setError('Pick at least one industry.');
       return;
     }
     setError(null);
@@ -81,7 +87,7 @@ export function PublishToLibraryModal({
         }
       }
 
-      await publish.mutateAsync({ designId, industry: selected });
+      await publish.mutateAsync({ designId, industries: selected });
       onPublished();
       onClose();
     } catch (err: any) {
@@ -121,25 +127,35 @@ export function PublishToLibraryModal({
           />
         </div>
 
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Industry
+        <label className="block text-sm font-medium text-gray-300 mb-1">
+          Industries
         </label>
+        <p className="text-xs text-gray-500 mb-2">
+          Pick up to 5 categories. ({selected.length}/5 selected)
+        </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-72 overflow-y-auto pr-1">
-          {INDUSTRY_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setSelected(opt.value)}
-              className={clsx(
-                'px-3 py-2 rounded-lg border text-sm transition-all',
-                selected === opt.value
-                  ? 'border-primary-500 bg-primary-900/30 ring-2 ring-primary-500 text-gray-100'
-                  : 'border-gray-700 hover:border-gray-600 bg-gray-800 text-gray-300'
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
+          {INDUSTRY_OPTIONS.map((opt) => {
+            const isSelected = selected.includes(opt.value);
+            const isFull = selected.length >= 5 && !isSelected;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => toggleIndustry(opt.value)}
+                disabled={isFull}
+                className={clsx(
+                  'px-3 py-2 rounded-lg border text-sm transition-all text-left leading-tight',
+                  isSelected
+                    ? 'border-primary-500 bg-primary-900/30 ring-2 ring-primary-500 text-gray-100'
+                    : isFull
+                    ? 'border-gray-800 bg-gray-900 text-gray-600 cursor-not-allowed'
+                    : 'border-gray-700 hover:border-gray-600 bg-gray-800 text-gray-300'
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
 
         {error && <p className="text-sm text-red-400 mb-3">{error}</p>}

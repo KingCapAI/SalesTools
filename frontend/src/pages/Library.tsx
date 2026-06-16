@@ -6,6 +6,7 @@ import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
 import { uploadsApi } from '../api/uploads';
 import { useLibraryDesigns, useLibraryIndustries, useRemixData } from '../hooks/useLibrary';
+import { INDUSTRY_LABELS_BY_SLUG } from '../types/api';
 import type { ReferenceMatchMode } from '../types/api';
 
 const HAT_STYLE_LABEL: Record<string, string> = {
@@ -203,8 +204,20 @@ export function Library() {
                         No preview
                       </div>
                     )}
-                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-xs text-white pointer-events-none">
-                      {industries?.find((c) => c.industry === d.library_industry)?.label || d.library_industry}
+                    <div className="absolute top-2 left-2 flex flex-wrap gap-1 max-w-[90%] pointer-events-none">
+                      {(d.library_industries || []).slice(0, 3).map((slug) => (
+                        <span
+                          key={slug}
+                          className="px-2 py-0.5 rounded-full bg-black/60 text-[10px] text-white whitespace-nowrap"
+                        >
+                          {INDUSTRY_LABELS_BY_SLUG[slug] || slug}
+                        </span>
+                      ))}
+                      {d.library_industries && d.library_industries.length > 3 && (
+                        <span className="px-2 py-0.5 rounded-full bg-black/60 text-[10px] text-white">
+                          +{d.library_industries.length - 3}
+                        </span>
+                      )}
                     </div>
                   </button>
 

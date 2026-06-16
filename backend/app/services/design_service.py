@@ -15,24 +15,45 @@ from .storage_service import save_generated_image
 
 # Human-readable labels for industry tags (frontend uses these for display).
 INDUSTRY_LABELS = {
-    Industry.SPORTS.value: "Sports",
-    Industry.FITNESS.value: "Fitness",
-    Industry.CONSTRUCTION.value: "Construction",
-    Industry.EDUCATION.value: "Education",
-    Industry.HEALTHCARE.value: "Healthcare",
-    Industry.ENERGY_OIL.value: "Energy & Oil",
-    Industry.TECHNOLOGY.value: "Technology",
-    Industry.HOSPITALITY.value: "Hospitality",
-    Industry.RETAIL.value: "Retail",
-    Industry.MANUFACTURING.value: "Manufacturing",
-    Industry.NONPROFIT.value: "Nonprofit",
-    Industry.GOVERNMENT.value: "Government",
-    Industry.REAL_ESTATE.value: "Real Estate",
-    Industry.AUTOMOTIVE.value: "Automotive",
-    Industry.FINANCE.value: "Finance",
+    Industry.SPORTS.value: "Sports & Athletics",
+    Industry.FITNESS.value: "Fitness & Wellness",
+    Industry.OUTDOOR_RECREATION.value: "Outdoor & Recreation",
+    Industry.AUTOMOTIVE.value: "Automotive & Vehicles",
+    Industry.CONSTRUCTION.value: "Construction & Trades",
+    Industry.MANUFACTURING.value: "Manufacturing & Industrial",
+    Industry.ENERGY_OIL.value: "Energy & Utilities",
+    Industry.TRANSPORTATION.value: "Transportation & Logistics",
+    Industry.AGRICULTURE.value: "Agriculture",
     Industry.FOOD_BEVERAGE.value: "Food & Beverage",
+    Industry.HOSPITALITY.value: "Hospitality & Travel",
+    Industry.RETAIL.value: "Retail & E-Commerce",
+    Industry.FASHION.value: "Fashion & Apparel",
+    Industry.HEALTHCARE.value: "Healthcare & Pharma",
+    Industry.TECHNOLOGY.value: "Technology",
+    Industry.FINANCE.value: "Finance & Professional Services",
+    Industry.REAL_ESTATE.value: "Real Estate",
+    Industry.MEDIA_ENTERTAINMENT.value: "Media & Entertainment",
+    Industry.EDUCATION.value: "Education",
+    Industry.GOVERNMENT.value: "Government & Defense",
+    Industry.NONPROFIT.value: "Nonprofit & Causes",
     Industry.OTHER.value: "Other",
 }
+
+
+def _encode_industries(slugs: List[str]) -> str:
+    """Store as ',a,b,c,' so substring matches can pad with commas
+    on both sides without ambiguity (e.g. ',sports,' won't match
+    ',e-sports,').
+    """
+    return "," + ",".join(slugs) + ","
+
+
+def _decode_industries(stored: Optional[str]) -> List[str]:
+    """Inverse of _encode_industries — split + strip empties. Tolerates
+    legacy single-value rows that weren't padded."""
+    if not stored:
+        return []
+    return [s for s in stored.split(",") if s]
 
 # Number of parallel versions to generate per batch
 VERSIONS_PER_BATCH = 3
@@ -634,13 +655,13 @@ def search_designs(
 def publish_design_to_library(
     db: Session,
     design_id: str,
-    industry: Industry,
+    industries: List[Industry],
     user_id: str,
 ) -> Design:
     """Mark a design as published to the shared library.
 
-    Anyone can publish their own design. The industry tag is required —
-    it powers the filter chips on the library page.
+    Anyone can publish their own design. At least one industry tag is
+    required; up to 5 are allowed for designs that span sectors.
     """
     design = db.query(Design).filter(Design.id == design_id).first()
     if not design:
@@ -661,7 +682,7 @@ def publish_design_to_library(
         raise ValueError("Cannot publish a design with no generated image yet.")
 
     design.published_to_library = True
-    design.library_industry = industry.value
+    design.library_industry = _encode_industries([i.value for i in industries])
     design.library_published_at = datetime.utcnow()
     design.library_published_by_id = user_id
     design.updated_at = datetime.utcnow()
@@ -702,7 +723,9 @@ def list_library_designs(
     """
     query = db.query(Design).filter(Design.published_to_library == True)  # noqa: E712
     if industry:
-        query = query.filter(Design.library_industry == industry)
+        # Stored as ',a,b,c,' so a literal substring of ',{industry},' is
+        # an unambiguous membership check.
+        query = query.filter(Design.library_industry.like(f"%,{industry},%"))
 
     designs = (
         query.order_by(Design.library_published_at.desc())
@@ -752,7 +775,7 @@ def list_library_designs(
             "hat_style": design.hat_style,
             "material": design.material,
             "design_type": design.design_type,
-            "library_industry": design.library_industry,
+            "library_industries": _decode_industries(design.library_industry),
             "library_published_at": design.library_published_at,
             "published_by_name": publisher_name_by_id.get(design.library_published_by_id),
             "latest_image_path": thumbnail_path,
@@ -762,23 +785,39 @@ def list_library_designs(
 
 
 def get_library_industry_counts(db: Session) -> List[Dict[str, Any]]:
-    """Return (industry, label, count) for every industry that has at least
+    """Return (industry, label, count) for every industry tagged on at least
     one published design — plus the global 'all' bucket. Drives the filter
-    chips on the Library page.
+    chips on the Library page. Multi-tag designs contribute to each tag's
+    count, so totals across chips won't necessarily sum to the 'all' count.
     """
     rows = (
-        db.query(Design.library_industry, func.count(Design.id))
+        db.query(Design.library_industry)
         .filter(Design.published_to_library == True)  # noqa: E712
-        .group_by(Design.library_industry)
         .all()
     )
-    total = sum(c for _, c in rows)
-    out: List[Dict[str, Any]] = [{"industry": "all", "label": "All", "count": total}]
-    for industry_key, count in rows:
-        if industry_key:
+
+    counts: Dict[str, int] = {}
+    total_designs = len(rows)
+    for (raw,) in rows:
+        for slug in _decode_industries(raw):
+            counts[slug] = counts.get(slug, 0) + 1
+
+    # Surface chips in the same canonical order as the enum so the UI is stable.
+    canonical_order = list(INDUSTRY_LABELS.keys())
+    out: List[Dict[str, Any]] = [{"industry": "all", "label": "All", "count": total_designs}]
+    for slug in canonical_order:
+        if counts.get(slug, 0) > 0:
             out.append({
-                "industry": industry_key,
-                "label": INDUSTRY_LABELS.get(industry_key, industry_key),
+                "industry": slug,
+                "label": INDUSTRY_LABELS[slug],
+                "count": counts[slug],
+            })
+    # Catch any unknown slugs (legacy data) at the end.
+    for slug, count in counts.items():
+        if slug not in canonical_order:
+            out.append({
+                "industry": slug,
+                "label": slug,
                 "count": count,
             })
     return out
@@ -832,6 +871,6 @@ def get_library_design_remix_data(
         "structure": design.structure,
         "closure": design.closure,
         "style_directions": style_directions,
-        "library_industry": design.library_industry,
+        "library_industries": _decode_industries(design.library_industry),
         "reference_image_path": reference_path,
     }

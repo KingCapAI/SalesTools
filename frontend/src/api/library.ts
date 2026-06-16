@@ -14,8 +14,8 @@ export const libraryApi = {
     return response.data;
   },
 
-  publish: async (designId: string, industry: Industry): Promise<void> => {
-    await api.post(`/library/designs/${designId}/publish`, { industry });
+  publish: async (designId: string, industries: Industry[]): Promise<void> => {
+    await api.post(`/library/designs/${designId}/publish`, { industries });
   },
 
   unpublish: async (designId: string): Promise<void> => {

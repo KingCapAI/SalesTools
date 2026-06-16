@@ -19,8 +19,8 @@ export function useLibraryIndustries() {
 export function usePublishToLibrary() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ designId, industry }: { designId: string; industry: Industry }) =>
-      libraryApi.publish(designId, industry),
+    mutationFn: ({ designId, industries }: { designId: string; industries: Industry[] }) =>
+      libraryApi.publish(designId, industries),
     onSuccess: (_, { designId }) => {
       queryClient.invalidateQueries({ queryKey: ['library-designs'] });
       queryClient.invalidateQueries({ queryKey: ['library-industries'] });

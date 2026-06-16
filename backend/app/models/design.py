@@ -33,7 +33,9 @@ class Design(Base):
     reference_match_mode = Column(String(20), nullable=True)  # "close" or "inspiration" — controls how strictly the reference is followed
     # Shared design library — opt-in publish, industry tag is mandatory at publish time.
     published_to_library = Column(Boolean, nullable=False, default=False, index=True)
-    library_industry = Column(String(50), nullable=True, index=True)
+    # Comma-separated industry slugs, padded with leading/trailing commas
+    # for unambiguous LIKE-based filtering (e.g. ",sports,fashion,").
+    library_industry = Column(String(500), nullable=True, index=True)
     library_published_at = Column(DateTime, nullable=True)
     library_published_by_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     created_by_id = Column(String(36), ForeignKey("users.id"), nullable=True)

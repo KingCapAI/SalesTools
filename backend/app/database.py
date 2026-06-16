@@ -79,13 +79,40 @@ def run_migrations(engine):
 
             if 'library_industry' not in columns:
                 conn.execute(text(
-                    "ALTER TABLE designs ADD COLUMN library_industry VARCHAR(50)"
+                    "ALTER TABLE designs ADD COLUMN library_industry VARCHAR(500)"
                 ))
                 conn.execute(text(
                     "CREATE INDEX IF NOT EXISTS ix_designs_library_industry ON designs(library_industry)"
                 ))
                 conn.commit()
                 print("Migration: Added library_industry column to designs table")
+            else:
+                # If column was previously VARCHAR(50), widen to VARCHAR(500) so we
+                # can store comma-separated industry slugs for multi-tag designs.
+                # Backfill: pad existing single-value rows with leading/trailing
+                # commas so the LIKE-based filter (',slug,') matches them too.
+                col_info = next((c for c in inspector.get_columns('designs') if c['name'] == 'library_industry'), None)
+                col_len = getattr(col_info['type'], 'length', None) if col_info else None
+                if col_len and col_len < 500:
+                    try:
+                        conn.execute(text("ALTER TABLE designs ALTER COLUMN library_industry TYPE VARCHAR(500)"))
+                        conn.commit()
+                        print("Migration: Widened library_industry to VARCHAR(500)")
+                    except Exception as e:
+                        print(f"Migration: library_industry widening skipped ({e})")
+                # Backfill padding (idempotent — only touches unpadded rows).
+                try:
+                    conn.execute(text(
+                        "UPDATE designs "
+                        "SET library_industry = ',' || library_industry || ',' "
+                        "WHERE library_industry IS NOT NULL "
+                        "AND library_industry != '' "
+                        "AND library_industry NOT LIKE ',%'"
+                    ))
+                    conn.commit()
+                    print("Migration: Padded existing library_industry values with delimiters")
+                except Exception as e:
+                    print(f"Migration: padding backfill skipped ({e})")
 
             if 'library_published_at' not in columns:
                 conn.execute(text(

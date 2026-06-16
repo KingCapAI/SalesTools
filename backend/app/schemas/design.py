@@ -122,25 +122,44 @@ class Industry(str, Enum):
     """Industry tag for shared design library."""
     SPORTS = "sports"
     FITNESS = "fitness"
+    OUTDOOR_RECREATION = "outdoor_recreation"
+    AUTOMOTIVE = "automotive"
     CONSTRUCTION = "construction"
-    EDUCATION = "education"
-    HEALTHCARE = "healthcare"
+    MANUFACTURING = "manufacturing"
     ENERGY_OIL = "energy_oil"
-    TECHNOLOGY = "technology"
+    TRANSPORTATION = "transportation"
+    AGRICULTURE = "agriculture"
+    FOOD_BEVERAGE = "food_beverage"
     HOSPITALITY = "hospitality"
     RETAIL = "retail"
-    MANUFACTURING = "manufacturing"
-    NONPROFIT = "nonprofit"
-    GOVERNMENT = "government"
-    REAL_ESTATE = "real_estate"
-    AUTOMOTIVE = "automotive"
+    FASHION = "fashion"
+    HEALTHCARE = "healthcare"
+    TECHNOLOGY = "technology"
     FINANCE = "finance"
-    FOOD_BEVERAGE = "food_beverage"
+    REAL_ESTATE = "real_estate"
+    MEDIA_ENTERTAINMENT = "media_entertainment"
+    EDUCATION = "education"
+    GOVERNMENT = "government"
+    NONPROFIT = "nonprofit"
     OTHER = "other"
 
 
 class PublishToLibraryRequest(BaseModel):
-    industry: Industry
+    industries: List[Industry]
+
+    @field_validator('industries')
+    @classmethod
+    def validate_industries(cls, v):
+        if len(v) == 0:
+            raise ValueError('Pick at least one industry')
+        if len(v) > 5:
+            raise ValueError('At most 5 industries per design')
+        # Dedupe while preserving order.
+        seen = []
+        for ind in v:
+            if ind not in seen:
+                seen.append(ind)
+        return seen
 
 
 class LibraryDesignListItem(BaseModel):
@@ -153,7 +172,7 @@ class LibraryDesignListItem(BaseModel):
     hat_style: str
     material: str
     design_type: str  # ai_generated or custom
-    library_industry: str
+    library_industries: List[str]  # one design can be tagged with multiple
     library_published_at: datetime
     published_by_name: Optional[str] = None  # Display name of publisher
     latest_image_path: Optional[str] = None

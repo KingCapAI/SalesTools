@@ -111,41 +111,56 @@ export type ReferenceMatchMode = 'close' | 'inspiration';
 export type Industry =
   | 'sports'
   | 'fitness'
+  | 'outdoor_recreation'
+  | 'automotive'
   | 'construction'
-  | 'education'
-  | 'healthcare'
+  | 'manufacturing'
   | 'energy_oil'
-  | 'technology'
+  | 'transportation'
+  | 'agriculture'
+  | 'food_beverage'
   | 'hospitality'
   | 'retail'
-  | 'manufacturing'
-  | 'nonprofit'
-  | 'government'
-  | 'real_estate'
-  | 'automotive'
+  | 'fashion'
+  | 'healthcare'
+  | 'technology'
   | 'finance'
-  | 'food_beverage'
+  | 'real_estate'
+  | 'media_entertainment'
+  | 'education'
+  | 'government'
+  | 'nonprofit'
   | 'other';
 
 export const INDUSTRY_OPTIONS: { value: Industry; label: string }[] = [
-  { value: 'sports', label: 'Sports' },
-  { value: 'fitness', label: 'Fitness' },
-  { value: 'construction', label: 'Construction' },
-  { value: 'education', label: 'Education' },
-  { value: 'healthcare', label: 'Healthcare' },
-  { value: 'energy_oil', label: 'Energy & Oil' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'hospitality', label: 'Hospitality' },
-  { value: 'retail', label: 'Retail' },
-  { value: 'manufacturing', label: 'Manufacturing' },
-  { value: 'nonprofit', label: 'Nonprofit' },
-  { value: 'government', label: 'Government' },
-  { value: 'real_estate', label: 'Real Estate' },
-  { value: 'automotive', label: 'Automotive' },
-  { value: 'finance', label: 'Finance' },
+  { value: 'sports', label: 'Sports & Athletics' },
+  { value: 'fitness', label: 'Fitness & Wellness' },
+  { value: 'outdoor_recreation', label: 'Outdoor & Recreation' },
+  { value: 'automotive', label: 'Automotive & Vehicles' },
+  { value: 'construction', label: 'Construction & Trades' },
+  { value: 'manufacturing', label: 'Manufacturing & Industrial' },
+  { value: 'energy_oil', label: 'Energy & Utilities' },
+  { value: 'transportation', label: 'Transportation & Logistics' },
+  { value: 'agriculture', label: 'Agriculture' },
   { value: 'food_beverage', label: 'Food & Beverage' },
+  { value: 'hospitality', label: 'Hospitality & Travel' },
+  { value: 'retail', label: 'Retail & E-Commerce' },
+  { value: 'fashion', label: 'Fashion & Apparel' },
+  { value: 'healthcare', label: 'Healthcare & Pharma' },
+  { value: 'technology', label: 'Technology' },
+  { value: 'finance', label: 'Finance & Professional Services' },
+  { value: 'real_estate', label: 'Real Estate' },
+  { value: 'media_entertainment', label: 'Media & Entertainment' },
+  { value: 'education', label: 'Education' },
+  { value: 'government', label: 'Government & Defense' },
+  { value: 'nonprofit', label: 'Nonprofit & Causes' },
   { value: 'other', label: 'Other' },
 ];
+
+export const INDUSTRY_LABELS_BY_SLUG: Record<string, string> = INDUSTRY_OPTIONS.reduce(
+  (acc, opt) => ({ ...acc, [opt.value]: opt.label }),
+  {} as Record<string, string>
+);
 
 export interface LibraryDesignListItem {
   id: string;
@@ -156,7 +171,7 @@ export interface LibraryDesignListItem {
   hat_style: string;
   material: string;
   design_type: 'ai_generated' | 'custom';
-  library_industry: Industry;
+  library_industries: Industry[];
   library_published_at: string;
   published_by_name?: string | null;
   latest_image_path?: string | null;
@@ -175,7 +190,7 @@ export interface LibraryRemixData {
   structure?: string | null;
   closure?: string | null;
   style_directions: string[];
-  library_industry: Industry;
+  library_industries: Industry[];
   reference_image_path?: string | null;
 }
 
