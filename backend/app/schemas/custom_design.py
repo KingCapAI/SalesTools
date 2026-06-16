@@ -113,6 +113,8 @@ class CustomDesignResponse(BaseModel):
     status: str
     approval_status: str
     shared_with_team: bool
+    published_to_library: bool = False
+    library_industry: Optional[str] = None
     created_by_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
