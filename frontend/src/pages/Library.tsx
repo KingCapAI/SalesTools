@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wand2, Library as LibraryIcon } from 'lucide-react';
+import { ArrowLeft, Wand2, Library as LibraryIcon, X, ZoomIn } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
@@ -21,6 +21,8 @@ export function Library() {
   const [activeIndustry, setActiveIndustry] = useState<string>('all');
   const [remixDesignId, setRemixDesignId] = useState<string | null>(null);
   const [remixMode, setRemixMode] = useState<ReferenceMatchMode>('close');
+  const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
+  const [lightboxLabel, setLightboxLabel] = useState<string>('');
   const navigate = useNavigate();
 
   const { data: designs, isLoading } = useLibraryDesigns(activeIndustry);
@@ -126,27 +128,45 @@ export function Library() {
               const imageUrl = d.latest_image_path
                 ? uploadsApi.getFileUrl(d.latest_image_path)
                 : null;
+              const label = d.design_name || `${d.brand_name} · Design #${d.design_number}`;
               return (
                 <div
                   key={d.id}
                   className="card overflow-hidden flex flex-col"
                 >
-                  <div className="aspect-square bg-gray-900 relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (imageUrl) {
+                        setLightboxImageUrl(imageUrl);
+                        setLightboxLabel(label);
+                      }
+                    }}
+                    disabled={!imageUrl}
+                    className="aspect-square bg-gray-900 relative group cursor-zoom-in disabled:cursor-default block w-full"
+                  >
                     {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={d.design_name || `Design #${d.design_number}`}
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={imageUrl}
+                          alt={label}
+                          className="w-full h-full object-contain p-2"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-full p-2.5">
+                            <ZoomIn className="w-5 h-5 text-white" />
+                          </div>
+                        </div>
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-600">
                         No preview
                       </div>
                     )}
-                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-xs text-white">
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-xs text-white pointer-events-none">
                       {industries?.find((c) => c.industry === d.library_industry)?.label || d.library_industry}
                     </div>
-                  </div>
+                  </button>
 
                   <div className="p-3 flex flex-col flex-1">
                     <h3 className="text-sm font-semibold text-gray-100 truncate">
@@ -226,6 +246,32 @@ export function Library() {
                 Continue to AI Designer
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox — full-size preview */}
+      {lightboxImageUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 sm:p-8"
+          onClick={() => setLightboxImageUrl(null)}
+        >
+          <button
+            onClick={() => setLightboxImageUrl(null)}
+            className="absolute top-4 right-4 p-2 bg-gray-800/80 hover:bg-gray-700 rounded-full text-gray-300 hover:text-white transition-colors z-10"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <div className="flex flex-col items-center max-w-full max-h-full">
+            <img
+              src={lightboxImageUrl}
+              alt={lightboxLabel}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <p className="text-gray-300 text-sm mt-3 truncate max-w-full">
+              {lightboxLabel}
+            </p>
           </div>
         </div>
       )}
