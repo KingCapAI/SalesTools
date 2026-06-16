@@ -59,12 +59,20 @@ export function VersionGallery({
     );
   }
 
-  // Group versions by batch number, sorted newest first
+  // Group versions by batch number, sorted newest first.
+  // CRITICAL: sort within each batch by version_number ASC so the thumbnail
+  // positions are stable. The backend's design.versions relationship has no
+  // ORDER BY clause, so clicking a thumbnail (which mutates is_selected and
+  // triggers a refetch) used to shuffle the order — users couldn't tell
+  // which option they had clicked.
   const batchMap = new Map<number, DesignVersion[]>();
   for (const v of versions) {
     const batch = v.batch_number || 0;
     if (!batchMap.has(batch)) batchMap.set(batch, []);
     batchMap.get(batch)!.push(v);
+  }
+  for (const list of batchMap.values()) {
+    list.sort((a, b) => a.version_number - b.version_number);
   }
   const batches = Array.from(batchMap.entries()).sort((a, b) => b[0] - a[0]);
 
