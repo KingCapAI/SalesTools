@@ -91,6 +91,8 @@ const DOMESTIC_DECORATION_MAP: Record<string, string> = {
   'faux leather laser patch': 'Faux Leather Laser Patch',
   'flat embroidery (metallic thread)': 'Flat Embroidery (Metallic Thread)',
   '3d embroidery (metallic thread)': '3D Embroidery (Metallic Thread)',
+  'woven patch': 'Woven Patch',
+  'sublimated patch': 'Sublimated Patch',
 };
 
 // AI-detected decoration labels -> overseas quote decoration names
@@ -126,7 +128,7 @@ const CUSTOM_TO_DOMESTIC_MAP: Record<string, string> = {
   laser_cut: 'Faux Leather Laser Patch',
   patch: 'Faux Leather Laser Patch',
   hd_print: 'High Density Print',
-  sublimated_embroidery: 'Embroidered Patch',
+  sublimated_embroidery: 'Sublimated Patch',
 };
 
 // CustomDesign decoration_method enum -> overseas decoration name

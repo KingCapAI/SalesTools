@@ -61,6 +61,9 @@ DOMESTIC_FRONT_DECORATION_PRICES = {
     "3D Embroidery (Metallic Thread)": {24: 6.90, 48: 5.65, 72: 5.65, 144: 5.65, 576: 5.65, 2500: 5.65},
     "Heat Transfer": {24: 4.00, 48: 3.00, 72: 3.00, 144: 3.00, 576: 3.00, 2500: 3.00},
     "Faux Leather Laser Patch": {24: 7.50, 48: 6.50, 72: 6.50, 144: 6.50, 576: 6.50, 2500: 6.50},
+    # Front-only patches priced like Faux Leather Laser Patch.
+    "Woven Patch": {24: 7.50, 48: 6.50, 72: 6.50, 144: 6.50, 576: 6.50, 2500: 6.50},
+    "Sublimated Patch": {24: 7.50, 48: 6.50, 72: 6.50, 144: 6.50, 576: 6.50, 2500: 6.50},
 }
 
 # Domestic additional location decoration prices (up to 5K stitches)
@@ -260,6 +263,8 @@ DOMESTIC_FRONT_DECORATION_METHODS = [
     "3D Embroidery (Metallic Thread)",
     "Heat Transfer",
     "Faux Leather Laser Patch",
+    "Woven Patch",
+    "Sublimated Patch",
 ]
 
 DOMESTIC_ADDITIONAL_DECORATION_METHODS = [

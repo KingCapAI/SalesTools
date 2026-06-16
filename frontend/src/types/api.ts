@@ -229,7 +229,8 @@ export type Material =
   | 'cotton-twill'
   | 'performance-polyester'
   | 'nylon'
-  | 'canvas';
+  | 'canvas'
+  | 'let-ai-choose';
 
 export type StyleDirection =
   | 'simple'
@@ -238,7 +239,8 @@ export type StyleDirection =
   | 'sporty'
   | 'rugged'
   | 'retro'
-  | 'collegiate';
+  | 'collegiate'
+  | 'describe-below';
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 

@@ -18,6 +18,7 @@ class Material(str, Enum):
     PERFORMANCE_POLYESTER = "performance-polyester"
     NYLON = "nylon"
     CANVAS = "canvas"
+    LET_AI_CHOOSE = "let-ai-choose"
 
 
 class StyleDirection(str, Enum):
@@ -28,6 +29,7 @@ class StyleDirection(str, Enum):
     RUGGED = "rugged"
     RETRO = "retro"
     COLLEGIATE = "collegiate"
+    DESCRIBE_BELOW = "describe-below"
 
 
 class HatStructure(str, Enum):

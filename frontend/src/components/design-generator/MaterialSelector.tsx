@@ -11,6 +11,7 @@ const materials: { value: Material; label: string; description: string }[] = [
   { value: 'performance-polyester', label: 'Performance Polyester', description: 'Moisture-wicking athletic' },
   { value: 'nylon', label: 'Nylon', description: 'Lightweight and quick-dry' },
   { value: 'canvas', label: 'Canvas', description: 'Heavy-duty structured' },
+  { value: 'let-ai-choose', label: 'Let AI Choose', description: 'Pick the best fabric for the design' },
 ];
 
 export function MaterialSelector({ value, onChange }: MaterialSelectorProps) {

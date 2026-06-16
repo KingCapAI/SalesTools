@@ -21,6 +21,7 @@ MATERIALS = {
     "performance-polyester": "performance polyester",
     "nylon": "nylon",
     "canvas": "canvas",
+    "let-ai-choose": "a high-quality fabric that best fits the design direction",
 }
 
 # Style direction display names
@@ -32,6 +33,8 @@ STYLE_DIRECTIONS = {
     "rugged": "Rugged",
     "retro": "Retro",
     "collegiate": "Collegiate",
+    # Sentinel: when present, build_design_prompt uses ONLY the custom description.
+    "describe-below": "",
 }
 
 # Structure display names
@@ -77,14 +80,25 @@ def format_construction(hat_style: str, material: str) -> str:
     `material` field to the whole hat erases the mesh back panels that
     define a trucker, so the model renders a solid-fabric cap instead.
     """
+    let_ai_choose = (material or "").lower() == "let-ai-choose"
     fmt_material = format_material(material)
     if is_trucker_style(hat_style):
+        front_clause = (
+            "are made of a high-quality fabric that best fits the design direction"
+            if let_ai_choose
+            else f"are made of {fmt_material}"
+        )
         return (
             f"TRUCKER CONSTRUCTION (critical — this defines the hat): the FRONT panels "
-            f"are made of {fmt_material}; the BACK panels are open-weave polyester MESH. "
+            f"{front_clause}; the BACK panels are open-weave polyester MESH. "
             f"The mesh back is the single most defining feature of a trucker hat and MUST "
             f"be clearly visible in the side, back, and model views. Do NOT render a "
             f"solid-fabric back — the back panels must read unmistakably as mesh."
+        )
+    if let_ai_choose:
+        return (
+            "The hat is made of a high-quality fabric appropriate for the design "
+            "(your choice — pick whichever fabric best fits the style direction)."
         )
     return f"The entire hat is made of {fmt_material}."
 
@@ -202,14 +216,29 @@ def build_design_prompt(
     formatted_style = format_hat_style(hat_style)
     formatted_material = format_material(material)
     construction_sentence = format_construction(hat_style, material)
-    formatted_direction = format_style_direction(style_direction)
     formatted_structure = format_structure(structure)
     formatted_closure = format_closure(closure)
 
-    # Combine style direction with custom description if provided
-    style_desc = formatted_direction
-    if custom_description:
-        style_desc = f"{formatted_direction}. {custom_description}"
+    # Style directions may arrive as a single value or as " and "-joined values
+    # from the router. Strip the "describe-below" sentinel from the list — when
+    # selected, the user is signaling: "ignore preset directions, use my text."
+    raw_parts = [p.strip() for p in (style_direction or "").split(" and ") if p.strip()]
+    filtered_parts = [p for p in raw_parts if p.lower() != "describe-below"]
+    only_describe_below = bool(raw_parts) and not filtered_parts
+
+    if filtered_parts:
+        formatted_direction = format_style_direction(" and ".join(filtered_parts))
+        style_desc = formatted_direction
+        if custom_description:
+            style_desc = f"{formatted_direction}. {custom_description}"
+    elif only_describe_below and custom_description:
+        # User chose "Describe below" → use ONLY their text, no preset framing.
+        style_desc = custom_description
+    elif custom_description:
+        style_desc = custom_description
+    else:
+        # Final fallback if nothing was provided.
+        style_desc = "Modern"
 
     # Build construction details if provided
     construction_details = ""

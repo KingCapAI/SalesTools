@@ -88,6 +88,11 @@ export function AIDesignGenerator() {
       return;
     }
 
+    if (styleDirections.includes('describe-below') && !customDescription.trim()) {
+      alert('Please describe the style in the description box');
+      return;
+    }
+
     try {
       const design = await createDesign.mutateAsync({
         customer_name: customerName.trim(),

@@ -13,7 +13,6 @@ import {
   useCustomDesign,
   useCreateCustomDesignRevision,
   useAddCustomDesignChatMessage,
-  useUpdateCustomDesign,
   useRegenerateCustomDesign,
   useSelectCustomVersion,
   useDeleteCustomVersion,
@@ -57,7 +56,6 @@ export function CustomDesignDetail() {
   const { data: design, isLoading, refetch } = useCustomDesign(designId || '');
   const createRevision = useCreateCustomDesignRevision();
   const addChatMessage = useAddCustomDesignChatMessage();
-  const updateDesign = useUpdateCustomDesign();
   const regenerateDesign = useRegenerateCustomDesign();
   const selectVersion = useSelectCustomVersion();
   const deleteVersion = useDeleteCustomVersion();
@@ -221,12 +219,6 @@ export function CustomDesignDetail() {
     }
   };
 
-  const handleSetApprovalStatus = async (status: ApprovalStatus) => {
-    if (!designId) return;
-    await updateDesign.mutateAsync({ id: designId, data: { approval_status: status } });
-    refetch();
-  };
-
   const handleDeleteQuote = async () => {
     if (!designId) return;
     if (!confirm('Are you sure you want to delete this quote?')) return;
@@ -368,22 +360,6 @@ export function CustomDesignDetail() {
 
           {/* Sidebar — sticky on desktop */}
           <div className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto space-y-4">
-            {/* Approval Status */}
-            <div className="card">
-              <h3 className="font-semibold text-white mb-3 text-sm">Approval Status</h3>
-              <div className="flex flex-wrap gap-2">
-                <Button variant={design.approval_status === 'approved' ? 'secondary' : 'outline'} size="sm" onClick={() => handleSetApprovalStatus('approved')} disabled={updateDesign.isPending}>
-                  <CheckCircle className="w-4 h-4 mr-1" /> Approve
-                </Button>
-                <Button variant={design.approval_status === 'rejected' ? 'danger' : 'outline'} size="sm" onClick={() => handleSetApprovalStatus('rejected')} disabled={updateDesign.isPending}>
-                  <XCircle className="w-4 h-4 mr-1" /> Reject
-                </Button>
-                <Button variant={design.approval_status === 'pending' ? 'secondary' : 'outline'} size="sm" onClick={() => handleSetApprovalStatus('pending')} disabled={updateDesign.isPending}>
-                  <Clock className="w-4 h-4 mr-1" /> Pending
-                </Button>
-              </div>
-            </div>
-
             {/* Tabbed sections */}
             <div className="card p-0 overflow-hidden">
               <Tabs tabs={sidebarTabs} activeTab={sidebarTab} onTabChange={setSidebarTab}>
