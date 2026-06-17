@@ -211,6 +211,8 @@ def build_design_prompt(
     logos: Optional[List[Dict[str, Any]]] = None,
     variation_index: int = 0,
     reference_match_mode: Optional[str] = None,
+    brand_colors: Optional[List[str]] = None,
+    brand_guidelines_text: Optional[str] = None,
 ) -> str:
     """
     Build the full prompt for Gemini image generation.
@@ -293,6 +295,24 @@ STRICT: Do NOT use more than 3 decoration locations. Do NOT use decoration metho
         if mode_block:
             reference_block = f"\n\n{mode_block}\n"
 
+    # Brand color anchor — only emitted when the user supplied/confirmed colors.
+    brand_colors_block = ""
+    cleaned_colors = [
+        c.strip() for c in (brand_colors or [])
+        if c and isinstance(c, str) and c.strip().startswith("#")
+    ][:5]
+    if cleaned_colors:
+        brand_colors_block = (
+            "\n\nBRAND COLORS — anchor the design to this palette:\n"
+            f"- Use these hex colors prominently on the hat, decorations, and thread: {', '.join(cleaned_colors)}.\n"
+            "- These are the brand's confirmed colors. Do NOT substitute with generic alternatives.\n"
+            "- Logos must keep their original colors. Hat fabric, stitching, and accent decorations should pull from this palette."
+        )
+
+    brand_guidelines_block = ""
+    if brand_guidelines_text and brand_guidelines_text.strip():
+        brand_guidelines_block = f"\n\nADDITIONAL BRAND CONTEXT:\n{brand_guidelines_text.strip()}"
+
     # Get variation hint
     variation_hint = VARIATION_HINTS[variation_index % len(VARIATION_HINTS)]
 
@@ -310,7 +330,7 @@ CONSTRUCTION & MATERIALS: {construction_sentence}{construction_details}
 The brand is **{client_name}**.
 
 The overall design vibe is **{style_desc}**.
-{reference_block}
+{reference_block}{brand_colors_block}{brand_guidelines_block}
 {logo_section}
 
 DECORATION METHOD CALLOUTS:

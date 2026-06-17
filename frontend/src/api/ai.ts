@@ -4,6 +4,7 @@ import type { BrandScrapedData } from '../types/api';
 export interface BrandScrapeRequest {
   brand_name?: string;
   brand_url?: string;
+  logo_path?: string;
 }
 
 export interface BrandScrapeResponse {

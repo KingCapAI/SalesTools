@@ -52,6 +52,7 @@ export function AIDesignGenerator() {
   const [logos, setLogos] = useState<DesignLogoCreate[]>(prefill?.logos || []);
   const [uploadedAssets, setUploadedAssets] = useState<UploadedAsset[]>([]);
   const [scrapedData, setScrapedData] = useState<BrandScrapedData | null>(null);
+  const [brandColors, setBrandColors] = useState<string[]>([]);
   const [hatStyle, setHatStyle] = useState<HatStyle>((prefill?.hatStyle as HatStyle) || '6-panel-hat');
   const [material, setMaterial] = useState<Material>((prefill?.material as Material) || 'cotton-twill');
   const [styleDirections, setStyleDirections] = useState<StyleDirection[]>(
@@ -114,6 +115,8 @@ export function AIDesignGenerator() {
         logos: logos,
         reference_image_path: referenceImagePath || undefined,
         reference_match_mode: referenceImagePath ? referenceMatchMode : undefined,
+        brand_colors: brandColors.length > 0 ? brandColors : undefined,
+        brand_guidelines_text: manualGuidelines.trim() || undefined,
       });
 
       // Navigate to design detail page
@@ -199,6 +202,9 @@ export function AIDesignGenerator() {
                 onScrape={setScrapedData}
                 manualGuidelines={manualGuidelines}
                 onManualGuidelinesChange={setManualGuidelines}
+                brandColors={brandColors}
+                onBrandColorsChange={setBrandColors}
+                firstLogoPath={logos[0]?.logo_path || undefined}
               />
             </div>
           </div>

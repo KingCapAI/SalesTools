@@ -163,6 +163,8 @@ async def create_design(
                 variation_index=i,
                 reference_image_path=design_data.reference_image_path if has_reference else None,
                 reference_match_mode=design_data.reference_match_mode.value if has_reference else None,
+                brand_colors=design_data.brand_colors,
+                brand_guidelines_text=design_data.brand_guidelines_text,
             )
         )
 

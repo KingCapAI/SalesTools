@@ -77,6 +77,8 @@ export interface BrandScrapedData {
   industry?: string;
   brand_elements?: string[];
   recommendations?: string;
+  /** Hex (uppercase) -> source label ("logo" | "website" | "knowledge"). */
+  color_sources?: Record<string, string>;
 }
 
 export interface QuoteSummary {
@@ -298,6 +300,8 @@ export interface DesignCreate {
   logos?: DesignLogoCreate[];
   reference_image_path?: string | null;
   reference_match_mode?: ReferenceMatchMode | null;
+  brand_colors?: string[];
+  brand_guidelines_text?: string;
 }
 
 export interface DesignUpdate {

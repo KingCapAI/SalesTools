@@ -255,59 +255,307 @@ Return ONLY the JSON object, no other text."""
         return None
 
 
+_BROWSER_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
+_PAGE_FETCH_TIMEOUT = 10.0
+_IMAGE_FETCH_TIMEOUT = 6.0
+_HTML_MAX_BYTES = 2_000_000
+_IMAGE_MAX_BYTES = 5_000_000
+
+
+def _absolute_url(page_url: str, href: str) -> str:
+    """Resolve a possibly-relative href against the page URL."""
+    from urllib.parse import urljoin
+    return urljoin(page_url, href)
+
+
+def _normalize_url(url: str) -> str:
+    """Add https:// if scheme is missing."""
+    url = (url or "").strip()
+    if not url:
+        return url
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    return url
+
+
+async def _fetch_url_brand_assets(brand_url: str) -> Dict[str, Any]:
+    """Best-effort fetch of homepage HTML + favicon + og:image.
+
+    Returns a dict with whatever we could pull; missing fields are absent.
+    Never raises — failures degrade silently to fewer signals.
+    """
+    import re
+
+    result: Dict[str, Any] = {}
+    normalized = _normalize_url(brand_url)
+    if not normalized:
+        return result
+
+    headers = {"User-Agent": _BROWSER_UA, "Accept": "text/html,*/*"}
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=_PAGE_FETCH_TIMEOUT,
+            follow_redirects=True,
+            max_redirects=5,
+            headers=headers,
+        ) as client:
+            html_response = await client.get(normalized)
+            html_bytes = html_response.content[:_HTML_MAX_BYTES]
+            final_url = str(html_response.url)
+            html = html_bytes.decode("utf-8", errors="ignore")
+
+            def first(pattern: str, flags: int = re.IGNORECASE) -> Optional[str]:
+                m = re.search(pattern, html, flags)
+                return m.group(1).strip() if m else None
+
+            title = first(r"<title[^>]*>([^<]+)</title>")
+            description = first(
+                r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']'
+            ) or first(
+                r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)["\']'
+            )
+            theme_color = first(
+                r'<meta[^>]+name=["\']theme-color["\'][^>]+content=["\']([^"\']+)["\']'
+            )
+            og_image_href = first(
+                r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']'
+            )
+            favicon_href = first(
+                r'<link[^>]+rel=["\'](?:icon|shortcut icon|apple-touch-icon)["\'][^>]+href=["\']([^"\']+)["\']'
+            )
+            # Fallback: link rel comes after href
+            if not favicon_href:
+                favicon_href = first(
+                    r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\'](?:icon|shortcut icon|apple-touch-icon)["\']'
+                )
+
+            if title:
+                result["title"] = title[:300]
+            if description:
+                result["description"] = description[:500]
+            if theme_color:
+                result["theme_color"] = theme_color
+
+            async def _fetch_image(href: Optional[str]) -> Optional[Dict[str, str]]:
+                if not href:
+                    return None
+                try:
+                    img_url = _absolute_url(final_url, href)
+                    img_resp = await client.get(img_url)
+                    img_bytes = img_resp.content[:_IMAGE_MAX_BYTES]
+                    if len(img_bytes) < 100:
+                        return None
+                    mime = img_resp.headers.get("content-type", "").split(";")[0].strip()
+                    if not mime.startswith("image/"):
+                        # Guess from extension
+                        lower = img_url.lower()
+                        if lower.endswith(".png"):
+                            mime = "image/png"
+                        elif lower.endswith((".jpg", ".jpeg")):
+                            mime = "image/jpeg"
+                        elif lower.endswith(".webp"):
+                            mime = "image/webp"
+                        elif lower.endswith(".ico"):
+                            mime = "image/x-icon"
+                        else:
+                            return None
+                    # Gemini doesn't accept ICO — skip those
+                    if mime in ("image/x-icon", "image/vnd.microsoft.icon"):
+                        return None
+                    return {
+                        "mime": mime,
+                        "data": base64.b64encode(img_bytes).decode("utf-8"),
+                    }
+                except Exception:
+                    return None
+
+            og_image = await _fetch_image(og_image_href)
+            favicon = await _fetch_image(favicon_href)
+            if og_image:
+                result["og_image"] = og_image
+            if favicon:
+                result["favicon"] = favicon
+
+    except Exception as e:
+        print(f"[BrandScrape] URL fetch failed for {normalized}: {e}")
+
+    return result
+
+
+def _kmeans_colors_from_logo(logo_bytes: bytes) -> List[str]:
+    """Run k-means on logo bytes and return the top dominant hex codes.
+
+    Drops near-white and fully transparent pixels so backgrounds don't
+    dilute the result. Returns at most 3 hex codes, ordered by pixel share.
+    """
+    try:
+        import numpy as np
+        from sklearn.cluster import KMeans
+
+        img = Image.open(io.BytesIO(logo_bytes))
+        if img.mode in ("P", "L"):
+            img = img.convert("RGBA")
+        elif img.mode == "CMYK":
+            img = img.convert("RGB")
+        img.thumbnail((200, 200), Image.LANCZOS)
+
+        pixels = np.array(img).reshape(-1, len(img.getbands()))
+
+        # Strip transparent pixels first if RGBA, then near-white background.
+        if pixels.shape[1] == 4:
+            opaque = pixels[pixels[:, 3] >= 30]
+            pixels = opaque[:, :3]
+        else:
+            pixels = pixels[:, :3]
+        if len(pixels) == 0:
+            return []
+        non_white = pixels[~np.all(pixels >= 240, axis=1)]
+        if len(non_white) == 0:
+            return []
+
+        unique_count = len(np.unique(non_white.astype(np.int32), axis=0))
+        k = min(5, max(1, unique_count))
+        kmeans = KMeans(n_clusters=k, n_init=10, random_state=42)
+        labels = kmeans.fit_predict(non_white.astype(np.float64))
+        centers = kmeans.cluster_centers_.astype(int)
+        counts = np.bincount(labels, minlength=k)
+
+        ordered = sorted(zip(counts, centers), key=lambda t: -t[0])
+        hexes: List[str] = []
+        for count, rgb in ordered:
+            if count / counts.sum() < 0.03:  # drop noise clusters under 3%
+                continue
+            r, g, b = int(rgb[0]), int(rgb[1]), int(rgb[2])
+            hexes.append(f"#{r:02X}{g:02X}{b:02X}")
+            if len(hexes) >= 3:
+                break
+        return hexes
+    except Exception as e:
+        print(f"[BrandScrape] Logo k-means failed: {e}")
+        return []
+
+
 async def scrape_brand_info(
     brand_name: Optional[str] = None,
     brand_url: Optional[str] = None,
+    logo_bytes: Optional[bytes] = None,
+    logo_mime: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Use Gemini to scrape and analyze brand information.
+    Vision-based brand analysis.
 
-    Args:
-        brand_name: The name of the brand
-        brand_url: The brand's website URL
+    Authority order for the primary color palette:
+      1. The uploaded brand logo (k-means on pixels — ground truth).
+      2. Visual signals from the homepage (og:image + favicon, sent as
+         vision inputs to Gemini).
+      3. Gemini's training-time knowledge of the brand (last resort).
 
-    Returns:
-        Dictionary containing brand colors, style, and guidelines
+    Returns dict shape unchanged for callers:
+      {primary_colors, secondary_colors, brand_style, design_aesthetic,
+       typography, target_audience, industry, brand_elements,
+       recommendations, color_sources}
     """
     init_gemini()
 
-    prompt = f"""Analyze the brand and provide comprehensive brand guidelines information.
+    # 1. Logo k-means (authoritative primaries if logo provided)
+    logo_hexes: List[str] = []
+    if logo_bytes:
+        logo_hexes = _kmeans_colors_from_logo(logo_bytes)
 
-Brand Name: {brand_name or 'Not provided'}
-Brand Website: {brand_url or 'Not provided'}
+    # 2. URL fetch (vision inputs + page metadata)
+    page_assets: Dict[str, Any] = {}
+    if brand_url:
+        page_assets = await _fetch_url_brand_assets(brand_url)
 
-Please provide the following information in a structured format:
-1. Primary brand colors (provide hex codes if possible)
-2. Secondary/accent colors
-3. Brand style/personality (e.g., modern, traditional, playful, professional)
-4. Typography style recommendations
-5. Design aesthetic (minimalist, bold, elegant, etc.)
-6. Target audience characteristics
-7. Industry/sector
-8. Any notable brand elements or motifs
+    # Build vision parts list
+    image_parts: List[Dict[str, Any]] = []
+    image_labels: List[str] = []
 
-If you cannot find specific information, provide reasonable suggestions based on the brand name and any available context.
+    if logo_bytes:
+        mime = logo_mime or "image/png"
+        image_parts.append({"inlineData": {
+            "mimeType": mime,
+            "data": base64.b64encode(logo_bytes).decode("utf-8"),
+        }})
+        image_labels.append("brand logo (authoritative source for primary colors)")
 
-Respond in JSON format with the following structure:
-{{
-    "primary_colors": ["#hex1", "#hex2"],
-    "secondary_colors": ["#hex1", "#hex2"],
-    "brand_style": "description of brand style",
-    "typography": "recommended font styles",
-    "design_aesthetic": "description of design aesthetic",
-    "target_audience": "description of target audience",
-    "industry": "industry/sector",
-    "brand_elements": ["element1", "element2"],
-    "recommendations": "additional recommendations for hat design"
-}}"""
+    if page_assets.get("og_image"):
+        image_parts.append({"inlineData": {
+            "mimeType": page_assets["og_image"]["mime"],
+            "data": page_assets["og_image"]["data"],
+        }})
+        image_labels.append("website Open Graph share image (use for secondary/accent colors and brand vibe)")
+
+    if page_assets.get("favicon"):
+        image_parts.append({"inlineData": {
+            "mimeType": page_assets["favicon"]["mime"],
+            "data": page_assets["favicon"]["data"],
+        }})
+        image_labels.append("website favicon (small, lower confidence — use only if other signals are missing)")
+
+    # Build the text prompt
+    prompt_lines = [
+        "You are extracting brand identity signals for hat design.",
+        "",
+        f"Brand name: {brand_name or 'Not provided'}",
+        f"Brand website: {brand_url or 'Not provided'}",
+    ]
+    if page_assets.get("title"):
+        prompt_lines.append(f"Page title: {page_assets['title']}")
+    if page_assets.get("description"):
+        prompt_lines.append(f"Page description: {page_assets['description']}")
+    if page_assets.get("theme_color"):
+        prompt_lines.append(f"Site theme-color meta: {page_assets['theme_color']}")
+
+    if image_parts:
+        prompt_lines.append("")
+        prompt_lines.append("Images attached (in order):")
+        for idx, label in enumerate(image_labels, start=1):
+            prompt_lines.append(f"  {idx}. {label}")
+
+    if logo_hexes:
+        prompt_lines.extend([
+            "",
+            "GROUND-TRUTH PRIMARY COLORS (extracted from the brand logo via pixel sampling):",
+            "  " + ", ".join(logo_hexes[:5]),
+            "These ARE the brand's primary colors. Do NOT override them.",
+            "Use the website assets ONLY for secondary/accent colors and brand vibe.",
+        ])
+    else:
+        prompt_lines.extend([
+            "",
+            "PRIMARY COLOR RULES:",
+            "- Pull primary colors from the most prominent visual mark (logo/wordmark) in the attached images.",
+            "- DO NOT pull primary colors from CTAs, buttons, background neutrals (#FFFFFF, #000000, light grays), or generic UI accent colors unless they clearly are the brand color.",
+            "- If signals are weak, prefer fewer colors over guessing.",
+        ])
+
+    prompt_lines.extend([
+        "",
+        "Respond with ONLY a JSON object — no prose, no markdown fences:",
+        "{",
+        '  "primary_colors": ["#RRGGBB", ...],          // 1-3 entries',
+        '  "secondary_colors": ["#RRGGBB", ...],        // 0-3 entries',
+        '  "brand_style": "...",                         // short phrase, e.g. "modern athletic"',
+        '  "typography": "...",                          // recommended font style',
+        '  "design_aesthetic": "...",                    // minimalist / bold / etc.',
+        '  "target_audience": "...",',
+        '  "industry": "...",',
+        '  "brand_elements": ["..."],',
+        '  "recommendations": "..."                      // 1-2 sentences for hat design',
+        "}",
+    ])
+
+    prompt = "\n".join(prompt_lines)
 
     try:
-        raw_text = await _call_gemini_text(prompt)
+        raw_text = await _call_gemini_text(prompt, image_parts=image_parts or None)
 
-        # Try to parse as JSON
         response_text = raw_text.strip()
-
-        # Remove markdown code blocks if present
         if response_text.startswith("```json"):
             response_text = response_text[7:]
         if response_text.startswith("```"):
@@ -315,19 +563,41 @@ Respond in JSON format with the following structure:
         if response_text.endswith("```"):
             response_text = response_text[:-3]
 
-        import json
-
         try:
-            return json.loads(response_text.strip())
+            parsed = json.loads(response_text.strip())
         except json.JSONDecodeError:
-            # Return raw text if JSON parsing fails
-            return {
+            parsed = {
                 "raw_response": raw_text,
                 "brand_style": "Unable to parse structured response",
                 "recommendations": raw_text,
             }
 
+        # Logo k-means overrides whatever Gemini guessed for primaries.
+        sources: Dict[str, str] = {}
+        if logo_hexes:
+            parsed["primary_colors"] = logo_hexes[:3]
+            for hx in logo_hexes[:3]:
+                sources[hx.upper()] = "logo"
+        else:
+            for hx in (parsed.get("primary_colors") or [])[:3]:
+                sources[hx.upper()] = "website" if page_assets else "knowledge"
+
+        for hx in (parsed.get("secondary_colors") or [])[:3]:
+            sources.setdefault(hx.upper(), "website" if page_assets else "knowledge")
+
+        parsed["color_sources"] = sources
+        return parsed
+
     except Exception as e:
+        # If Gemini failed but we still have logo k-means, return those as a usable result.
+        if logo_hexes:
+            return {
+                "primary_colors": logo_hexes[:3],
+                "secondary_colors": [],
+                "brand_style": "",
+                "recommendations": "",
+                "color_sources": {hx.upper(): "logo" for hx in logo_hexes[:3]},
+            }
         return {
             "error": str(e),
             "brand_style": "Error fetching brand information",
@@ -589,6 +859,8 @@ async def generate_design(
     variation_index: int = 0,
     reference_image_path: Optional[str] = None,
     reference_match_mode: Optional[str] = None,
+    brand_colors: Optional[List[str]] = None,
+    brand_guidelines_text: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Generate a complete hat design.
@@ -622,6 +894,8 @@ async def generate_design(
         logos=logos_data,
         variation_index=variation_index,
         reference_match_mode=reference_match_mode if reference_image_path else None,
+        brand_colors=brand_colors,
+        brand_guidelines_text=brand_guidelines_text,
     )
 
     # Generate the image

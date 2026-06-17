@@ -201,6 +201,8 @@ class DesignCreate(BaseModel):
     logos: Optional[List[DesignLogoCreate]] = None  # Named logos with optional location
     reference_image_path: Optional[str] = None  # Optional reference image (existing hat/design to riff on)
     reference_match_mode: Optional[ReferenceMatchMode] = None  # Required when reference_image_path is set
+    brand_colors: Optional[List[str]] = None  # Hex codes — primary palette to anchor the design
+    brand_guidelines_text: Optional[str] = None  # Free-text brand info pasted by the user
 
     @field_validator('style_directions')
     @classmethod

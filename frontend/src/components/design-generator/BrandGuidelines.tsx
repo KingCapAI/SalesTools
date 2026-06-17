@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, Sparkles, X, FileText, Image as ImageIcon } from 'lucide-react';
+import { Upload, Sparkles, X, FileText, Image as ImageIcon, Plus, RotateCcw } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { uploadsApi } from '../../api/uploads';
@@ -23,10 +23,26 @@ interface BrandGuidelinesProps {
   onScrape: (data: BrandScrapedData) => void;
   manualGuidelines: string;
   onManualGuidelinesChange: (value: string) => void;
+  brandColors: string[];
+  onBrandColorsChange: (colors: string[]) => void;
+  firstLogoPath?: string;
   disabled?: boolean;
 }
 
 type Mode = 'upload' | 'scrape';
+
+const HEX_RE = /^#?[0-9a-fA-F]{6}$/;
+
+function normalizeHex(value: string): string {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return '';
+  const withHash = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+  return withHash.toUpperCase();
+}
+
+function isValidHex(value: string): boolean {
+  return HEX_RE.test((value || '').trim());
+}
 
 export function BrandGuidelines({
   brandName,
@@ -37,6 +53,9 @@ export function BrandGuidelines({
   onScrape,
   manualGuidelines,
   onManualGuidelinesChange,
+  brandColors,
+  onBrandColorsChange,
+  firstLogoPath,
   disabled,
 }: BrandGuidelinesProps) {
   const [mode, setMode] = useState<Mode>('scrape');
@@ -44,6 +63,10 @@ export function BrandGuidelines({
   const [isScraping, setIsScraping] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // When the AI returns colors, seed the editable palette — but never overwrite
+  // user edits made after the initial seed.
+  const [aiSuggestedColors, setAiSuggestedColors] = useState<string[]>([]);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -92,10 +115,22 @@ export function BrandGuidelines({
       const response = await aiApi.scrapeBrand({
         brand_name: brandName || undefined,
         brand_url: scrapeUrl || undefined,
+        logo_path: firstLogoPath || undefined,
       });
 
       if (response.success) {
         onScrape(response.data);
+        // Seed editable palette from AI output (primaries first, then secondaries).
+        const merged = [
+          ...(response.data.primary_colors || []),
+          ...(response.data.secondary_colors || []),
+        ]
+          .map(normalizeHex)
+          .filter(isValidHex)
+          .filter((v, i, arr) => arr.indexOf(v) === i)
+          .slice(0, 6);
+        setAiSuggestedColors(merged);
+        onBrandColorsChange(merged);
       } else {
         setError(response.message || 'Failed to analyze brand');
       }
@@ -104,6 +139,44 @@ export function BrandGuidelines({
     } finally {
       setIsScraping(false);
     }
+  };
+
+  // Local hex input editing — held separately so partial typing doesn't fail
+  // validation mid-keystroke.
+  const [hexDrafts, setHexDrafts] = useState<string[]>([]);
+  useEffect(() => {
+    setHexDrafts(brandColors);
+  }, [brandColors.join('|')]);
+
+  const updateColorAt = (idx: number, raw: string) => {
+    const drafts = [...hexDrafts];
+    drafts[idx] = raw;
+    setHexDrafts(drafts);
+    if (isValidHex(raw)) {
+      const next = [...brandColors];
+      next[idx] = normalizeHex(raw);
+      onBrandColorsChange(next);
+    }
+  };
+
+  const removeColorAt = (idx: number) => {
+    const next = brandColors.filter((_, i) => i !== idx);
+    onBrandColorsChange(next);
+  };
+
+  const addColor = () => {
+    if (brandColors.length >= 6) return;
+    onBrandColorsChange([...brandColors, '#000000']);
+  };
+
+  const resetToAI = () => {
+    onBrandColorsChange(aiSuggestedColors);
+  };
+
+  const sourceFor = (hex: string): string | undefined => {
+    const map = scrapedData?.color_sources;
+    if (!map) return undefined;
+    return map[hex.toUpperCase()];
   };
 
   return (
@@ -142,7 +215,8 @@ export function BrandGuidelines({
         <div className="space-y-4">
           <p className="text-sm text-gray-400">
             Let AI analyze the brand to extract colors, style, and design recommendations.
-            Enter a website URL for more detailed results, or we&apos;ll search based on the brand name.
+            For best accuracy: upload the brand&apos;s logo above first (becomes the source of
+            truth for primary colors), then add the homepage URL.
           </p>
           <Input
             label="Brand Website URL (Optional)"
@@ -161,26 +235,106 @@ export function BrandGuidelines({
             Analyze Brand with AI
           </Button>
 
-          {/* Scraped Data Display */}
+          {/* Editable color swatches — always visible so users can hand-enter colors
+              without running the AI analysis at all. */}
+          <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-gray-100 text-sm">Brand Colors</h4>
+              {aiSuggestedColors.length > 0 && (
+                <button
+                  type="button"
+                  onClick={resetToAI}
+                  className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1"
+                  title="Reset to AI suggestions"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Reset to AI
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              These colors are sent to the AI image generator. Edit, add, or remove to correct
+              what the AI got wrong.
+            </p>
+            {brandColors.length === 0 ? (
+              <p className="text-xs text-gray-500 italic mb-3">
+                No colors yet. Click &quot;Analyze Brand with AI&quot; above, or add hex codes manually.
+              </p>
+            ) : (
+              <div className="space-y-2 mb-3">
+                {brandColors.map((hex, idx) => {
+                  const draft = hexDrafts[idx] ?? hex;
+                  const valid = isValidHex(draft);
+                  const source = sourceFor(hex);
+                  return (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={valid ? normalizeHex(draft) : '#000000'}
+                        onChange={(e) => updateColorAt(idx, e.target.value)}
+                        className="w-10 h-10 rounded border border-gray-600 bg-transparent cursor-pointer"
+                        aria-label={`Color ${idx + 1} picker`}
+                      />
+                      <input
+                        type="text"
+                        value={draft}
+                        onChange={(e) => updateColorAt(idx, e.target.value)}
+                        placeholder="#000000"
+                        className={`flex-1 px-3 py-2 rounded-lg bg-gray-900 border text-sm text-gray-100 font-mono ${
+                          valid ? 'border-gray-700' : 'border-red-500/60'
+                        }`}
+                        spellCheck={false}
+                      />
+                      {source && (
+                        <span
+                          className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                            source === 'logo'
+                              ? 'bg-green-900/50 text-green-300'
+                              : source === 'website'
+                              ? 'bg-blue-900/50 text-blue-300'
+                              : 'bg-gray-700 text-gray-400'
+                          }`}
+                          title={
+                            source === 'logo'
+                              ? 'Sampled from logo pixels'
+                              : source === 'website'
+                              ? 'Inferred from website'
+                              : 'AI knowledge guess'
+                          }
+                        >
+                          {source}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeColorAt(idx)}
+                        className="p-2 text-gray-500 hover:text-red-400"
+                        aria-label={`Remove color ${idx + 1}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={addColor}
+              disabled={brandColors.length >= 6}
+              className="text-sm text-primary-400 hover:text-primary-300 disabled:text-gray-600 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" />
+              Add color
+              {brandColors.length >= 6 && <span className="ml-1 text-xs">(max 6)</span>}
+            </button>
+          </div>
+
+          {/* Scraped Data: extras beyond the colors (style, recommendations, etc.) */}
           {scrapedData && (
             <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
-              <h4 className="font-medium text-gray-100 mb-3">Brand Analysis</h4>
+              <h4 className="font-medium text-gray-100 mb-3 text-sm">Brand Analysis</h4>
               <div className="space-y-2 text-sm">
-                {scrapedData.primary_colors && scrapedData.primary_colors.length > 0 && (
-                  <div>
-                    <span className="text-gray-400">Colors: </span>
-                    <span className="flex gap-1 mt-1">
-                      {scrapedData.primary_colors.map((color, i) => (
-                        <span
-                          key={i}
-                          className="w-6 h-6 rounded border border-gray-600"
-                          style={{ backgroundColor: color }}
-                          title={color}
-                        />
-                      ))}
-                    </span>
-                  </div>
-                )}
                 {scrapedData.brand_style && (
                   <div>
                     <span className="text-gray-400">Style: </span>
@@ -269,7 +423,7 @@ export function BrandGuidelines({
         <label className="label">Additional Brand Information (Optional)</label>
         <textarea
           className="input min-h-[80px]"
-          placeholder="Enter brand PMS colors, brand direction, or any other guidelines to inform the design..."
+          placeholder="Enter brand PMS codes, design direction, do's and don'ts, or anything else the AI should know..."
           value={manualGuidelines}
           onChange={(e) => onManualGuidelinesChange(e.target.value)}
           disabled={disabled}
