@@ -520,10 +520,17 @@ async def scrape_brand_info(
     if logo_hexes:
         prompt_lines.extend([
             "",
-            "GROUND-TRUTH PRIMARY COLORS (extracted from the brand logo via pixel sampling):",
+            "CONFIRMED PRIMARY COLORS (sampled from the logo's pixels — these are anchors, not the full palette):",
             "  " + ", ".join(logo_hexes[:5]),
-            "These ARE the brand's primary colors. Do NOT override them.",
-            "Use the website assets ONLY for secondary/accent colors and brand vibe.",
+            "",
+            "YOUR JOB — EXPAND BEYOND THESE:",
+            "- Treat the logo colors above as ONE anchor in the palette, not the full story.",
+            "- Identify ADDITIONAL brand colors that complement them: accent colors used in the brand's marketing, signature secondary colors, alternate logo variants, brand guideline palette colors you've seen for this brand.",
+            "- Sources to consult: the attached website images, your training knowledge of this brand's identity, common variations of the brand mark.",
+            "- Put these additional colors in secondary_colors. Aim for 2-4 entries when signals exist.",
+            "- DO NOT duplicate the logo colors in secondary_colors.",
+            "- DO NOT include generic UI neutrals (#FFFFFF, #000000, plain grays) unless they're explicitly part of the brand identity.",
+            "- DO NOT include CTA button colors or generic website chrome unless they clearly are brand colors.",
         ])
     else:
         prompt_lines.extend([
@@ -531,6 +538,7 @@ async def scrape_brand_info(
             "PRIMARY COLOR RULES:",
             "- Pull primary colors from the most prominent visual mark (logo/wordmark) in the attached images.",
             "- DO NOT pull primary colors from CTAs, buttons, background neutrals (#FFFFFF, #000000, light grays), or generic UI accent colors unless they clearly are the brand color.",
+            "- For secondary_colors, include accent colors used in marketing materials, alternate logo variants, or brand palette colors you know from training. 1-3 entries when signals exist.",
             "- If signals are weak, prefer fewer colors over guessing.",
         ])
 
@@ -539,7 +547,7 @@ async def scrape_brand_info(
         "Respond with ONLY a JSON object — no prose, no markdown fences:",
         "{",
         '  "primary_colors": ["#RRGGBB", ...],          // 1-3 entries',
-        '  "secondary_colors": ["#RRGGBB", ...],        // 0-3 entries',
+        '  "secondary_colors": ["#RRGGBB", ...],        // up to 4 entries — the full brand palette beyond the primaries',
         '  "brand_style": "...",                         // short phrase, e.g. "modern athletic"',
         '  "typography": "...",                          // recommended font style',
         '  "design_aesthetic": "...",                    // minimalist / bold / etc.',
@@ -572,18 +580,46 @@ async def scrape_brand_info(
                 "recommendations": raw_text,
             }
 
-        # Logo k-means overrides whatever Gemini guessed for primaries.
+        # Merge logo k-means with Gemini-found colors.
+        # Logo colors anchor primaries; any additional brand colors Gemini
+        # surfaced (whether in primary_colors or secondary_colors) flow into
+        # secondaries, deduped against the logo anchors. The logo doesn't
+        # override the palette — it just becomes its most authoritative tier.
         sources: Dict[str, str] = {}
-        if logo_hexes:
-            parsed["primary_colors"] = logo_hexes[:3]
-            for hx in logo_hexes[:3]:
-                sources[hx.upper()] = "logo"
-        else:
-            for hx in (parsed.get("primary_colors") or [])[:3]:
-                sources[hx.upper()] = "website" if page_assets else "knowledge"
+        gemini_primaries = [
+            (h or "").strip() for h in (parsed.get("primary_colors") or [])
+            if h and isinstance(h, str)
+        ]
+        gemini_secondaries = [
+            (h or "").strip() for h in (parsed.get("secondary_colors") or [])
+            if h and isinstance(h, str)
+        ]
 
-        for hx in (parsed.get("secondary_colors") or [])[:3]:
-            sources.setdefault(hx.upper(), "website" if page_assets else "knowledge")
+        def _seen_upper(items: List[str]) -> set:
+            return {x.upper() for x in items if x}
+
+        if logo_hexes:
+            anchors = logo_hexes[:3]
+            seen = _seen_upper(anchors)
+            extras: List[str] = []
+            # Anything Gemini surfaced that isn't already in the logo palette
+            # becomes part of the broader brand palette.
+            for candidate in gemini_primaries + gemini_secondaries:
+                up = candidate.upper()
+                if up and up not in seen:
+                    extras.append(candidate)
+                    seen.add(up)
+            parsed["primary_colors"] = anchors
+            parsed["secondary_colors"] = extras[:4]
+            for hx in anchors:
+                sources[hx.upper()] = "logo"
+            for hx in extras[:4]:
+                sources.setdefault(hx.upper(), "website" if page_assets else "knowledge")
+        else:
+            for hx in gemini_primaries[:3]:
+                sources[hx.upper()] = "website" if page_assets else "knowledge"
+            for hx in gemini_secondaries[:4]:
+                sources.setdefault(hx.upper(), "website" if page_assets else "knowledge")
 
         parsed["color_sources"] = sources
         return parsed
