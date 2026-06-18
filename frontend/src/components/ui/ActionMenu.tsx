@@ -17,7 +17,11 @@ interface ActionMenuProps {
 
 export function ActionMenu({ items }: ActionMenuProps) {
   const [open, setOpen] = useState(false);
+  // Pick the side dynamically when the menu opens so the dropdown never
+  // hangs off-screen. Default 'right' matches the historical anchor.
+  const [side, setSide] = useState<'left' | 'right'>('right');
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -29,24 +33,44 @@ export function ActionMenu({ items }: ActionMenuProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  const handleToggle = () => {
+    if (!open && buttonRef.current) {
+      // Anchor on the side that gives the dropdown more room. A 192px-wide
+      // menu wants ~200px of clearance; if the button is too close to the
+      // left edge, flip the anchor to 'left' so it expands rightward.
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceRight = window.innerWidth - rect.right;
+      const spaceLeft = rect.left;
+      setSide(spaceLeft < 200 && spaceRight > spaceLeft ? 'left' : 'right');
+    }
+    setOpen(!open);
+  };
+
   const visibleItems = items.filter((i) => !i.hidden);
 
   return (
     <div className="relative" ref={menuRef}>
       <button
-        onClick={() => setOpen(!open)}
+        ref={buttonRef}
+        onClick={handleToggle}
         className="p-2 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-600 transition-colors"
+        aria-label="More actions"
       >
         <MoreHorizontal className="w-5 h-5" />
       </button>
 
       {open && (
         <>
-          {/* Backdrop for mobile */}
+          {/* Backdrop captures outside taps on touch devices */}
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
 
-          {/* Menu — anchored right, but won't overflow viewport */}
-          <div className="absolute right-0 mt-2 w-48 max-w-[calc(100vw-2rem)] bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-40 py-1">
+          <div
+            className={
+              `absolute ${side === 'right' ? 'right-0' : 'left-0'} mt-2 w-48 ` +
+              `max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto ` +
+              `bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-40 py-1`
+            }
+          >
             {visibleItems.map((item) => {
               const Icon = item.icon;
               return (

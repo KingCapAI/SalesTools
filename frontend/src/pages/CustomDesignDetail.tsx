@@ -19,6 +19,7 @@ import {
 } from '../hooks/useCustomDesigns';
 import { useUnpublishFromLibrary } from '../hooks/useLibrary';
 import { PublishToLibraryModal } from '../components/design-generator/PublishToLibraryModal';
+import { RenameDesignModal } from '../components/design-generator/RenameDesignModal';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
 import {
   ArrowLeft, Plus, Download,
@@ -63,6 +64,7 @@ export function CustomDesignDetail() {
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
   const unpublish = useUnpublishFromLibrary();
   const [isExporting, setIsExporting] = useState(false);
   const [sidebarTab, setSidebarTab] = useState('chat');
@@ -251,6 +253,7 @@ export function CustomDesignDetail() {
   };
 
   const actionItems = [
+    { icon: Pencil, label: 'Rename Design', onClick: () => setRenameModalOpen(true) },
     { icon: RefreshCw, label: 'Regenerate', onClick: handleRegenerate, loading: regenerateDesign.isPending, hidden: hasRevisions },
     { icon: Pencil, label: 'Copy & Edit', onClick: handleCopyAndEdit },
     { icon: Download, label: 'Download', onClick: handleDownload, disabled: !selectedVersion?.image_path },
@@ -285,10 +288,19 @@ export function CustomDesignDetail() {
                 <Layers className="w-5 h-5 text-white" />
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 min-w-0">
                   <h1 className="text-xl lg:text-2xl font-bold text-gray-100 truncate">
                     {design.design_name || `Custom Design #${design.design_number}`}
                   </h1>
+                  <button
+                    type="button"
+                    onClick={() => setRenameModalOpen(true)}
+                    className="p-1 rounded-md text-gray-500 hover:text-gray-200 hover:bg-gray-800 transition-colors flex-shrink-0"
+                    title="Rename design"
+                    aria-label="Rename design"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                 </div>
                 <p className="text-gray-400 text-sm truncate">
                   {design.brand_name} • {design.hat_style.replace(/-/g, ' ')} • {design.location_logos.length} decoration{design.location_logos.length !== 1 ? 's' : ''}
@@ -298,7 +310,7 @@ export function CustomDesignDetail() {
           </div>
 
           {/* Actions — responsive */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
             <div className="hidden lg:flex items-center gap-2">
               {!hasRevisions && (
                 <Button variant="outline" size="sm" onClick={handleRegenerate} isLoading={regenerateDesign.isPending} title="Generate 3 new design options">
@@ -350,16 +362,18 @@ export function CustomDesignDetail() {
               )}
             </div>
 
-            <div className="md:hidden">
-              <ActionMenu items={actionItems} />
-            </div>
-
             <Link to="/custom-design-builder/new">
               <Button size="sm">
                 <Plus className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">New Design</span>
               </Button>
             </Link>
+
+            {/* Mobile: overflow menu (placed last so its right-anchored dropdown
+                hugs the screen edge instead of clipping leftward). */}
+            <div className="md:hidden">
+              <ActionMenu items={actionItems} />
+            </div>
           </div>
         </div>
 
@@ -489,6 +503,19 @@ export function CustomDesignDetail() {
           isOpen={publishModalOpen}
           onClose={() => setPublishModalOpen(false)}
           onPublished={() => refetch()}
+        />
+      )}
+
+      {/* Rename Modal */}
+      {designId && (
+        <RenameDesignModal
+          designId={designId}
+          designKind="custom"
+          initialName={design.design_name || ''}
+          fallbackLabel={`Custom Design #${design.design_number}`}
+          isOpen={renameModalOpen}
+          onClose={() => setRenameModalOpen(false)}
+          onSaved={() => refetch()}
         />
       )}
     </div>

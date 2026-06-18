@@ -74,23 +74,21 @@ export function Library() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-3">
-                <LibraryIcon className="w-6 h-6 text-amber-400" />
-                Design Library
-              </h1>
-              <p className="text-gray-400 mt-1 text-sm">
-                Browse designs your teammates have published. Remix any one with your own logos.
-              </p>
-            </div>
+        <div className="flex items-center gap-3 mb-8 min-w-0">
+          <Link to="/dashboard" className="flex-shrink-0">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Back</span>
+            </Button>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-100 flex items-center gap-3 truncate">
+              <LibraryIcon className="w-6 h-6 text-amber-400 flex-shrink-0" />
+              Design Library
+            </h1>
+            <p className="text-gray-400 mt-1 text-sm truncate">
+              Browse designs your teammates have published. Remix any one with your own logos.
+            </p>
           </div>
         </div>
 

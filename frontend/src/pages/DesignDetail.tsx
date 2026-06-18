@@ -12,6 +12,7 @@ import { ProductionTimeline } from '../components/design-generator/ProductionTim
 import { useDesign, useCreateRevisionV2, useAddChatMessage, useRegenerateDesign, useSelectVersion, useDeleteVersion } from '../hooks/useDesigns';
 import { useUnpublishFromLibrary } from '../hooks/useLibrary';
 import { PublishToLibraryModal } from '../components/design-generator/PublishToLibraryModal';
+import { RenameDesignModal } from '../components/design-generator/RenameDesignModal';
 import { useDesignQuote, useDeleteDesignQuote, useExportDesignWithQuote } from '../hooks/useDesignQuotes';
 import {
   ArrowLeft, Plus, Download,
@@ -40,6 +41,7 @@ export function DesignDetail() {
   const [isExporting, setIsExporting] = useState(false);
   const [sidebarTab, setSidebarTab] = useState('chat');
   const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
   const unpublish = useUnpublishFromLibrary();
 
   useEffect(() => {
@@ -223,6 +225,7 @@ export function DesignDetail() {
   };
 
   const actionItems = [
+    { icon: Pencil, label: 'Rename Design', onClick: () => setRenameModalOpen(true) },
     { icon: RefreshCw, label: 'Regenerate', onClick: handleRegenerate, loading: regenerateDesign.isPending, hidden: hasRevisions },
     { icon: Pencil, label: 'Copy & Edit', onClick: handleCopyAndEdit },
     { icon: Download, label: 'Download', onClick: handleDownload, disabled: !selectedVersion?.image_path },
@@ -252,10 +255,19 @@ export function DesignDetail() {
               </Button>
             </Link>
             <div className="min-w-0">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <h1 className="text-xl lg:text-2xl font-bold text-gray-100 truncate">
                   {design.design_name || `Design #${design.design_number}`}
                 </h1>
+                <button
+                  type="button"
+                  onClick={() => setRenameModalOpen(true)}
+                  className="p-1 rounded-md text-gray-500 hover:text-gray-200 hover:bg-gray-800 transition-colors flex-shrink-0"
+                  title="Rename design"
+                  aria-label="Rename design"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
               </div>
               <p className="text-gray-400 text-sm truncate">
                 {design.brand_name} • {design.style_directions.join(', ')} • {design.hat_style.replace(/-/g, ' ')}
@@ -264,7 +276,7 @@ export function DesignDetail() {
           </div>
 
           {/* Actions — responsive */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
             {/* Desktop: all buttons */}
             <div className="hidden lg:flex items-center gap-2">
               {!hasRevisions && (
@@ -318,17 +330,18 @@ export function DesignDetail() {
               )}
             </div>
 
-            {/* Mobile: overflow menu */}
-            <div className="md:hidden">
-              <ActionMenu items={actionItems} />
-            </div>
-
             <Link to="/ai-design-generator/new">
               <Button size="sm">
                 <Plus className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">New Design</span>
               </Button>
             </Link>
+
+            {/* Mobile: overflow menu (placed last so its right-anchored dropdown
+                hugs the screen edge instead of clipping leftward). */}
+            <div className="md:hidden">
+              <ActionMenu items={actionItems} />
+            </div>
           </div>
         </div>
 
@@ -425,6 +438,19 @@ export function DesignDetail() {
           isOpen={publishModalOpen}
           onClose={() => setPublishModalOpen(false)}
           onPublished={() => refetch()}
+        />
+      )}
+
+      {/* Rename Modal */}
+      {designId && (
+        <RenameDesignModal
+          designId={designId}
+          designKind="ai"
+          initialName={design.design_name || ''}
+          fallbackLabel={`Design #${design.design_number}`}
+          isOpen={renameModalOpen}
+          onClose={() => setRenameModalOpen(false)}
+          onSaved={() => refetch()}
         />
       )}
     </div>

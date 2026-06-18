@@ -57,22 +57,22 @@ export function DesignerDashboard() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Link to="/dashboard">
+        {/* Header — stacks on mobile so the CTA doesn't get pushed off-screen */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link to="/dashboard" className="flex-shrink-0">
               <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
+                <ArrowLeft className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
             </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-100">AI Design Conceptor</h1>
-              <p className="text-gray-400">Manage and create AI hat design concepts</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-100 truncate">AI Design Conceptor</h1>
+              <p className="text-gray-400 text-sm truncate">Manage and create AI hat design concepts</p>
             </div>
           </div>
-          <Link to="/ai-design-generator/new">
-            <Button size="lg">
+          <Link to="/ai-design-generator/new" className="w-full sm:w-auto">
+            <Button size="lg" className="w-full sm:w-auto">
               <Plus className="w-5 h-5 mr-2" />
               Create New Design
             </Button>

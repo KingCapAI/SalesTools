@@ -99,23 +99,21 @@ export function CustomDesignBuilder() {
       <Header />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Link to="/custom-design-builder">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <Layers className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-100">Mockup Builder</h1>
-                <p className="text-gray-400">Build a hat mockup with specific logos and placements</p>
-              </div>
+        {/* Header — shrinks on mobile so the Back button never clips the title */}
+        <div className="flex items-center gap-3 mb-8 min-w-0">
+          <Link to="/custom-design-builder" className="flex-shrink-0">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Back</span>
+            </Button>
+          </Link>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+              <Layers className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-100 truncate">Mockup Builder</h1>
+              <p className="text-gray-400 text-sm truncate">Build a hat mockup with specific logos and placements</p>
             </div>
           </div>
         </div>
