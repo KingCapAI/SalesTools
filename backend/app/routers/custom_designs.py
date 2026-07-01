@@ -908,6 +908,7 @@ async def create_custom_design_revision_v2(
             logo_path=None,
             brand_assets=[],
             reference_image_path=design.reference_hat_path,
+            base_image_path=base_version.image_path,
         )
         for _ in range(VERSIONS_PER_BATCH)
     ]

@@ -292,9 +292,11 @@ async def create_revision_v2(
     new_batch = max_batch + 1
     current_max_version = design.current_version
 
-    # All 3 variants use the SAME prompt — variance comes from model sampling,
-    # not prompt steering. The user's expectation is "3 near-identical options
-    # so I can pick the cleanest," not "3 distinct interpretations."
+    # All 3 variants use the SAME prompt + SAME source image. Variance comes
+    # from model sampling, not prompt steering. The user's expectation is
+    # "3 near-identical options so I can pick the cleanest," not "3 distinct
+    # interpretations." Passing base_version.image_path enables image-to-image
+    # editing so each variant stays tight to the source.
     tasks = [
         generate_revision_v2(
             base_prompt=base_version.prompt,
@@ -303,6 +305,7 @@ async def create_revision_v2(
             logo_path=None,
             brand_assets=[],
             reference_image_path=design.reference_hat_path,
+            base_image_path=base_version.image_path,
         )
         for _ in range(VERSIONS_PER_BATCH)
     ]

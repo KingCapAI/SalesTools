@@ -776,7 +776,8 @@ async def generate_design_image(
             except Exception as e:
                 print(f"Warning: Could not load logo: {e}")
 
-        # If we have an original image (revision mode), include it
+        # If we have an original image (revision mode), include it as the
+        # authoritative source. Label it so the edit prompt's references land.
         if original_image_path:
             try:
                 image_bytes = await read_file_bytes(original_image_path)
@@ -785,6 +786,7 @@ async def generate_design_image(
                     mime_type = "image/png"
                     if original_image_path.endswith(".jpg") or original_image_path.endswith(".jpeg"):
                         mime_type = "image/jpeg"
+                    parts.append({"text": "SOURCE DESIGN (the current design — preserve everything not explicitly changed):"})
                     parts.append({
                         "inlineData": {
                             "mimeType": mime_type,
@@ -956,29 +958,84 @@ async def generate_revision_v2(
     logo_path: Optional[str] = None,
     brand_assets: Optional[List[str]] = None,
     reference_image_path: Optional[str] = None,
+    base_image_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Generate a revision by regenerating the design from scratch with an edit block.
+    Image-to-image revision: send the current design's IMAGE back to the model
+    alongside a targeted edit instruction, so the output stays pixel-close to
+    the source (matches Gemini's own image-editing behavior).
 
-    Critically, this DOES NOT feed the prior generated image back to the model.
-    Image-to-image revisions degrade quality over rounds and tend to drift on
-    accuracy because the model fights between "preserve" and "change." This
-    function instead takes the prior prompt, appends a focused EDIT INSTRUCTIONS
-    block, and produces a fresh generation. Quality stays at first-gen level.
+    Prior implementation regenerated from prompt-only, which caused visible
+    drift on every edit — logos, colors, and layout details would shift even
+    when the user only asked for one localized change. Feeding the base
+    image back gives the model a hard visual anchor and produces the tight,
+    consistent edits users get on gemini.google.com.
 
     Args:
-        base_prompt: The prior version's prompt (whose spec we want to inherit).
+        base_prompt: The prior version's prompt (still passed for spec
+            continuity, but the image is now the primary anchor).
         edit_notes: User-supplied free-text feedback.
         logos: DesignLogo objects to pass alongside the prompt.
         logo_path: Backward-compat single logo path.
         brand_assets: Brand asset paths.
-        reference_image_path: Optional reference image (carry through from creation).
+        reference_image_path: The original user-uploaded reference (from
+            creation) — carried through so a chain of edits can still see
+            what the user wanted to riff on. NOT the same as base_image_path.
+        base_image_path: The currently-selected version's rendered image.
+            This is the ground-truth starting point for the edit. When set,
+            the model preserves everything not explicitly changed.
 
     Returns:
         Dict with prompt, success, image_data or error — identical shape to
         generate_design's return.
     """
-    revised_prompt = f"""{base_prompt}
+    if base_image_path:
+        # Image-to-image edit: the source image IS the spec. The prompt is
+        # a targeted instruction, not a full regeneration description.
+        revised_prompt = f"""EDIT INSTRUCTIONS — apply to the attached source design image.
+
+The attached image labeled "SOURCE DESIGN" is the CURRENT design. Your job
+is to produce a MINIMAL, TARGETED edit of that image applying ONLY the
+change(s) below. Everything else must remain pixel-identical to the source.
+
+Requested change:
+{edit_notes.strip()}
+
+PRESERVATION RULES — non-negotiable:
+- Layout: keep the exact 6-view 3x2 grid, same angles, same labels.
+- Hat: same silhouette, same style, same panels, same closure, same brim.
+- Colors: keep every color that was not explicitly asked to change.
+- Decorations: keep every logo, embroidery, patch, and callout that was
+  not explicitly asked to change — same position, same size, same method.
+- Model view (bottom-right): keep the same model, pose, framing, and
+  lighting unless the edit explicitly targets it.
+- Background, lighting, shadows, fabric texture: preserve exactly.
+
+Do NOT:
+- Re-imagine, re-style, or "improve" the design.
+- Re-arrange decorations or logos across views.
+- Change colors that weren't mentioned in the edit.
+- Redraw the model with a different face/pose.
+- Regenerate from scratch. Treat this as a surgical edit.
+
+Reference spec (for context only — the source image overrides any
+disagreement):
+---
+{base_prompt}
+---
+"""
+        result = await generate_design_image(
+            prompt=revised_prompt,
+            logo_path=logo_path,
+            logos=logos,
+            brand_assets=brand_assets,
+            original_image_path=base_image_path,
+            reference_image_path=reference_image_path,
+        )
+    else:
+        # Fallback: no base image available (very old design or race
+        # condition). Regenerate from prompt with an edit block.
+        revised_prompt = f"""{base_prompt}
 
 
 EDIT INSTRUCTIONS — APPLY THESE CHANGES TO THE DESIGN ABOVE:
@@ -991,14 +1048,13 @@ description specifies. Do not introduce new design elements. Do not change
 anything that was not requested. The result must still be a 6-view layout
 matching the layout template.
 """
-
-    result = await generate_design_image(
-        prompt=revised_prompt,
-        logo_path=logo_path,
-        logos=logos,
-        brand_assets=brand_assets,
-        reference_image_path=reference_image_path,
-    )
+        result = await generate_design_image(
+            prompt=revised_prompt,
+            logo_path=logo_path,
+            logos=logos,
+            brand_assets=brand_assets,
+            reference_image_path=reference_image_path,
+        )
 
     return {
         "prompt": revised_prompt,
