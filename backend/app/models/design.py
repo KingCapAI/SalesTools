@@ -156,9 +156,12 @@ class DesignLocationLogo(Base):
     location = Column(String(50), nullable=False)  # "front", "left", "right", "back", "visor"
     logo_path = Column(String(500), nullable=False)  # Path to uploaded logo file
     logo_filename = Column(String(255), nullable=False)  # Original filename
-    decoration_method = Column(String(100), nullable=False)  # embroidery, screen_print, patch, etc.
+    decoration_method = Column(String(100), nullable=False)  # embroidery, screen_print, pvc_patch, etc.
     size = Column(String(50), nullable=False)  # "small", "medium", "large", or "custom"
     size_details = Column(String(100), nullable=True)  # Optional: specific dimensions like "3x2 inches"
+    # Optional color for the decoration itself (thread/ink/patch-base/material).
+    # Stored as either a hex code ("#FF0000") or a named color ("royal blue").
+    decoration_color = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

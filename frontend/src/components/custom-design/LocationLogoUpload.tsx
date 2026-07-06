@@ -7,15 +7,49 @@ import type { DecorationLocation, DecorationMethod, DecorationSize, LocationLogo
 
 const DECORATION_METHODS: { value: DecorationMethod; label: string }[] = [
   { value: 'embroidery', label: 'Embroidery' },
-  { value: 'screen_print', label: 'Screen Print' },
-  { value: 'patch', label: 'Patch' },
   { value: '3d_puff', label: '3D Puff' },
+  { value: 'sublimated_embroidery', label: 'Sublimated Embroidery' },
+  { value: 'pvc_patch', label: 'PVC Patch' },
+  { value: 'suede_patch', label: 'Suede Patch' },
+  { value: 'embroidered_patch', label: 'Embroidered Patch' },
+  { value: 'woven_patch', label: 'Woven Patch' },
+  { value: 'screen_print', label: 'Screen Print' },
   { value: 'laser_cut', label: 'Laser Cut' },
   { value: 'heat_transfer', label: 'Heat Transfer' },
   { value: 'sublimation', label: 'Sublimation' },
   { value: 'hd_print', label: 'HD Print' },
-  { value: 'sublimated_embroidery', label: 'Sublimated Embroidery' },
 ];
+
+// What the decoration_color field actually colors, per method. Shown as the
+// label above the picker so users understand what they're setting.
+const COLOR_ROLE_BY_METHOD: Record<DecorationMethod, string> = {
+  embroidery: 'Thread color',
+  '3d_puff': 'Puff thread color',
+  sublimated_embroidery: 'Thread base color',
+  screen_print: 'Ink color',
+  heat_transfer: 'Vinyl color',
+  sublimation: 'Primary ink color',
+  hd_print: 'Ink color',
+  patch: 'Patch base color',
+  pvc_patch: 'PVC base color',
+  suede_patch: 'Suede base color',
+  embroidered_patch: 'Patch fabric color',
+  woven_patch: 'Patch base color',
+  laser_cut: 'Material color',
+};
+
+const HEX_RE = /^#?[0-9a-fA-F]{6}$/;
+
+function normalizeHex(value: string): string {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return '';
+  const withHash = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+  return withHash.toUpperCase();
+}
+
+function isValidHex(value: string): boolean {
+  return HEX_RE.test((value || '').trim());
+}
 
 const SIZES: { value: DecorationSize; label: string }[] = [
   { value: 'small', label: 'Small (~2")' },
@@ -115,6 +149,16 @@ export function LocationLogoUpload({
     if (!value) return;
     onChange({ ...value, size_details: details });
   };
+
+  const handleColorChange = (color: string) => {
+    if (!value) return;
+    onChange({ ...value, decoration_color: color || undefined });
+  };
+
+  const currentMethod = (value?.decoration_method || 'embroidery') as DecorationMethod;
+  const colorRoleLabel = COLOR_ROLE_BY_METHOD[currentMethod] || 'Decoration color';
+  const decorationColor = value?.decoration_color || '';
+  const colorIsHex = isValidHex(decorationColor);
 
   return (
     <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
@@ -223,6 +267,49 @@ export function LocationLogoUpload({
               />
             </div>
           )}
+
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">
+              {colorRoleLabel} <span className="text-gray-500">(optional)</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={colorIsHex ? normalizeHex(decorationColor) : '#000000'}
+                onChange={(e) => handleColorChange(e.target.value.toUpperCase())}
+                disabled={disabled}
+                className="w-9 h-9 rounded border border-gray-600 bg-transparent cursor-pointer flex-shrink-0"
+                aria-label={`${colorRoleLabel} picker`}
+              />
+              <input
+                type="text"
+                value={decorationColor}
+                onChange={(e) => handleColorChange(e.target.value)}
+                placeholder="#RRGGBB or color name"
+                className={`input text-sm py-1.5 flex-1 font-mono ${
+                  decorationColor && !colorIsHex && !decorationColor.match(/^[a-zA-Z ]+$/)
+                    ? 'border-red-500/60'
+                    : ''
+                }`}
+                disabled={disabled}
+                spellCheck={false}
+              />
+              {decorationColor && (
+                <button
+                  type="button"
+                  onClick={() => handleColorChange('')}
+                  className="p-1 text-gray-500 hover:text-red-400 flex-shrink-0"
+                  title="Clear color"
+                  aria-label="Clear decoration color"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-gray-500 mt-1">
+              Leave blank to let the AI pick. Accepts a hex code or a color name (e.g. &quot;royal blue&quot;).
+            </p>
+          </div>
         </div>
       )}
     </div>

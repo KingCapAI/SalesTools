@@ -19,7 +19,13 @@ class DecorationLocation(str, Enum):
 class DecorationMethod(str, Enum):
     EMBROIDERY = "embroidery"
     SCREEN_PRINT = "screen_print"
+    # DEPRECATED: 'patch' is retained so historical rows still deserialize.
+    # New designs must pick one of the specific patch subtypes below.
     PATCH = "patch"
+    PVC_PATCH = "pvc_patch"
+    SUEDE_PATCH = "suede_patch"
+    EMBROIDERED_PATCH = "embroidered_patch"
+    WOVEN_PATCH = "woven_patch"
     THREE_D_PUFF = "3d_puff"
     LASER_CUT = "laser_cut"
     HEAT_TRANSFER = "heat_transfer"
@@ -43,6 +49,10 @@ class LocationLogoCreate(BaseModel):
     decoration_method: DecorationMethod
     size: DecorationSize
     size_details: Optional[str] = None  # e.g., "3x2 inches"
+    # Optional color for the decoration itself (thread for embroidery,
+    # ink for print, patch base for patch types, etc.). Accepts a hex
+    # code like "#FF0000" or a named color like "royal blue".
+    decoration_color: Optional[str] = None
 
 
 class LocationLogoResponse(BaseModel):
@@ -55,6 +65,7 @@ class LocationLogoResponse(BaseModel):
     decoration_method: str
     size: str
     size_details: Optional[str] = None
+    decoration_color: Optional[str] = None
     created_at: datetime
 
     class Config:

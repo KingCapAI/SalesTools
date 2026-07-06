@@ -8,7 +8,12 @@ from .prompt_builder import LEGAL_TEXT, format_hat_style, format_material, forma
 DECORATION_METHODS = {
     "embroidery": "flat embroidery",
     "screen_print": "screen printing",
-    "patch": "sewn patch",
+    # Legacy generic 'patch' — kept so old designs still describe correctly.
+    "patch": "sewn embroidered patch",
+    "pvc_patch": "PVC patch (soft rubber-like patch with raised design details)",
+    "suede_patch": "suede patch (faux leather patch with laser-etched or debossed design)",
+    "embroidered_patch": "embroidered patch (fabric patch with the design stitched on, then sewn onto the hat)",
+    "woven_patch": "woven patch (patch with the design woven directly into the threads for fine detail)",
     "3d_puff": "3D puff embroidery",
     "laser_cut": "laser-cut applique",
     "heat_transfer": "heat transfer vinyl",
@@ -16,6 +21,29 @@ DECORATION_METHODS = {
     "hd_print": "high-density print (raised, glossy 3D-look ink that stands proud of the fabric — similar to 3D printing)",
     "sublimated_embroidery": "sublimated embroidery (an embroidered patch where the thread surface is dye-sublimated for full-color photographic detail)",
 }
+
+
+# What the decoration_color field refers to for each method — used in the prompt
+# so the model knows whether we're specifying thread, ink, patch base, etc.
+_COLOR_ROLE = {
+    "embroidery": "thread color",
+    "3d_puff": "puff embroidery thread color",
+    "sublimated_embroidery": "embroidered thread color",
+    "screen_print": "ink color",
+    "heat_transfer": "vinyl color",
+    "sublimation": "primary ink color",
+    "hd_print": "ink color",
+    "patch": "patch base color",
+    "pvc_patch": "PVC patch base color",
+    "suede_patch": "suede patch base color",
+    "embroidered_patch": "patch fabric color",
+    "woven_patch": "patch base color",
+    "laser_cut": "applique material color",
+}
+
+
+def color_role_for_method(method: str) -> str:
+    return _COLOR_ROLE.get(method, "decoration color")
 
 # Size display names
 SIZES = {
@@ -140,9 +168,23 @@ def build_custom_design_prompt(
         method_name = format_decoration_method(logo["decoration_method"])
         size_name = format_size(logo["size"], logo.get("size_details"))
 
-        decoration_descriptions.append(
-            f"- **{location_name.upper()}**: {method_name} using the provided {logo['location']} logo, sized {size_name}"
+        base = (
+            f"- **{location_name.upper()}**: {method_name} using the provided "
+            f"{logo['location']} logo, sized {size_name}"
         )
+
+        # Optional decoration color — refers to thread/ink/patch base/etc.,
+        # NOT the logo artwork itself (the logo keeps its own colors).
+        deco_color = (logo.get("decoration_color") or "").strip()
+        if deco_color:
+            role = color_role_for_method(logo["decoration_method"])
+            base += (
+                f", {role}: **{deco_color}** "
+                f"(applies to the decoration surface — the logo artwork itself "
+                f"keeps its original colors)"
+            )
+
+        decoration_descriptions.append(base)
 
     decorations_text = "\n".join(decoration_descriptions)
 
@@ -183,7 +225,7 @@ CRITICAL INSTRUCTIONS:
 6. Each logo should be clearly visible and properly sized for its location
 
 ALLOWED DECORATION METHODS PER LOCATION:
-- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
+- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, suede patch (aka faux leather patch), embroidered patch, sublimated patch, or 3D printing.
 - LEFT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - RIGHT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - BACK: flat embroidery ONLY.
@@ -194,7 +236,7 @@ DECORATION METHOD CALLOUTS:
 Label each unique decoration ONCE across the entire image. Rules:
 - Each decoration method should be labeled EXACTLY ONCE in the view where it is most clearly visible. Do NOT label the same decoration in multiple views.
 - Format: thin line or arrow from label to the decoration it identifies.
-- Label text = exact method name, e.g. "Flat Embroidery", "3D Embroidery", "PVC Patch", "Woven Patch", "Sublimated Patch", "Sublimated Print".
+- Label text = exact method name, e.g. "Flat Embroidery", "3D Embroidery", "PVC Patch", "Suede Patch", "Embroidered Patch", "Woven Patch", "Sublimated Patch", "Sublimated Print".
 - Style: clean sans-serif font, black text on a small white pill/tag background.
 - Do NOT add ANY labels to the MODEL VIEW (view #6). The model view should be clean with no callouts.
 - Only label decorations in hat-only views (views 1-5). Pick the view where each decoration is most prominent.
@@ -261,7 +303,7 @@ CRITICAL INSTRUCTIONS:
 9. Keep the design clean and professional
 
 ALLOWED DECORATION METHODS PER LOCATION:
-- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
+- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, suede patch (aka faux leather patch), embroidered patch, sublimated patch, or 3D printing.
 - LEFT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - RIGHT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - BACK: flat embroidery ONLY.
@@ -272,7 +314,7 @@ DECORATION METHOD CALLOUTS:
 Label each unique decoration ONCE across the entire image. Rules:
 - Each decoration method should be labeled EXACTLY ONCE in the view where it is most clearly visible. Do NOT label the same decoration in multiple views.
 - Format: thin line or arrow from label to the decoration it identifies.
-- Label text = exact method name, e.g. "Flat Embroidery", "3D Embroidery", "PVC Patch", "Woven Patch", "Sublimated Patch", "Sublimated Print".
+- Label text = exact method name, e.g. "Flat Embroidery", "3D Embroidery", "PVC Patch", "Suede Patch", "Embroidered Patch", "Woven Patch", "Sublimated Patch", "Sublimated Print".
 - Style: clean sans-serif font, black text on a small white pill/tag background.
 - Do NOT add ANY labels to the MODEL VIEW (view #6). The model view should be clean with no callouts.
 - Only label decorations in hat-only views (views 1-5). Pick the view where each decoration is most prominent.

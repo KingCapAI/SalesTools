@@ -196,6 +196,18 @@ def run_migrations(engine):
                 conn.commit()
                 print("Migration: Added detected_decorations column to design_versions table")
 
+    # Migration: Add decoration_color to design_location_logos table
+    if 'design_location_logos' in inspector.get_table_names():
+        columns = [col['name'] for col in inspector.get_columns('design_location_logos')]
+
+        with engine.connect() as conn:
+            if 'decoration_color' not in columns:
+                conn.execute(text(
+                    "ALTER TABLE design_location_logos ADD COLUMN decoration_color VARCHAR(100)"
+                ))
+                conn.commit()
+                print("Migration: Added decoration_color column to design_location_logos table")
+
     # Migration: Add Stripe columns to orders table
     if 'orders' in inspector.get_table_names():
         columns = [col['name'] for col in inspector.get_columns('orders')]

@@ -354,7 +354,13 @@ export type DecorationLocation = 'front' | 'front_lower_left' | 'front_lower_rig
 export type DecorationMethod =
   | 'embroidery'
   | 'screen_print'
+  /** @deprecated Legacy generic patch — kept so old designs still deserialize.
+   *  New designs must pick one of the specific patch subtypes below. */
   | 'patch'
+  | 'pvc_patch'
+  | 'suede_patch'
+  | 'embroidered_patch'
+  | 'woven_patch'
   | '3d_puff'
   | 'laser_cut'
   | 'heat_transfer'
@@ -373,6 +379,7 @@ export interface LocationLogo {
   decoration_method: DecorationMethod;
   size: DecorationSize;
   size_details?: string;
+  decoration_color?: string | null;
   created_at: string;
 }
 
@@ -383,6 +390,7 @@ export interface LocationLogoCreate {
   decoration_method: DecorationMethod;
   size: DecorationSize;
   size_details?: string;
+  decoration_color?: string;
 }
 
 export interface CustomDesign {

@@ -230,6 +230,7 @@ async def create_custom_design(
                 decoration_method=logo_data.decoration_method.value,
                 size=logo_data.size.value,
                 size_details=logo_data.size_details,
+                decoration_color=logo_data.decoration_color,
             )
             db.add(location_logo)
             location_logos_data.append({
@@ -238,6 +239,7 @@ async def create_custom_design(
                 "decoration_method": logo_data.decoration_method.value,
                 "size": logo_data.size.value,
                 "size_details": logo_data.size_details,
+                "decoration_color": logo_data.decoration_color,
             })
 
         db.commit()
@@ -396,6 +398,7 @@ async def regenerate_custom_design(
                 "decoration_method": logo.decoration_method,
                 "size": logo.size,
                 "size_details": logo.size_details,
+                "decoration_color": logo.decoration_color,
             })
 
         # Get next batch number
@@ -611,6 +614,7 @@ async def duplicate_custom_design(
                 decoration_method=DecorationMethod(logo.decoration_method),
                 size=LogoSize(logo.size),
                 size_details=logo.size_details,
+                decoration_color=logo.decoration_color,
             ))
 
         # Create the new design using the same inputs
@@ -661,6 +665,7 @@ async def duplicate_custom_design(
                 decoration_method=logo_data.decoration_method.value,
                 size=logo_data.size.value,
                 size_details=logo_data.size_details,
+                decoration_color=logo_data.decoration_color,
             )
             db.add(location_logo)
             location_logos_data.append({
@@ -669,6 +674,7 @@ async def duplicate_custom_design(
                 "decoration_method": logo_data.decoration_method.value,
                 "size": logo_data.size.value,
                 "size_details": logo_data.size_details,
+                "decoration_color": logo_data.decoration_color,
             })
 
         db.commit()
