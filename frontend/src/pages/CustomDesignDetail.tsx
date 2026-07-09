@@ -183,6 +183,7 @@ export function CustomDesignDetail() {
         decoration_method: l.decoration_method,
         size: l.size,
         size_details: l.size_details,
+        decoration_color: l.decoration_color || undefined,
       })),
       referenceHatPath: design.reference_hat_path || '',
     };

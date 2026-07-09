@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -13,31 +13,61 @@ import type { HatStyle, Material, HatStructure, ClosureType, DecorationLocation,
 
 const LOCATIONS: DecorationLocation[] = ['front', 'front_lower_left', 'front_lower_right', 'left', 'right', 'back', 'visor'];
 
+// Shape sent by CustomDesignDetail's Copy & Edit handler.
+interface PrefillData {
+  customerName?: string;
+  brandName?: string;
+  designName?: string;
+  hatStyle?: string;
+  material?: string;
+  structure?: string;
+  closure?: string;
+  crownColor?: string;
+  visorColor?: string;
+  locationLogos?: Partial<LocationLogoCreate>[];
+  referenceHatPath?: string | null;
+}
+
+const EMPTY_LOCATION_LOGOS: Record<DecorationLocation, Partial<LocationLogoCreate> | null> = {
+  front: null,
+  front_lower_left: null,
+  front_lower_right: null,
+  left: null,
+  right: null,
+  back: null,
+  visor: null,
+};
+
 export function CustomDesignBuilder() {
   const navigate = useNavigate();
+  const location = useLocation();
   const createCustomDesign = useCreateCustomDesign();
 
-  // Form state
-  const [customerName, setCustomerName] = useState('');
-  const [brandName, setBrandName] = useState('');
-  const [designName, setDesignName] = useState('');
-  const [hatStyle, setHatStyle] = useState<HatStyle>('6-panel-hat');
-  const [material, setMaterial] = useState<Material>('cotton-twill');
-  const [structure, setStructure] = useState<HatStructure>('structured');
-  const [closure, setClosure] = useState<ClosureType>('snapback');
-  const [crownColor, setCrownColor] = useState('black');
-  const [visorColor, setVisorColor] = useState('black');
-  const [referenceHatPath, setReferenceHatPath] = useState<string | null>(null);
+  // Prefill from "Copy & Edit" if the user navigated here from a design detail page.
+  const prefill: PrefillData | undefined = (location.state as any)?.prefill;
 
-  // Location logos state - keyed by location
-  const [locationLogos, setLocationLogos] = useState<Record<DecorationLocation, Partial<LocationLogoCreate> | null>>({
-    front: null,
-    front_lower_left: null,
-    front_lower_right: null,
-    left: null,
-    right: null,
-    back: null,
-    visor: null,
+  // Form state — initialized from prefill if available.
+  const [customerName, setCustomerName] = useState(prefill?.customerName || '');
+  const [brandName, setBrandName] = useState(prefill?.brandName || '');
+  const [designName, setDesignName] = useState(prefill?.designName || '');
+  const [hatStyle, setHatStyle] = useState<HatStyle>((prefill?.hatStyle as HatStyle) || '6-panel-hat');
+  const [material, setMaterial] = useState<Material>((prefill?.material as Material) || 'cotton-twill');
+  const [structure, setStructure] = useState<HatStructure>((prefill?.structure as HatStructure) || 'structured');
+  const [closure, setClosure] = useState<ClosureType>((prefill?.closure as ClosureType) || 'snapback');
+  const [crownColor, setCrownColor] = useState(prefill?.crownColor || 'black');
+  const [visorColor, setVisorColor] = useState(prefill?.visorColor || 'black');
+  const [referenceHatPath, setReferenceHatPath] = useState<string | null>(prefill?.referenceHatPath || null);
+
+  // Location logos state - keyed by location. Seed from prefill by location.
+  const [locationLogos, setLocationLogos] = useState<Record<DecorationLocation, Partial<LocationLogoCreate> | null>>(() => {
+    if (!prefill?.locationLogos?.length) return { ...EMPTY_LOCATION_LOGOS };
+    const seeded = { ...EMPTY_LOCATION_LOGOS };
+    for (const logo of prefill.locationLogos) {
+      if (logo?.location && logo?.logo_path) {
+        seeded[logo.location as DecorationLocation] = logo;
+      }
+    }
+    return seeded;
   });
 
   const handleLocationLogoChange = (location: DecorationLocation, value: Partial<LocationLogoCreate> | null) => {
@@ -112,8 +142,14 @@ export function CustomDesignBuilder() {
               <Layers className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-100 truncate">Mockup Builder</h1>
-              <p className="text-gray-400 text-sm truncate">Build a hat mockup with specific logos and placements</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-100 truncate">
+                {prefill ? 'Edit & Resubmit Mockup' : 'Mockup Builder'}
+              </h1>
+              <p className="text-gray-400 text-sm truncate">
+                {prefill
+                  ? 'Modify any inputs below and generate a new mockup'
+                  : 'Build a hat mockup with specific logos and placements'}
+              </p>
             </div>
           </div>
         </div>
