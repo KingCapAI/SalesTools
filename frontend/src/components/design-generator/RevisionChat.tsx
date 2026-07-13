@@ -20,10 +20,12 @@ const QUICK_PROMPTS = [
 
 // Kept as a canned instruction — phrased for the image-to-image edit prompt
 // so the model applies a targeted swap without regenerating anything else.
+// The brim direction matches the label: WEARERS RIGHT → brim points right,
+// WEARERS LEFT → brim points left.
 const SWAP_LR_PROMPT =
   "Swap the WEARERS LEFT and WEARERS RIGHT views (top-center and top-right cells). " +
-  "In the corrected result, the cell labeled WEARERS RIGHT must show the brim pointing to the LEFT edge of the cell, " +
-  "and the cell labeled WEARERS LEFT must show the brim pointing to the RIGHT edge. " +
+  "In the corrected result, the cell labeled WEARERS RIGHT must show the brim pointing to the RIGHT edge of the cell, " +
+  "and the cell labeled WEARERS LEFT must show the brim pointing to the LEFT edge. " +
   "Keep every other cell — FRONT, BACK, UNDERVISOR, and MODEL — pixel-identical.";
 
 export function RevisionChat({

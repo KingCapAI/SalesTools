@@ -360,22 +360,26 @@ Place the angle labels (FRONT, WEARERS RIGHT, WEARERS LEFT, BACK, UNDERVISOR, MO
 
 SIDE-VIEW ORIENTATION — CRITICAL, DO NOT GET THIS BACKWARDS:
 The two side-view cells (cells 2 and 3) are frequently swapped. Use the
-BRIM DIRECTION as the single unambiguous anchor:
+BRIM DIRECTION as the single unambiguous anchor. THE SIDES MATCH — the
+brim points the same way as the label:
 
   - Cell 2 (labeled "WEARERS RIGHT", top-center):
-      brim MUST point toward the LEFT edge of the cell.
-      Rationale: rotate the hat so the wearer's RIGHT ear side faces the
-      camera; the brim (which points forward off the wearer's face) now
-      points to the viewer's LEFT.
+      brim MUST point toward the RIGHT edge of the cell.
+      Rationale: to show the wearer's RIGHT ear side, the hat is oriented
+      so the wearer's face (and therefore the brim, which points forward
+      off the face) is turned toward the viewer's RIGHT.
 
   - Cell 3 (labeled "WEARERS LEFT", top-right):
-      brim MUST point toward the RIGHT edge of the cell.
-      Rationale: rotate the hat so the wearer's LEFT ear side faces the
-      camera; the brim now points to the viewer's RIGHT.
+      brim MUST point toward the LEFT edge of the cell.
+      Rationale: to show the wearer's LEFT ear side, the hat is oriented
+      so the wearer's face (and brim) is turned toward the viewer's LEFT.
+
+MNEMONIC: brim direction matches the label. Right label → brim right.
+Left label → brim left. If they disagree, the cell is wrong.
 
 SELF-CHECK before finalizing:
-  1. Cell 2 (under "WEARERS RIGHT"): is the brim tip pointing LEFT? If not, this cell is wrong.
-  2. Cell 3 (under "WEARERS LEFT"): is the brim tip pointing RIGHT? If not, this cell is wrong.
+  1. Cell 2 (under "WEARERS RIGHT"): is the brim tip pointing RIGHT? If not, this cell is wrong.
+  2. Cell 3 (under "WEARERS LEFT"): is the brim tip pointing LEFT? If not, this cell is wrong.
   3. If either check fails, SWAP the contents of cells 2 and 3 before rendering.
 
 STRICT RULES:
