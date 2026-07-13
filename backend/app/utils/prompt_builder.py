@@ -348,8 +348,8 @@ Each view shows the SAME hat from a DIFFERENT angle. Same design, same colors, s
 
 Top row:
 1. **FRONT** (top-left) — hat facing camera straight-on, front panel visible
-2. **WEARERS RIGHT** (top-center) — hat rotated so the WEARER'S RIGHT side faces the camera; the brim points to the LEFT side of the image
-3. **WEARERS LEFT** (top-right) — hat rotated so the WEARER'S LEFT side faces the camera; the brim points to the RIGHT side of the image
+2. **WEARERS RIGHT** (top-center) — hat rotated so the WEARER'S RIGHT side faces the camera
+3. **WEARERS LEFT** (top-right) — hat rotated so the WEARER'S LEFT side faces the camera
 
 Bottom row:
 4. **BACK** (bottom-left) — hat rotated 180°, back panel and closure visible
@@ -358,10 +358,30 @@ Bottom row:
 
 Place the angle labels (FRONT, WEARERS RIGHT, WEARERS LEFT, BACK, UNDERVISOR, MODEL) under each box exactly as shown in the LAYOUT TEMPLATE.
 
+SIDE-VIEW ORIENTATION — CRITICAL, DO NOT GET THIS BACKWARDS:
+The two side-view cells (cells 2 and 3) are frequently swapped. Use the
+BRIM DIRECTION as the single unambiguous anchor:
+
+  - Cell 2 (labeled "WEARERS RIGHT", top-center):
+      brim MUST point toward the LEFT edge of the cell.
+      Rationale: rotate the hat so the wearer's RIGHT ear side faces the
+      camera; the brim (which points forward off the wearer's face) now
+      points to the viewer's LEFT.
+
+  - Cell 3 (labeled "WEARERS LEFT", top-right):
+      brim MUST point toward the RIGHT edge of the cell.
+      Rationale: rotate the hat so the wearer's LEFT ear side faces the
+      camera; the brim now points to the viewer's RIGHT.
+
+SELF-CHECK before finalizing:
+  1. Cell 2 (under "WEARERS RIGHT"): is the brim tip pointing LEFT? If not, this cell is wrong.
+  2. Cell 3 (under "WEARERS LEFT"): is the brim tip pointing RIGHT? If not, this cell is wrong.
+  3. If either check fails, SWAP the contents of cells 2 and 3 before rendering.
+
 STRICT RULES:
 - Exactly 6 views. Not 4, not 5, not 7, not 8. Exactly 6.
 - Each view must show a DIFFERENT angle — no duplicate or near-duplicate views.
-- WEARERS RIGHT and WEARERS LEFT are mirror images — they must NOT look the same. WEARERS RIGHT shows the right side panel from the wearer's perspective; WEARERS LEFT shows the left side panel from the wearer's perspective.
+- WEARERS RIGHT and WEARERS LEFT are mirror images — they must NOT look the same. The brim-direction rule above is the definition of which is which.
 - The design must be IDENTICAL across all views — do not change decorations, colors, or logos between views.
 
 Professional studio lighting, white background, 4k resolution.

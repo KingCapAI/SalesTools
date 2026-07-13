@@ -18,6 +18,14 @@ const QUICK_PROMPTS = [
   'Remove the back decoration',
 ];
 
+// Kept as a canned instruction — phrased for the image-to-image edit prompt
+// so the model applies a targeted swap without regenerating anything else.
+const SWAP_LR_PROMPT =
+  "Swap the WEARERS LEFT and WEARERS RIGHT views (top-center and top-right cells). " +
+  "In the corrected result, the cell labeled WEARERS RIGHT must show the brim pointing to the LEFT edge of the cell, " +
+  "and the cell labeled WEARERS LEFT must show the brim pointing to the RIGHT edge. " +
+  "Keep every other cell — FRONT, BACK, UNDERVISOR, and MODEL — pixel-identical.";
+
 export function RevisionChat({
   chats,
   onRequestRevision,
@@ -93,19 +101,29 @@ export function RevisionChat({
         <div ref={chatEndRef} />
       </div>
 
-      {/* Quick prompts */}
-      {chats.length === 0 && !isLoading && (
+      {/* Quick prompts — the L/R swap fix stays reachable at every point in
+          the chat, since the mistake can appear on any generated variant. */}
+      {!isLoading && (
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {QUICK_PROMPTS.map((q) => (
-            <button
-              key={q}
-              type="button"
-              onClick={() => setMessage(q)}
-              className="text-xs px-2.5 py-1 rounded-full bg-fill-tertiary text-gray-200 hover:bg-fill-secondary transition-colors"
-            >
-              {q}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => submitRevision(SWAP_LR_PROMPT)}
+            className="text-xs px-2.5 py-1 rounded-full bg-amber-900/40 text-amber-200 hover:bg-amber-900/60 border border-amber-700/40 transition-colors"
+            title="Fires an edit that swaps only the two side views"
+          >
+            Swap wearer&apos;s L / R views
+          </button>
+          {chats.length === 0 &&
+            QUICK_PROMPTS.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => setMessage(q)}
+                className="text-xs px-2.5 py-1 rounded-full bg-fill-tertiary text-gray-200 hover:bg-fill-secondary transition-colors"
+              >
+                {q}
+              </button>
+            ))}
         </div>
       )}
 
