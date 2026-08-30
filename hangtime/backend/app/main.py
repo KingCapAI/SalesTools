@@ -5,6 +5,8 @@ from datetime import date, datetime, timedelta
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -469,3 +471,24 @@ def disconnect_calendar(conn_id: int, user: User = Depends(current_user), db: Se
 @app.get("/api/health")
 def health():
     return {"ok": True, "app": "hangtime"}
+
+
+# ---------- production: serve the built frontend from the same service ----------
+
+STATIC_DIR = os.environ.get(
+    "HANGTIME_STATIC_DIR",
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "frontend", "dist"),
+)
+
+if os.path.isdir(STATIC_DIR):
+    app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
+
+    @app.get("/manifest.webmanifest", include_in_schema=False)
+    def manifest():
+        return FileResponse(os.path.join(STATIC_DIR, "manifest.webmanifest"), media_type="application/manifest+json")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(404, "Not found")
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))

@@ -125,7 +125,7 @@ export default function EventPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          <button className="btn-secondary text-sm" onClick={() => shareEvent(`${event.emoji} ${event.title}`, event.share_url)}>
+          <button className="btn-secondary text-sm" onClick={() => shareEvent(`${event.emoji} ${event.title}`, `${window.location.origin}/e/${event.share_code}`)}>
             💬 Text the invite
           </button>
           <a className="btn-secondary text-sm" href={`/api/events/${event.share_code}/ics`}>

@@ -66,6 +66,7 @@ export default function GroupPage() {
   if (!group) return <Shell back="/home"><p className="font-bold text-ink/50">Loading…</p></Shell>
 
   const memberCount = group.members.length
+  const inviteUrl = `${window.location.origin}/join/${group.invite_code}`
 
   return (
     <Shell back="/home">
@@ -238,14 +239,14 @@ export default function GroupPage() {
             <div className="mt-3 flex gap-2">
               <button
                 className="btn-primary flex-1"
-                onClick={() => shareEvent(`Join "${group.name}" on Hangtime`, group.invite_url ?? '')}
+                onClick={() => shareEvent(`Join "${group.name}" on Hangtime`, inviteUrl)}
               >
                 💬 Text the link
               </button>
               <button
                 className="btn-secondary"
                 onClick={async () => {
-                  if (await copyText(group.invite_url ?? '')) {
+                  if (await copyText(inviteUrl)) {
                     setCopied(true)
                     setTimeout(() => setCopied(false), 1500)
                   }

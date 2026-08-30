@@ -49,6 +49,29 @@ npm run dev
 
 Open http://localhost:5173 and tap one of the demo crew members to jump straight in.
 
+## Try it on your phone
+
+**Option A — put it on the internet (Railway, ~5 min).** The `Dockerfile` builds the
+frontend and serves everything (app + API) as one service:
+
+1. railway.app → New Project → **Deploy from GitHub repo** → pick this repo and the
+   `claude/friend-group-calendar-app-2lhqcv` branch.
+2. In the service settings, set **Root Directory** to `hangtime` — Railway detects the
+   Dockerfile automatically.
+3. Settings → Networking → **Generate Domain**. Open that URL on your phone.
+4. On iPhone: Share → **Add to Home Screen** and it installs like an app (it's a PWA).
+
+The demo crew is seeded on boot, so you can tap "Eric" and play immediately — and the
+invite/share links will point at your real domain, so you can text a friend an event
+link and watch them RSVP. (Render or Fly work the same way; note SQLite data resets on
+redeploy unless you attach a volume mounted at `/srv/backend-data` with
+`HANGTIME_DATABASE_URL` pointed there.)
+
+**Option B — same Wi-Fi, no deploy.** Run the backend as above, then
+`npm run dev -- --host` in `frontend/`, and open `http://<your-computer's-IP>:5173`
+on your phone (Vite prints the network URL). Good for a quick look; share links won't
+work for friends outside your network.
+
 ## How calendar sync works today
 
 - **In:** paste your calendar's secret ICS/webcal URL (Google, Apple/iCloud, Outlook —
