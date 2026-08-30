@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  @apply bg-cream text-ink font-display antialiased;
+  background-image: radial-gradient(circle at 15% 10%, rgba(255, 217, 61, 0.25), transparent 40%),
+    radial-gradient(circle at 85% 5%, rgba(155, 93, 229, 0.16), transparent 45%),
+    radial-gradient(circle at 70% 90%, rgba(107, 203, 119, 0.14), transparent 40%);
+  background-attachment: fixed;
+}
+
+@layer components {
+  .card {
+    @apply rounded-blob border-2 border-ink bg-white shadow-pop;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border-2 border-ink px-5 py-2.5 font-extrabold shadow-poplite transition active:translate-y-[3px] active:shadow-none disabled:opacity-40 disabled:active:translate-y-0 disabled:active:shadow-poplite;
+  }
+  .btn-primary {
+    @apply btn bg-pop-coral text-white;
+  }
+  .btn-secondary {
+    @apply btn bg-white;
+  }
+  .input {
+    @apply w-full rounded-2xl border-2 border-ink bg-white px-4 py-3 font-semibold outline-none placeholder:text-ink/35 focus:ring-4 focus:ring-pop-sunshine/60;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border-2 border-ink px-3 py-1 text-sm font-extrabold;
+  }
+}
