@@ -10,6 +10,9 @@ from ..data.pricing import (
     DOMESTIC_STYLES,
     DOMESTIC_FRONT_DECORATION_PRICES,
     DOMESTIC_ADDITIONAL_DECORATION_PRICES,
+    DOMESTIC_OUTSOURCED_FRONT_METHODS,
+    DOMESTIC_OUTSOURCED_MIN_QTY,
+    DOMESTIC_OUTSOURCED_LEAD_TIME_DAYS,
     DOMESTIC_RUSH_FEES,
     DOMESTIC_ADDONS,
     DOMESTIC_ADDITIONAL_CHARGES,
@@ -62,9 +65,38 @@ def calculate_domestic_quote(
         raise ValueError(f"Unknown style number: {style_number}")
 
     style_info = DOMESTIC_STYLES.get(style_number, {})
+    is_outsourced_front = bool(
+        front_decoration and front_decoration in DOMESTIC_OUTSOURCED_FRONT_METHODS
+    )
     results = []
 
     for qty_break in DOMESTIC_QUANTITY_BREAKS:
+        # Outsourced patches are only priced at the vendor MOQ and above.
+        # Below the MOQ, the whole tier is unavailable — we mark the row
+        # instead of silently zero-ing so the UI can hide/disable it.
+        below_moq = is_outsourced_front and qty_break < DOMESTIC_OUTSOURCED_MIN_QTY
+        if below_moq:
+            results.append({
+                "quantity_break": qty_break,
+                "available": False,
+                "unavailable_reason": (
+                    f"{front_decoration} requires a minimum order of "
+                    f"{DOMESTIC_OUTSOURCED_MIN_QTY} pieces (outsourced from vendor)."
+                ),
+                "blank_price": None,
+                "front_decoration_price": None,
+                "left_decoration_price": None,
+                "right_decoration_price": None,
+                "back_decoration_price": None,
+                "rush_fee": None,
+                "rope_price": None,
+                "per_piece_price": None,
+                "digitizing_fee": None,
+                "subtotal": None,
+                "total": None,
+            })
+            continue
+
         # Base hat price
         blank_price = DOMESTIC_BLANK_PRICES[style_number].get(qty_break, 0)
 
@@ -103,6 +135,7 @@ def calculate_domestic_quote(
 
         results.append({
             "quantity_break": qty_break,
+            "available": True,
             "blank_price": round(blank_price, 2),
             "front_decoration_price": round(front_deco_price, 2),
             "left_decoration_price": round(left_deco_price, 2),
@@ -127,6 +160,12 @@ def calculate_domestic_quote(
         "back_decoration": back_decoration,
         "shipping_speed": shipping_speed,
         "include_rope": include_rope,
+        # Outsourced-patch flags — the frontend uses these to badge the
+        # quote, bump the production timeline, and remind the user about
+        # the vendor MOQ.
+        "is_outsourced": is_outsourced_front,
+        "outsourced_lead_time_days": DOMESTIC_OUTSOURCED_LEAD_TIME_DAYS if is_outsourced_front else 0,
+        "outsourced_min_qty": DOMESTIC_OUTSOURCED_MIN_QTY if is_outsourced_front else None,
         "price_breaks": results,
     }
 

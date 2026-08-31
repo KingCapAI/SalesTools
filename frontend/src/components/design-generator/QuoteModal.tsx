@@ -496,10 +496,22 @@ function DomesticFormFields({ form, setForm, options }: DomesticFormFieldsProps)
               className="input"
             >
               <option value="">None</option>
-              {options.front_decoration_methods.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
+              {options.front_decoration_methods.map((m) => {
+                const isOutsourced = options.outsourced_front_methods?.includes(m);
+                return (
+                  <option key={m} value={m}>
+                    {m}{isOutsourced ? ' — Outsourced (72 pc min, +10 days)' : ''}
+                  </option>
+                );
+              })}
             </select>
+            {form.front_decoration && options.outsourced_front_methods?.includes(form.front_decoration) && (
+              <div className="mt-2 rounded-md border border-amber-700/50 bg-amber-900/25 px-2.5 py-1.5 text-[11px] text-amber-200 leading-snug">
+                <span className="font-medium">{form.front_decoration}</span> is outsourced —
+                not in-house. Vendor produces the patch; adds ~{options.outsourced_lead_time_days ?? 10} business
+                days and requires a {options.outsourced_min_qty ?? 72}-pc minimum.
+              </div>
+            )}
           </div>
           <div>
             <label className="text-xs text-gray-400 mb-1 block">Wearer's Left</label>

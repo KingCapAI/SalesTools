@@ -11,7 +11,7 @@ DECORATION_METHODS = {
     # Legacy generic 'patch' — kept so old designs still describe correctly.
     "patch": "sewn embroidered patch",
     "pvc_patch": "PVC patch (soft rubber-like patch with raised design details)",
-    "suede_patch": "suede patch (faux leather patch with laser-etched or debossed design)",
+    "suede_patch": "faux suede laser patch (soft suede-look patch with the design laser-etched into the surface)",
     "embroidered_patch": "embroidered patch (fabric patch with the design stitched on, then sewn onto the hat)",
     "woven_patch": "woven patch (patch with the design woven directly into the threads for fine detail)",
     "3d_puff": "3D puff embroidery",
@@ -225,7 +225,7 @@ CRITICAL INSTRUCTIONS:
 6. Each logo should be clearly visible and properly sized for its location
 
 ALLOWED DECORATION METHODS PER LOCATION:
-- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, suede patch (aka faux leather patch), embroidered patch, sublimated patch, or 3D printing.
+- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux suede laser patch, embroidered patch, sublimated patch, or 3D printing.
 - LEFT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - RIGHT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - BACK: flat embroidery ONLY.
@@ -327,7 +327,7 @@ CRITICAL INSTRUCTIONS:
 9. Keep the design clean and professional
 
 ALLOWED DECORATION METHODS PER LOCATION:
-- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, suede patch (aka faux leather patch), embroidered patch, sublimated patch, or 3D printing.
+- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux suede laser patch, embroidered patch, sublimated patch, or 3D printing.
 - LEFT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - RIGHT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - BACK: flat embroidery ONLY.

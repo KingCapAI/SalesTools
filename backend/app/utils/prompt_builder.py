@@ -175,7 +175,7 @@ def build_logo_placement_instructions(logos: List[Dict[str, Any]]) -> str:
 DECORATION RULES — MAXIMUM 3 LOCATIONS:
 Use no more than 3 decoration locations total. Keep the design clean and professional.
 Allowed methods per location:
-- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
+- FRONT: flat embroidery, 3D embroidery, PVC patch, woven patch, faux suede laser patch, embroidered patch, sublimated patch, or 3D printing.
 - WEARER'S LEFT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - WEARER'S RIGHT SIDE: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 - BACK: flat embroidery ONLY.
@@ -281,7 +281,7 @@ HAT CONSTRUCTION:
 IMPORTANT - SIDE PERSPECTIVE: All references to 'left' and 'right' are from the WEARER's perspective, not the viewer's. This must match the WEARERS LEFT / WEARERS RIGHT labels in the result template's 6-view layout.
 
 DECORATION LOCATIONS — MAXIMUM 3 locations. Choose up to 3 from the following:
-1. FRONT: Always include a decoration on the front. Methods: flat embroidery, 3D embroidery, PVC patch, woven patch, faux leather patch, embroidered patch, sublimated patch, or 3D printing.
+1. FRONT: Always include a decoration on the front. Methods: flat embroidery, 3D embroidery, PVC patch, woven patch, faux suede laser patch, embroidered patch, sublimated patch, or 3D printing.
 2. SIDE (choose ONE — wearer's left or wearer's right, not both): Methods: flat embroidery, 3D embroidery, woven patch, or sublimated patch ONLY.
 3. BACK: Method: flat embroidery ONLY.
 4. UNDERBILL (inside visor): Method: sublimated print ONLY.

@@ -452,12 +452,33 @@ function DomesticForm({ form, setForm, options }: DomesticFormProps) {
               className="input"
             >
               <option value="">None</option>
-              {options.front_decoration_methods.map((method) => (
-                <option key={method} value={method}>
-                  {method}
-                </option>
-              ))}
+              {options.front_decoration_methods.map((method) => {
+                const isOutsourced = options.outsourced_front_methods?.includes(method);
+                return (
+                  <option key={method} value={method}>
+                    {method}{isOutsourced ? ' — Outsourced (72 pc min, +10 days)' : ''}
+                  </option>
+                );
+              })}
             </select>
+            {form.front_decoration && options.outsourced_front_methods?.includes(form.front_decoration) && (
+              <div className="mt-2 rounded-md border border-amber-700/50 bg-amber-900/25 px-3 py-2 text-xs text-amber-200 space-y-1">
+                <div className="font-medium">
+                  {form.front_decoration} is sourced from an outside vendor — not made in-house.
+                </div>
+                <div className="text-amber-200/80">
+                  <strong>Cost driver:</strong> vendor produces the patch, then ships to King Cap
+                  for assembly onto the hat.
+                </div>
+                <div className="text-amber-200/80">
+                  <strong>Timeline:</strong> adds ~{options.outsourced_lead_time_days ?? 10} business days
+                  to standard production.
+                </div>
+                <div className="text-amber-200/80">
+                  <strong>Minimum:</strong> {options.outsourced_min_qty ?? 72} pieces — smaller runs are unavailable.
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -848,14 +869,35 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
         </div>
       </div>
 
+      {result.is_outsourced && (
+        <div className="mb-6 rounded-lg border border-amber-700/50 bg-amber-900/25 p-4 text-sm">
+          <div className="font-semibold text-amber-100 mb-1">
+            Outsourced patch — not made in-house
+          </div>
+          <div className="text-amber-200/90">
+            <strong>{result.front_decoration}</strong> is produced by an outside vendor, then
+            shipped to King Cap for assembly. This quote reflects that: add
+            ~{result.outsourced_lead_time_days ?? 10} business days to the standard production
+            timeline, and note the vendor {result.outsourced_min_qty ?? 72}-piece minimum
+            (rows below that quantity show as unavailable above).
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-700">
               <th className="text-left py-3 px-3 text-gray-400">Line Item</th>
               {breaks.map(pb => (
-                <th key={pb.quantity_break} className="text-right py-3 px-3 text-gray-400">
-                  {pb.quantity_break.toLocaleString()}+
+                <th
+                  key={pb.quantity_break}
+                  className={`text-right py-3 px-3 ${pb.available === false ? 'text-gray-600' : 'text-gray-400'}`}
+                >
+                  <div>{pb.quantity_break.toLocaleString()}+</div>
+                  {pb.available === false && (
+                    <div className="text-[10px] font-normal text-amber-500/80">below MOQ</div>
+                  )}
                 </th>
               ))}
             </tr>
@@ -868,8 +910,11 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
                   {row.sublabel && <div className="text-xs text-gray-400">{row.sublabel}</div>}
                 </td>
                 {breaks.map((pb) => (
-                  <td key={pb.quantity_break} className="py-3 px-3 text-right text-gray-100">
-                    ${formatCurrency((pb[row.key] as number) ?? 0)}
+                  <td
+                    key={pb.quantity_break}
+                    className={`py-3 px-3 text-right ${pb.available === false ? 'text-gray-600' : 'text-gray-100'}`}
+                  >
+                    {pb.available === false ? '—' : `$${formatCurrency((pb[row.key] as number) ?? 0)}`}
                   </td>
                 ))}
               </tr>
@@ -879,8 +924,11 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
             <tr className="bg-gray-800/50">
               <td className="py-3 px-3 text-gray-100 font-semibold">Per-Piece Total</td>
               {breaks.map(pb => (
-                <td key={pb.quantity_break} className="py-3 px-3 text-right text-primary-400 font-semibold">
-                  ${formatCurrency(pb.per_piece_price ?? 0)}
+                <td
+                  key={pb.quantity_break}
+                  className={`py-3 px-3 text-right font-semibold ${pb.available === false ? 'text-gray-600' : 'text-primary-400'}`}
+                >
+                  {pb.available === false ? '—' : `$${formatCurrency(pb.per_piece_price ?? 0)}`}
                 </td>
               ))}
             </tr>
@@ -893,8 +941,11 @@ function DomesticResults({ result, formData }: { result: DomesticQuoteResponse; 
                   <div className="text-xs text-gray-400">one-time</div>
                 </td>
                 {breaks.map(pb => (
-                  <td key={pb.quantity_break} className="py-3 px-3 text-right text-gray-100">
-                    ${formatCurrency(pb.digitizing_fee ?? 0)}
+                  <td
+                    key={pb.quantity_break}
+                    className={`py-3 px-3 text-right ${pb.available === false ? 'text-gray-600' : 'text-gray-100'}`}
+                  >
+                    {pb.available === false ? '—' : `$${formatCurrency(pb.digitizing_fee ?? 0)}`}
                   </td>
                 ))}
               </tr>

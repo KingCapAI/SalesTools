@@ -28,6 +28,9 @@ export interface OverseasQuoteRequest {
 
 export interface PriceBreak {
   quantity_break: number;
+  /** false when the tier is not sellable (e.g., outsourced patch below vendor MOQ). */
+  available?: boolean;
+  unavailable_reason?: string;
   blank_price: number | null;
   front_decoration_price: number | null;
   left_decoration_price: number | null;
@@ -57,6 +60,11 @@ export interface DomesticQuoteResponse {
   back_decoration: string | null;
   shipping_speed: string;
   include_rope: boolean;
+  /** True when the front decoration is an outsourced patch — quote carries a
+   *  vendor MOQ and +N business days of lead time. */
+  is_outsourced?: boolean;
+  outsourced_lead_time_days?: number;
+  outsourced_min_qty?: number | null;
   price_breaks: PriceBreak[];
 }
 
@@ -87,6 +95,11 @@ export interface QuoteOptions {
     styles: StyleInfo[];
     front_decoration_methods: string[];
     additional_decoration_methods: string[];
+    /** Subset of front_decoration_methods that ship from an outside vendor.
+     *  Enforced 72-piece minimum; adds outsourced_lead_time_days to production. */
+    outsourced_front_methods: string[];
+    outsourced_min_qty: number;
+    outsourced_lead_time_days: number;
     shipping_speeds: string[];
   };
   overseas: {

@@ -26,6 +26,9 @@ from ..data.pricing import (
     DOMESTIC_STYLES,
     DOMESTIC_FRONT_DECORATION_METHODS,
     DOMESTIC_ADDITIONAL_DECORATION_METHODS,
+    DOMESTIC_OUTSOURCED_FRONT_METHODS,
+    DOMESTIC_OUTSOURCED_MIN_QTY,
+    DOMESTIC_OUTSOURCED_LEAD_TIME_DAYS,
     DOMESTIC_RUSH_FEES,
     OVERSEAS_HAT_TYPES,
     OVERSEAS_DECORATION_METHODS,
@@ -53,6 +56,11 @@ async def get_quote_options():
             ],
             "front_decoration_methods": DOMESTIC_FRONT_DECORATION_METHODS,
             "additional_decoration_methods": DOMESTIC_ADDITIONAL_DECORATION_METHODS,
+            # Outsourced patches — front only, 72-piece MOQ, +10 business
+            # days lead time. Sorted so the frontend can render deterministically.
+            "outsourced_front_methods": sorted(DOMESTIC_OUTSOURCED_FRONT_METHODS),
+            "outsourced_min_qty": DOMESTIC_OUTSOURCED_MIN_QTY,
+            "outsourced_lead_time_days": DOMESTIC_OUTSOURCED_LEAD_TIME_DAYS,
             "shipping_speeds": list(DOMESTIC_RUSH_FEES.keys()),
         },
         "overseas": {

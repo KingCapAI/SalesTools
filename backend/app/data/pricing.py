@@ -54,17 +54,39 @@ DOMESTIC_STYLES = {
 
 # Domestic front decoration prices (up to 5K/10K stitches)
 # Note: 24 qty is "up to 5K", 48+ is "up to 10K"
+#
+# In-house methods carry every quantity break (24, 48, 72, 144, 576, 2500).
+# Outsourced patches (see DOMESTIC_OUTSOURCED_FRONT_METHODS below) only exist
+# at 72+ because that is the vendor MOQ; missing 24/48 keys are intentional
+# and enforced by the pricing service.
 DOMESTIC_FRONT_DECORATION_PRICES = {
     "Flat Embroidery": {24: 3.75, 48: 2.75, 72: 2.75, 144: 2.75, 576: 2.75, 2500: 2.75},
     "3D Embroidery": {24: 5.50, 48: 4.50, 72: 4.50, 144: 4.50, 576: 4.50, 2500: 4.50},
     "Flat Embroidery (Metallic Thread)": {24: 4.70, 48: 3.45, 72: 3.45, 144: 3.45, 576: 3.45, 2500: 3.45},
     "3D Embroidery (Metallic Thread)": {24: 6.90, 48: 5.65, 72: 5.65, 144: 5.65, 576: 5.65, 2500: 5.65},
     "Heat Transfer": {24: 4.00, 48: 3.00, 72: 3.00, 144: 3.00, 576: 3.00, 2500: 3.00},
-    "Faux Leather Laser Patch": {24: 7.50, 48: 6.50, 72: 6.50, 144: 6.50, 576: 6.50, 2500: 6.50},
-    # Front-only patches priced like Faux Leather Laser Patch.
-    "Woven Patch": {24: 7.50, 48: 6.50, 72: 6.50, 144: 6.50, 576: 6.50, 2500: 6.50},
-    "Sublimated Patch": {24: 7.50, 48: 6.50, 72: 6.50, 144: 6.50, 576: 6.50, 2500: 6.50},
+    # In-house laser-etched suede patch. Was "Faux Leather Laser Patch";
+    # renamed to match the product's actual material (faux suede).
+    "Faux Suede Laser Patch": {24: 7.50, 48: 6.50, 72: 6.50, 144: 6.50, 576: 6.50, 2500: 6.50},
+    # Outsourced patches — front only, 72-piece MOQ, +10 business days lead time.
+    "Faux Leather Patch": {72: 7.20, 144: 6.20, 576: 4.70, 2500: 4.70},
+    "Genuine Leather Patch": {72: 9.45, 144: 7.95, 576: 5.45, 2500: 5.45},
+    "Woven Patch": {72: 10.45, 144: 8.70, 576: 5.95, 2500: 5.95},
+    "PVC Rubber Patch": {72: 11.20, 144: 9.20, 576: 6.20, 2500: 6.20},
 }
+
+# Methods that ship from an outside vendor rather than King Cap's in-house
+# embroidery/laser shop. Priced only at 72+ pieces; each adds ~10 business
+# days to the standard production timeline. Surfaced to the UI so the sales
+# form can badge them and warn the user before they lock a quote.
+DOMESTIC_OUTSOURCED_FRONT_METHODS = {
+    "Faux Leather Patch",
+    "Genuine Leather Patch",
+    "Woven Patch",
+    "PVC Rubber Patch",
+}
+DOMESTIC_OUTSOURCED_MIN_QTY = 72
+DOMESTIC_OUTSOURCED_LEAD_TIME_DAYS = 10
 
 # Domestic additional location decoration prices (up to 5K stitches)
 DOMESTIC_ADDITIONAL_DECORATION_PRICES = {
@@ -262,9 +284,11 @@ DOMESTIC_FRONT_DECORATION_METHODS = [
     "Flat Embroidery (Metallic Thread)",
     "3D Embroidery (Metallic Thread)",
     "Heat Transfer",
-    "Faux Leather Laser Patch",
+    "Faux Suede Laser Patch",
+    "Faux Leather Patch",
+    "Genuine Leather Patch",
     "Woven Patch",
-    "Sublimated Patch",
+    "PVC Rubber Patch",
 ]
 
 DOMESTIC_ADDITIONAL_DECORATION_METHODS = [

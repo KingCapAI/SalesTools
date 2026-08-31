@@ -277,6 +277,23 @@ export function ProductionTimeline({ initialDate, quoteData, alwaysExpanded }: P
     const pt: ProductionType = quoteData.quote_type === 'domestic' ? 'domestic' : 'overseas';
     setProductionType(pt);
 
+    // Outsourced front patches ship from a vendor and require an extra
+    // ~10 business days of lead time on top of the standard production.
+    // We derive this client-side (rather than persisting it on the quote
+    // row) by checking the front_decoration name against a known set —
+    // avoids a DB migration for a UI-only concern. Keep this list in
+    // sync with backend DOMESTIC_OUTSOURCED_FRONT_METHODS.
+    const OUTSOURCED_FRONT_METHODS = new Set([
+      'Faux Leather Patch',
+      'Genuine Leather Patch',
+      'Woven Patch',
+      'PVC Rubber Patch',
+    ]);
+    const isOutsourced = pt === 'domestic'
+      && !!quoteData.front_decoration
+      && OUTSOURCED_FRONT_METHODS.has(quoteData.front_decoration);
+    const outsourcedBumpDays = isOutsourced ? 10 : 0;
+
     if (pt === 'overseas') {
       // Ship direct detection
       const sd = quoteData.shipping_method === 'Direct to Customer';
@@ -298,10 +315,11 @@ export function ProductionTimeline({ initialDate, quoteData, alwaysExpanded }: P
     } else {
       // Parse domestic production speed from shipping_speed field
       const speed = quoteData.shipping_speed || '';
-      if (speed.includes('4 Production')) setDomesticProductionDays(4);
-      else if (speed.includes('3 Production')) setDomesticProductionDays(3);
-      else if (speed.includes('2 Production')) setDomesticProductionDays(2);
-      else setDomesticProductionDays(7);
+      let baseDomesticDays = 7;
+      if (speed.includes('4 Production')) baseDomesticDays = 4;
+      else if (speed.includes('3 Production')) baseDomesticDays = 3;
+      else if (speed.includes('2 Production')) baseDomesticDays = 2;
+      setDomesticProductionDays(baseDomesticDays + outsourcedBumpDays);
     }
 
     setSyncedFromQuote(true);
@@ -315,6 +333,7 @@ export function ProductionTimeline({ initialDate, quoteData, alwaysExpanded }: P
         if (speed.includes('4 Production')) dpd = 4;
         else if (speed.includes('3 Production')) dpd = 3;
         else if (speed.includes('2 Production')) dpd = 2;
+        dpd += outsourcedBumpDays;
         setMilestones(calculateDomesticMilestones(new Date(inHandsDate + 'T00:00:00'), domesticShippingDays, dpd));
       } else {
         const sd = quoteData.shipping_method === 'Direct to Customer';

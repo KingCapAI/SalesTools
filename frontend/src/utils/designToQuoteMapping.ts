@@ -87,12 +87,20 @@ const DOMESTIC_DECORATION_MAP: Record<string, string> = {
   '3d embroidery': '3D Embroidery',
   '3d puff embroidery': '3D Embroidery',
   'heat transfer': 'Heat Transfer',
-  'faux leather patch': 'Faux Leather Laser Patch',
-  'faux leather laser patch': 'Faux Leather Laser Patch',
+  // In-house laser-etched suede patch. Old name kept as an alias so
+  // detected labels from historical designs still map correctly.
+  'faux suede laser patch': 'Faux Suede Laser Patch',
+  'suede patch': 'Faux Suede Laser Patch',
+  'faux suede patch': 'Faux Suede Laser Patch',
+  'faux leather patch': 'Faux Leather Patch',
+  'faux leather laser patch': 'Faux Suede Laser Patch',
+  'genuine leather patch': 'Genuine Leather Patch',
+  'leather patch': 'Genuine Leather Patch',
+  'pvc patch': 'PVC Rubber Patch',
+  'pvc rubber patch': 'PVC Rubber Patch',
   'flat embroidery (metallic thread)': 'Flat Embroidery (Metallic Thread)',
   '3d embroidery (metallic thread)': '3D Embroidery (Metallic Thread)',
   'woven patch': 'Woven Patch',
-  'sublimated patch': 'Sublimated Patch',
 };
 
 // AI-detected decoration labels -> overseas quote decoration names
@@ -125,10 +133,16 @@ const CUSTOM_TO_DOMESTIC_MAP: Record<string, string> = {
   embroidery: 'Flat Embroidery',
   '3d_puff': '3D Embroidery',
   heat_transfer: 'Heat Transfer',
-  laser_cut: 'Faux Leather Laser Patch',
-  patch: 'Faux Leather Laser Patch',
+  laser_cut: 'Faux Suede Laser Patch',
+  suede_patch: 'Faux Suede Laser Patch',
+  patch: 'Faux Suede Laser Patch',
+  pvc_patch: 'PVC Rubber Patch',
+  woven_patch: 'Woven Patch',
+  embroidered_patch: 'Woven Patch',
   hd_print: 'High Density Print',
-  sublimated_embroidery: 'Sublimated Patch',
+  // Sublimated embroidery isn't offered domestically anymore — closest
+  // in-house substitute for auto-mapping.
+  sublimated_embroidery: 'Faux Suede Laser Patch',
 };
 
 // CustomDesign decoration_method enum -> overseas decoration name
