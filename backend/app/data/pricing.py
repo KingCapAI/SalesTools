@@ -73,6 +73,10 @@ DOMESTIC_FRONT_DECORATION_PRICES = {
     "Genuine Leather Patch": {72: 9.45, 144: 7.95, 576: 5.45, 2500: 5.45},
     "Woven Patch": {72: 10.45, 144: 8.70, 576: 5.95, 2500: 5.95},
     "PVC Rubber Patch": {72: 11.20, 144: 9.20, 576: 6.20, 2500: 6.20},
+    # Currently priced for the 2.26-4.00 sq in size band only. If we start
+    # selling smaller/larger emblems, add them as separate entries (e.g.,
+    # "Max Flex Emblem (Small)") with their own tier prices.
+    "Max Flex Emblem": {72: 9.70, 144: 8.95, 576: 7.45, 2500: 7.20},
 }
 
 # Methods that ship from an outside vendor rather than King Cap's in-house
@@ -84,6 +88,7 @@ DOMESTIC_OUTSOURCED_FRONT_METHODS = {
     "Genuine Leather Patch",
     "Woven Patch",
     "PVC Rubber Patch",
+    "Max Flex Emblem",
 }
 DOMESTIC_OUTSOURCED_MIN_QTY = 72
 DOMESTIC_OUTSOURCED_LEAD_TIME_DAYS = 10
@@ -289,6 +294,7 @@ DOMESTIC_FRONT_DECORATION_METHODS = [
     "Genuine Leather Patch",
     "Woven Patch",
     "PVC Rubber Patch",
+    "Max Flex Emblem",
 ]
 
 DOMESTIC_ADDITIONAL_DECORATION_METHODS = [

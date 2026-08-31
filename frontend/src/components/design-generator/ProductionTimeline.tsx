@@ -288,6 +288,7 @@ export function ProductionTimeline({ initialDate, quoteData, alwaysExpanded }: P
       'Genuine Leather Patch',
       'Woven Patch',
       'PVC Rubber Patch',
+      'Max Flex Emblem',
     ]);
     const isOutsourced = pt === 'domestic'
       && !!quoteData.front_decoration
