@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     # Anthropic (Claude AI)
     anthropic_api_key: str = ""
 
+    # HQ editable content: comma-separated emails allowed to edit Resources pages
+    content_editor_emails: str = "ericn@wearkingcap.com"
+
     # Resend (Email)
     resend_api_key: str = ""
     email_from: str = "King Cap <orders@wearkingcap.com>"

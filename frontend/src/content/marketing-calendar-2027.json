@@ -1,0 +1,492 @@
+{
+ "year": 2027,
+ "intro": "Four quarterly themes, eight campaigns, three launch shows. Each campaign is sold in 4 months ahead, overseas orders close 3 months ahead, domestic stays open to 3 weeks out. Click any bar or marker for the brief.",
+ "footnote": "Show dates confirmed with organizers as of Sep 29, 2026. SAAC has not published 2027 dates; Impressions Long Beach, Promotions East and SAAC are marked TBD against the $100K show cap. Trade shows and marketing are each capped at $100K; there is no paid digital, the former ad budget funds Hats in Hand sampling.",
+ "quarters": [
+  {
+   "q": "Q1",
+   "name": "Launch Season",
+   "goal": "Every distributor who matters leaves January knowing three things: a new premium Elite line, a simpler price ladder (Basics $4, Classic $5, Comfort $6, Sport $6.50), and a free decorated sample in their hand.",
+   "promo": "Hats in Hand: sign up, pick a style and color, send a logo, get a free domestic spec sample. Launched at PPAI, top-100 distributors first.",
+   "shows": "ASI Orlando, PPAI Expo, ASI Fort Worth"
+  },
+  {
+   "q": "Q2",
+   "name": "Event Season",
+   "goal": "King Cap is the fastest way to put a good-looking hat on every head at an event. Overseas if you planned, domestic in 2 to 3 weeks if you did not.",
+   "promo": "Event Ready: any stocked blank, decorated at Apollo, ships in 15 business days. Price breaks at 48 / 72 / 100 on the flyer.",
+   "shows": "Regionals, Promotions East"
+  },
+  {
+   "q": "Q3",
+   "name": "Back to School and Game Day",
+   "goal": "Fall is hat season. Own schools and game day, and be the first to say \"order your December hats in August.\"",
+   "promo": "Company Gift Early Bird: gift programs placed by Aug 15 get overseas pricing and guaranteed pre-Thanksgiving delivery. Launched at ASI Chicago.",
+   "shows": "ASI Chicago, SAAC"
+  },
+  {
+   "q": "Q4",
+   "name": "Gift Season and 2028 Setup",
+   "goal": "To distributors: there is still time, domestic ships in 15 days through Dec 8. To top accounts: thank you, here is 2028, see you at PPAI.",
+   "promo": "Year-End Quick Turn: stocked blanks, Versa Tags and patches, 15-day domestic delivery, order by Dec 8. DTC runs Small Business Saturday and Cyber Monday.",
+   "shows": "No shows; build PPAI 2028"
+  }
+ ],
+ "campaigns": [
+  {
+   "n": "New Year Lineup",
+   "sub": "Elite, pricing, Hats in Hand",
+   "briefAt": "",
+   "cut": "",
+   "phases": [
+    {
+     "t": "live",
+     "s": "2027-01-05",
+     "e": "2027-02-28",
+     "l": "Launch at ASI Orlando and PPAI Expo"
+    }
+   ],
+   "hero": "Elite (water-repellent, black), The Range, unconstructed 5-panel, 2027 price ladder",
+   "offer": "Hats in Hand free sample; show specials on new lines",
+   "mat": "2027 line sheet and price list, booth graphics, launch email to all three segments, LinkedIn launch, Instagram carousels from the Company Gift and Harvest Hours banks",
+   "need": "Jan 5 (ASI Orlando)",
+   "brief": "Done, Sep 2026",
+   "flyer": "Dec 15, 2026",
+   "dom": ""
+  },
+  {
+   "n": "Spring Golf and Outdoor",
+   "sub": "Sport line, Fairway Partners",
+   "briefAt": "",
+   "cut": "2027-01-15",
+   "phases": [
+    {
+     "t": "sellin",
+     "s": "2027-01-05",
+     "e": "2027-01-15",
+     "l": "Sell-in"
+    },
+    {
+     "t": "domestic",
+     "s": "2027-01-15",
+     "e": "2027-03-10",
+     "l": "Domestic until Mar 10"
+    },
+    {
+     "t": "live",
+     "s": "2027-04-01",
+     "e": "2027-05-31",
+     "l": "Spring golf in market"
+    }
+   ],
+   "hero": "Sport line (450, 450-P, 460, 460-P), The Pitch, Fairway Partners courses",
+   "offer": "Golf outing bundles at 48 / 72 / 100 breaks; Fairway Partners course program",
+   "mat": "Golf flyer in the PPAI booth, Fairway Partners email, Fall Fairways image bank reshot as spring, pro-shop and charity-tournament talk track",
+   "need": "Apr 1",
+   "brief": "Nov 1, 2026",
+   "flyer": "Jan 5 (in booth)",
+   "dom": "Mar 10"
+  },
+  {
+   "n": "Summer Events",
+   "sub": "Classic line, Buddy cap",
+   "briefAt": "2027-01-04",
+   "cut": "2027-03-01",
+   "phases": [
+    {
+     "t": "sellin",
+     "s": "2027-02-01",
+     "e": "2027-03-01",
+     "l": "Sell-in Feb 1"
+    },
+    {
+     "t": "domestic",
+     "s": "2027-03-01",
+     "e": "2027-05-10",
+     "l": "Domestic until May 10"
+    },
+    {
+     "t": "live",
+     "s": "2027-06-01",
+     "e": "2027-07-15",
+     "l": "Summer events"
+    }
+   ],
+   "hero": "Classic 250 / 250-T / 260, Buddy 230 for female-led industries, 5-panel unconstructed",
+   "offer": "Early-order pricing on 288+; Event Ready 15-day domestic turn",
+   "mat": "Summer flyer at ASI Fort Worth with cutoffs printed on it, Klaviyo Feb 1 then reminders Apr 15 and May 15, Morning Rush bank and a new Summer Events shoot",
+   "need": "Jun 1",
+   "brief": "Jan 4",
+   "flyer": "Feb 1",
+   "dom": "May 10"
+  },
+  {
+   "n": "July 4 Red, White and Blue",
+   "sub": "Domestic only",
+   "briefAt": "2027-02-01",
+   "cut": "",
+   "phases": [
+    {
+     "t": "sellin",
+     "s": "2027-04-01",
+     "e": "2027-06-10",
+     "l": "Sell-in, domestic only, order by Jun 10"
+    },
+    {
+     "t": "live",
+     "s": "2027-06-20",
+     "e": "2027-07-05",
+     "l": "July 4"
+    }
+   ],
+   "hero": "Stocked red, white and navy blanks; flag and patch decoration (woven, PVC, faux suede)",
+   "offer": "Bundle of 3 colorways at one price",
+   "mat": "One flyer, one email, one Instagram carousel; no overseas build",
+   "need": "Jun 25",
+   "brief": "Feb 1",
+   "flyer": "Apr 1",
+   "dom": "Jun 10"
+  },
+  {
+   "n": "Back to School",
+   "sub": "School colors, 3D embroidery",
+   "briefAt": "2027-03-01",
+   "cut": "2027-05-01",
+   "phases": [
+    {
+     "t": "sellin",
+     "s": "2027-04-01",
+     "e": "2027-05-01",
+     "l": "Sell-in Apr 1"
+    },
+    {
+     "t": "domestic",
+     "s": "2027-05-01",
+     "e": "2027-07-10",
+     "l": "Domestic until Jul 10"
+    },
+    {
+     "t": "live",
+     "s": "2027-08-01",
+     "e": "2027-08-31",
+     "l": "Back to school"
+    }
+   ],
+   "hero": "Classic and Comfort in school colors, 3D embroidery mascots, print-on-demand for e-comm distributors",
+   "offer": "School and university program pricing at 288 / 576 / 1,440; 15-day domestic for late orders",
+   "mat": "Back to School flyer, university and booster-club talk track, Saturday Lights bank plus a new campus shoot, spirit-wear case study",
+   "need": "Aug 1",
+   "brief": "Mar 1",
+   "flyer": "Apr 1",
+   "dom": "Jul 10"
+  },
+  {
+   "n": "Game Day",
+   "sub": "Sport and Comfort, high density print",
+   "briefAt": "2027-04-01",
+   "cut": "2027-06-15",
+   "phases": [
+    {
+     "t": "sellin",
+     "s": "2027-05-01",
+     "e": "2027-06-15",
+     "l": "Sell-in May 1"
+    },
+    {
+     "t": "domestic",
+     "s": "2027-06-15",
+     "e": "2027-08-10",
+     "l": "Domestic until Aug 10"
+    },
+    {
+     "t": "live",
+     "s": "2027-09-01",
+     "e": "2027-10-15",
+     "l": "Game day"
+    }
+   ],
+   "hero": "Sport 450 / 460, Comfort 360-T, Richardson-style 260-T, high density print, PVC patches",
+   "offer": "Team and tailgate pricing; booster and alumni bundles",
+   "mat": "Game Day flyer at Promotions East, college football kickoff email Aug 15, NFL kickoff social, Saturday Lights bank",
+   "need": "Sep 1",
+   "brief": "Apr 1",
+   "flyer": "May 1",
+   "dom": "Aug 10"
+  },
+  {
+   "n": "Company Gift",
+   "sub": "Elite, premium patches, gift box",
+   "briefAt": "2027-06-01",
+   "cut": "2027-08-15",
+   "phases": [
+    {
+     "t": "sellin",
+     "s": "2027-07-15",
+     "e": "2027-08-15",
+     "l": "Launch at ASI Chicago"
+    },
+    {
+     "t": "domestic",
+     "s": "2027-08-15",
+     "e": "2027-10-25",
+     "l": "Domestic until Oct 25"
+    },
+    {
+     "t": "live",
+     "s": "2027-11-01",
+     "e": "2027-12-15",
+     "l": "Gifts ship"
+    }
+   ],
+   "hero": "Elite line, The Range, faux suede / woven / knit-stitch patches, gift-box option",
+   "offer": "Early Bird: overseas pricing and guaranteed pre-Thanksgiving delivery for programs placed by Aug 15",
+   "mat": "Company Gift flyer and image bank, HR and executive-gifting talk track, LinkedIn corporate-gifting series, Oct 1 last-call email, unboxing content",
+   "need": "Nov 15",
+   "brief": "Jun 1",
+   "flyer": "Jul 15 (ASI Chicago)",
+   "dom": "Oct 25"
+  },
+  {
+   "n": "Year-End Quick Turn",
+   "sub": "Domestic only, budget flush",
+   "briefAt": "2027-06-15",
+   "cut": "",
+   "phases": [
+    {
+     "t": "sellin",
+     "s": "2027-10-01",
+     "e": "2027-12-08",
+     "l": "Sell-in Oct 1, domestic only, order by Dec 8"
+    },
+    {
+     "t": "live",
+     "s": "2027-12-08",
+     "e": "2027-12-23",
+     "l": "Ships"
+    }
+   ],
+   "hero": "Stocked blanks in core colors, Versa Tags domestic decoration, woven and PVC patches",
+   "offer": "15-day domestic turn; budget-flush bundles at 48 / 72 / 100",
+   "mat": "Quick Turn flyer, weekly Klaviyo countdown of weeks left to order, rep call list of accounts with unspent budget",
+   "need": "Dec 15",
+   "brief": "Jun 15",
+   "flyer": "Oct 1",
+   "dom": "Dec 8"
+  },
+  {
+   "n": "New Year Lineup 2028",
+   "sub": "2028 sell-in",
+   "briefAt": "2027-07-15",
+   "cut": "",
+   "phases": [
+    {
+     "t": "sellin",
+     "s": "2027-10-01",
+     "e": "2027-12-31",
+     "l": "2028 creative, samples, preview to top-100 Dec 1"
+    }
+   ],
+   "hero": "2028 additions, Elite colors beyond black, next-year pricing",
+   "offer": "PPAI 2028 appointment booking; Hats in Hand round two",
+   "mat": "2028 line sheet, year-in-review thank-you note, PPAI 2028 invite, refreshed booth, new 2028 shoot",
+   "need": "Jan 2028 (PPAI)",
+   "brief": "Jul 15",
+   "flyer": "Dec 15",
+   "dom": ""
+  }
+ ],
+ "shows": [
+  {
+   "n": "ASI Orlando",
+   "s": "2027-01-05",
+   "e": "2027-01-07",
+   "k": "nat",
+   "tbd": false,
+   "city": "Orlando, FL",
+   "who": "Chris or Mike",
+   "role": "First look at the New Year Lineup; Spring Golf sell-in"
+  },
+  {
+   "n": "PPAI Expo",
+   "s": "2027-01-12",
+   "e": "2027-01-14",
+   "k": "nat",
+   "tbd": false,
+   "city": "Las Vegas, NV",
+   "who": "Eric, Brian, Chris, Mike",
+   "role": "Flagship launch: Elite line, new price ladder, Hats in Hand, Spring Golf flyer"
+  },
+  {
+   "n": "Impressions LB",
+   "s": "2027-01-21",
+   "e": "2027-01-23",
+   "k": "reg",
+   "tbd": true,
+   "city": "Long Beach, CA",
+   "who": "Eric",
+   "role": "Decorator and West Coast audience; Apollo domestic decoration story if we exhibit"
+  },
+  {
+   "n": "PPAMS",
+   "s": "2027-02-16",
+   "e": "2027-02-16",
+   "k": "reg",
+   "tbd": false,
+   "city": "Nashville, TN",
+   "who": "Southern outside rep",
+   "role": "Spring Golf and Summer Events flyers"
+  },
+  {
+   "n": "ASI Fort Worth",
+   "s": "2027-03-01",
+   "e": "2027-03-03",
+   "k": "nat",
+   "tbd": false,
+   "city": "Fort Worth, TX",
+   "who": "Chris or Mike",
+   "role": "Last call for Summer Events overseas orders; oil and gas, trades, ranch"
+  },
+  {
+   "n": "VAPPA",
+   "s": "2027-03-23",
+   "e": "2027-04-01",
+   "k": "reg",
+   "tbd": false,
+   "city": "Virginia",
+   "who": "East Coast rep",
+   "role": "Summer Events and Back to School"
+  },
+  {
+   "n": "Universal Connect",
+   "s": "2027-04-26",
+   "e": "2027-04-28",
+   "k": "reg",
+   "tbd": false,
+   "city": "Charleston, SC",
+   "who": "East / Southern rep",
+   "role": "Back to School sell-in"
+  },
+  {
+   "n": "NEPPA",
+   "s": "2027-05-03",
+   "e": "2027-05-04",
+   "k": "reg",
+   "tbd": false,
+   "city": "Quincy, MA",
+   "who": "East Coast rep",
+   "role": "Back to School and Game Day"
+  },
+  {
+   "n": "Promotions East",
+   "s": "2027-06-14",
+   "e": "2027-06-15",
+   "k": "nat",
+   "tbd": true,
+   "city": "New York, NY",
+   "who": "Chris or Mike",
+   "role": "Game Day last call; Company Gift preview"
+  },
+  {
+   "n": "ASI Chicago",
+   "s": "2027-07-27",
+   "e": "2027-07-29",
+   "k": "nat",
+   "tbd": false,
+   "city": "Chicago, IL",
+   "who": "Eric, Chris, Mike",
+   "role": "Company Gift launch; Back to School and Game Day domestic quick-turn"
+  },
+  {
+   "n": "SAAC Expo",
+   "s": "2027-08-10",
+   "e": "2027-08-13",
+   "k": "reg",
+   "tbd": true,
+   "city": "Long Beach, CA (2027 date TBC)",
+   "who": "Eric",
+   "role": "West Coast coverage; Company Gift overseas cutoff"
+  },
+  {
+   "n": "Fall regionals",
+   "s": "2027-09-20",
+   "e": "2027-09-28",
+   "k": "reg",
+   "tbd": false,
+   "city": "MA, MD, VA, NJ",
+   "who": "East Coast reps",
+   "role": "NEPPA Sep 20-21, CPPA Sep 23, VAPPA Sep 28, SAAGNY Sep 28: Year-End and Company Gift domestic"
+  }
+ ],
+ "tentpoles": [
+  {
+   "n": "Super Bowl",
+   "s": "2027-02-14",
+   "lo": false
+  },
+  {
+   "n": "March Madness",
+   "s": "2027-03-16",
+   "lo": true
+  },
+  {
+   "n": "Masters",
+   "s": "2027-04-08",
+   "lo": false
+  },
+  {
+   "n": "Earth Day",
+   "s": "2027-04-22",
+   "lo": true
+  },
+  {
+   "n": "Graduation",
+   "s": "2027-05-15",
+   "lo": false
+  },
+  {
+   "n": "Memorial Day",
+   "s": "2027-05-31",
+   "lo": true
+  },
+  {
+   "n": "Father's Day",
+   "s": "2027-06-20",
+   "lo": false
+  },
+  {
+   "n": "July 4",
+   "s": "2027-07-04",
+   "lo": true
+  },
+  {
+   "n": "Back to school",
+   "s": "2027-08-16",
+   "lo": false
+  },
+  {
+   "n": "Labor Day",
+   "s": "2027-09-06",
+   "lo": true
+  },
+  {
+   "n": "Football kickoff",
+   "s": "2027-09-09",
+   "lo": false
+  },
+  {
+   "n": "Halloween",
+   "s": "2027-10-31",
+   "lo": true
+  },
+  {
+   "n": "Thanksgiving",
+   "s": "2027-11-25",
+   "lo": false
+  },
+  {
+   "n": "Cyber Monday",
+   "s": "2027-11-29",
+   "lo": true
+  }
+ ]
+}

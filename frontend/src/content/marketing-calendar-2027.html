@@ -122,9 +122,9 @@ header p{margin:6px 0 0;max-width:62ch}
 <div class="wrap">
   <header>
     <div>
-      <div class="eyebrow">King Cap · 2027</div>
+      <div class="eyebrow" id="eyebrow">King Cap · 2027</div>
       <h1>Marketing Calendar</h1>
-      <p class="muted">Four quarterly themes, eight campaigns, three launch shows. Each campaign is sold in 4 months ahead, overseas orders close 3 months ahead, domestic stays open to 3 weeks out. Click any bar or marker for the brief.</p>
+      <p class="muted" id="intro"></p>
     </div>
     <div class="controls" role="group" aria-label="Show or hide lanes">
       <button class="toggle" id="t-shows" aria-pressed="true">Shows</button>
@@ -156,104 +156,76 @@ header p{margin:6px 0 0;max-width:62ch}
     <aside class="panel" id="panel" aria-live="polite"></aside>
   </div>
 
-  <p class="rule">Show dates confirmed with organizers as of Sep 29, 2026. SAAC has not published 2027 dates; Impressions Long Beach, Promotions East and SAAC are marked TBD against the $100K show cap. Trade shows and marketing are each capped at $100K; there is no paid digital, the former ad budget funds Hats in Hand sampling.</p>
+  <p class="rule" id="footnote"></p>
 </div>
 
 <script>
-const Y=2027;
-const d=(m,dd)=>new Date(Y,m-1,dd);
-const yearStart=d(1,1), yearEnd=new Date(Y+1,0,1);
-const pct=date=>((date-yearStart)/(yearEnd-yearStart))*100;
+// Data arrives from the parent page (MarketingCalendar.tsx) via postMessage:
+//   { type: 'calendar-data', data: { year, intro, footnote, quarters, campaigns, shows, tentpoles } }
+// Dates in the payload are "YYYY-MM-DD" strings.
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const parse=str=>{if(!str)return null;const [y,m,d]=String(str).split('-').map(Number);return new Date(y,m-1,d);};
 const fmt=date=>date.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-
-const quarters=[
- {q:'Q1',name:'Launch Season',goal:'Every distributor who matters leaves January knowing three things: a new premium Elite line, a simpler price ladder (Basics $4, Classic $5, Comfort $6, Sport $6.50), and a free decorated sample in their hand.',promo:'Hats in Hand: sign up, pick a style and color, send a logo, get a free domestic spec sample. Launched at PPAI, top-100 distributors first.',shows:'ASI Orlando, PPAI Expo, ASI Fort Worth'},
- {q:'Q2',name:'Event Season',goal:'King Cap is the fastest way to put a good-looking hat on every head at an event. Overseas if you planned, domestic in 2 to 3 weeks if you did not.',promo:'Event Ready: any stocked blank, decorated at Apollo, ships in 15 business days. Price breaks at 48 / 72 / 100 on the flyer.',shows:'Regionals, Promotions East'},
- {q:'Q3',name:'Back to School and Game Day',goal:'Fall is hat season. Own schools and game day, and be the first to say "order your December hats in August."',promo:'Company Gift Early Bird: gift programs placed by Aug 15 get overseas pricing and guaranteed pre-Thanksgiving delivery. Launched at ASI Chicago.',shows:'ASI Chicago, SAAC'},
- {q:'Q4',name:'Gift Season and 2028 Setup',goal:'To distributors: there is still time, domestic ships in 15 days through Dec 8. To top accounts: thank you, here is 2028, see you at PPAI.',promo:'Year-End Quick Turn: stocked blanks, Versa Tags and patches, 15-day domestic delivery, order by Dec 8. DTC runs Small Business Saturday and Cyber Monday.',shows:'No shows; build PPAI 2028'}
-];
-
-const campaigns=[
- {n:'New Year Lineup',sub:'Elite, pricing, Hats in Hand',phases:[{t:'live',s:d(1,5),e:d(2,28),l:'Launch at ASI Orlando and PPAI Expo'}],
-  hero:'Elite (water-repellent, black), The Range, unconstructed 5-panel, 2027 price ladder',offer:'Hats in Hand free sample; show specials on new lines',mat:'2027 line sheet and price list, booth graphics, launch email to all three segments, LinkedIn launch, Instagram carousels from the Company Gift and Harvest Hours banks',need:'Jan 5 (ASI Orlando)',brief:'Done, Sep 2026',flyer:'Dec 15, 2026'},
- {n:'Spring Golf and Outdoor',sub:'Sport line, Fairway Partners',briefAt:null,briefNote:'Nov 1, 2026',phases:[{t:'sellin',s:d(1,5),e:d(1,15),l:'Sell-in'},{t:'domestic',s:d(1,15),e:d(3,10),l:'Domestic until Mar 10'},{t:'live',s:d(4,1),e:d(5,31),l:'Spring golf in market'}],cut:d(1,15),
-  hero:'Sport line (450, 450-P, 460, 460-P), The Pitch, Fairway Partners courses',offer:'Golf outing bundles at 48 / 72 / 100 breaks; Fairway Partners course program',mat:'Golf flyer in the PPAI booth, Fairway Partners email, Fall Fairways image bank reshot as spring, pro-shop and charity-tournament talk track',need:'Apr 1',brief:'Nov 1, 2026',flyer:'Jan 5 (in booth)',dom:'Mar 10'},
- {n:'Summer Events',sub:'Classic line, Buddy cap',briefAt:d(1,4),phases:[{t:'sellin',s:d(2,1),e:d(3,1),l:'Sell-in Feb 1'},{t:'domestic',s:d(3,1),e:d(5,10),l:'Domestic until May 10'},{t:'live',s:d(6,1),e:d(7,15),l:'Summer events'}],cut:d(3,1),
-  hero:'Classic 250 / 250-T / 260, Buddy 230 for female-led industries, 5-panel unconstructed',offer:'Early-order pricing on 288+; Event Ready 15-day domestic turn',mat:'Summer flyer at ASI Fort Worth with cutoffs printed on it, Klaviyo Feb 1 then reminders Apr 15 and May 15, Morning Rush bank and a new Summer Events shoot',need:'Jun 1',brief:'Jan 4',flyer:'Feb 1',dom:'May 10'},
- {n:'July 4 Red, White and Blue',sub:'Domestic only',briefAt:d(2,1),phases:[{t:'sellin',s:d(4,1),e:d(6,10),l:'Sell-in, domestic only, order by Jun 10'},{t:'live',s:d(6,20),e:d(7,5),l:'July 4'}],
-  hero:'Stocked red, white and navy blanks; flag and patch decoration (woven, PVC, faux suede)',offer:'Bundle of 3 colorways at one price',mat:'One flyer, one email, one Instagram carousel; no overseas build',need:'Jun 25',brief:'Feb 1',flyer:'Apr 1',dom:'Jun 10'},
- {n:'Back to School',sub:'School colors, 3D embroidery',briefAt:d(3,1),phases:[{t:'sellin',s:d(4,1),e:d(5,1),l:'Sell-in Apr 1'},{t:'domestic',s:d(5,1),e:d(7,10),l:'Domestic until Jul 10'},{t:'live',s:d(8,1),e:d(8,31),l:'Back to school'}],cut:d(5,1),
-  hero:'Classic and Comfort in school colors, 3D embroidery mascots, print-on-demand for e-comm distributors',offer:'School and university program pricing at 288 / 576 / 1,440; 15-day domestic for late orders',mat:'Back to School flyer, university and booster-club talk track, Saturday Lights bank plus a new campus shoot, spirit-wear case study',need:'Aug 1',brief:'Mar 1',flyer:'Apr 1',dom:'Jul 10'},
- {n:'Game Day',sub:'Sport and Comfort, high density print',briefAt:d(4,1),phases:[{t:'sellin',s:d(5,1),e:d(6,15),l:'Sell-in May 1'},{t:'domestic',s:d(6,15),e:d(8,10),l:'Domestic until Aug 10'},{t:'live',s:d(9,1),e:d(10,15),l:'Game day'}],cut:d(6,15),
-  hero:'Sport 450 / 460, Comfort 360-T, Richardson-style 260-T, high density print, PVC patches',offer:'Team and tailgate pricing; booster and alumni bundles',mat:'Game Day flyer at Promotions East, college football kickoff email Aug 15, NFL kickoff social, Saturday Lights bank',need:'Sep 1',brief:'Apr 1',flyer:'May 1',dom:'Aug 10'},
- {n:'Company Gift',sub:'Elite, premium patches, gift box',briefAt:d(6,1),phases:[{t:'sellin',s:d(7,15),e:d(8,15),l:'Launch at ASI Chicago'},{t:'domestic',s:d(8,15),e:d(10,25),l:'Domestic until Oct 25'},{t:'live',s:d(11,1),e:d(12,15),l:'Gifts ship'}],cut:d(8,15),
-  hero:'Elite line, The Range, faux suede / woven / knit-stitch patches, gift-box option',offer:'Early Bird: overseas pricing and guaranteed pre-Thanksgiving delivery for programs placed by Aug 15',mat:'Company Gift flyer and image bank, HR and executive-gifting talk track, LinkedIn corporate-gifting series, Oct 1 last-call email, unboxing content',need:'Nov 15',brief:'Jun 1',flyer:'Jul 15 (ASI Chicago)',dom:'Oct 25'},
- {n:'Year-End Quick Turn',sub:'Domestic only, budget flush',briefAt:d(6,15),phases:[{t:'sellin',s:d(10,1),e:d(12,8),l:'Sell-in Oct 1, domestic only, order by Dec 8'},{t:'live',s:d(12,8),e:d(12,23),l:'Ships'}],
-  hero:'Stocked blanks in core colors, Versa Tags domestic decoration, woven and PVC patches',offer:'15-day domestic turn; budget-flush bundles at 48 / 72 / 100',mat:'Quick Turn flyer, weekly Klaviyo countdown of weeks left to order, rep call list of accounts with unspent budget',need:'Dec 15',brief:'Jun 15',flyer:'Oct 1',dom:'Dec 8'},
- {n:'New Year Lineup 2028',sub:'2028 sell-in',briefAt:d(7,15),phases:[{t:'sellin',s:d(10,1),e:d(12,31),l:'2028 creative, samples, preview to top-100 Dec 1'}],
-  hero:'2028 additions, Elite colors beyond black, next-year pricing',offer:'PPAI 2028 appointment booking; Hats in Hand round two',mat:'2028 line sheet, year-in-review thank-you note, PPAI 2028 invite, refreshed booth, new 2028 shoot',need:'Jan 2028 (PPAI)',brief:'Jul 15',flyer:'Dec 15'}
-];
-
-const shows=[
- {n:'ASI Orlando',s:d(1,5),e:d(1,7),k:'nat',city:'Orlando, FL',who:'Chris or Mike',role:'First look at the New Year Lineup; Spring Golf sell-in'},
- {n:'PPAI Expo',s:d(1,12),e:d(1,14),k:'nat',city:'Las Vegas, NV',who:'Eric, Brian, Chris, Mike',role:'Flagship launch: Elite line, new price ladder, Hats in Hand, Spring Golf flyer'},
- {n:'Impressions LB',s:d(1,21),e:d(1,23),k:'reg',tbd:true,city:'Long Beach, CA',who:'Eric',role:'Decorator and West Coast audience; Apollo domestic decoration story if we exhibit'},
- {n:'PPAMS',s:d(2,16),e:d(2,16),k:'reg',city:'Nashville, TN',who:'Southern outside rep',role:'Spring Golf and Summer Events flyers'},
- {n:'ASI Fort Worth',s:d(3,1),e:d(3,3),k:'nat',city:'Fort Worth, TX',who:'Chris or Mike',role:'Last call for Summer Events overseas orders; oil and gas, trades, ranch'},
- {n:'VAPPA',s:d(3,23),e:d(4,1),k:'reg',city:'Virginia',who:'East Coast rep',role:'Summer Events and Back to School'},
- {n:'Universal Connect',s:d(4,26),e:d(4,28),k:'reg',city:'Charleston, SC',who:'East / Southern rep',role:'Back to School sell-in'},
- {n:'NEPPA',s:d(5,3),e:d(5,4),k:'reg',city:'Quincy, MA',who:'East Coast rep',role:'Back to School and Game Day'},
- {n:'Promotions East',s:d(6,14),e:d(6,15),k:'nat',tbd:true,city:'New York, NY',who:'Chris or Mike',role:'Game Day last call; Company Gift preview'},
- {n:'ASI Chicago',s:d(7,27),e:d(7,29),k:'nat',city:'Chicago, IL',who:'Eric, Chris, Mike',role:'Company Gift launch; Back to School and Game Day domestic quick-turn'},
- {n:'SAAC Expo',s:d(8,10),e:d(8,13),k:'reg',tbd:true,city:'Long Beach, CA (2027 date TBC)',who:'Eric',role:'West Coast coverage; Company Gift overseas cutoff'},
- {n:'Fall regionals',s:d(9,20),e:d(9,28),k:'reg',city:'MA, MD, VA, NJ',who:'East Coast reps',role:'NEPPA Sep 20-21, CPPA Sep 23, VAPPA Sep 28, SAAGNY Sep 28: Year-End and Company Gift domestic'}
-];
-
-const tentpoles=[
- {n:'Super Bowl',s:d(2,14)},{n:'March Madness',s:d(3,16),lo:true},{n:'Masters',s:d(4,8)},{n:'Earth Day',s:d(4,22),lo:true},
- {n:'Graduation',s:d(5,15)},{n:'Memorial Day',s:d(5,31),lo:true},{n:'Father\'s Day',s:d(6,20)},{n:'July 4',s:d(7,4),lo:true},
- {n:'Back to school',s:d(8,16)},{n:'Labor Day',s:d(9,6),lo:true},{n:'Football kickoff',s:d(9,9)},
- {n:'Halloween',s:d(10,31),lo:true},{n:'Thanksgiving',s:d(11,25)},{n:'Cyber Monday',s:d(11,29),lo:true}
-];
-
 const g=document.getElementById('gantt');
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let html='<div class="grid">';
-html+='<div class="row head"><div class="lbl group">2027</div><div class="quarters">'+quarters.map(q=>`<div class="q"><b>${q.q}</b><span>${esc(q.name)}</span></div>`).join('')+'</div></div>';
-html+='<div class="row head"><div class="lbl"></div><div class="months">'+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(m=>`<div>${m}</div>`).join('')+'</div></div>';
-const vl='<div class="vlines">'+'<i></i>'.repeat(12)+'</div>';
-html+=`<div class="row tall shows" id="lane-shows"><div class="lbl group">Trade shows</div><div class="track">${vl}`;
-shows.forEach((s,i)=>{const left=pct(s.s);const top=[6,30,54][i%3];html+=`<button class="mk ${s.k}${s.tbd?' tbd':''}" style="left:${left}%;top:${top}px" data-show="${i}"><i class="dot"></i>${esc(s.n)}${s.tbd?' · TBD':''}</button>`;});
-html+='</div></div>';
-html+=`<div class="row tall" id="lane-tent"><div class="lbl group">Tentpoles</div><div class="track">${vl}`;
-tentpoles.forEach(t=>{html+=`<div class="tent${t.lo?' lo':''}" style="left:${pct(t.s)}%"><i></i>${esc(t.n)}</div>`;});
-html+='</div></div>';
-campaigns.forEach((c,i)=>{
-  html+=`<div class="row"><div class="lbl"><div>${esc(c.n)}<small>${esc(c.sub)}</small></div></div><div class="track">${vl}`;
-  c.phases.forEach(p=>{const l=pct(p.s),w=pct(p.e)-l;html+=`<button class="bar ${p.t}" style="left:${l}%;width:${w}%" data-c="${i}" title="${esc(p.l)}">${esc(p.l)}</button>`;});
-  if(c.cut)html+=`<div class="cut" style="left:${pct(c.cut)}%" title="Overseas cutoff ${fmt(c.cut)}"></div>`;
-  if(c.briefAt)html+=`<div class="brief" style="left:calc(${pct(c.briefAt)}% - 5px)" title="Creative brief ${fmt(c.briefAt)}"></div>`;
-  html+='</div></div>';
-});
-html+='</div>';
-g.innerHTML=html;
-
 const panel=document.getElementById('panel');
-function showCampaign(i){const c=campaigns[i];
-  const chips=[`<span class="chip">Brief ${esc(c.brief)}</span>`,`<span class="chip">Flyer and email ${esc(c.flyer)}</span>`,c.cut?`<span class="chip cutoff">Overseas cutoff ${fmt(c.cut)}</span>`:'',c.dom?`<span class="chip">Domestic until ${esc(c.dom)}</span>`:'',`<span class="chip">Hats in hand ${esc(c.need)}</span>`].join('');
+let state=null;
+
+function render(data){
+  const Y=Number(data.year)||2027;
+  const yearStart=new Date(Y,0,1), yearEnd=new Date(Y+1,0,1);
+  const pct=date=>Math.max(0,Math.min(100,((date-yearStart)/(yearEnd-yearStart))*100));
+  const quarters=data.quarters||[], campaigns=data.campaigns||[], shows=data.shows||[], tentpoles=data.tentpoles||[];
+  state={campaigns,shows};
+  document.getElementById('eyebrow').textContent='King Cap · '+Y;
+  document.getElementById('intro').textContent=data.intro||'';
+  document.getElementById('footnote').textContent=data.footnote||'';
+
+  let html='<div class="grid">';
+  html+=`<div class="row head"><div class="lbl group">${Y}</div><div class="quarters">`+quarters.map(q=>`<div class="q"><b>${esc(q.q)}</b><span>${esc(q.name)}</span></div>`).join('')+'</div></div>';
+  html+='<div class="row head"><div class="lbl"></div><div class="months">'+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(m=>`<div>${m}</div>`).join('')+'</div></div>';
+  const vl='<div class="vlines">'+'<i></i>'.repeat(12)+'</div>';
+  html+=`<div class="row tall shows" id="lane-shows"><div class="lbl group">Trade shows</div><div class="track">${vl}`;
+  shows.forEach((s,i)=>{const d=parse(s.s);if(!d)return;const top=[6,30,54][i%3];html+=`<button class="mk ${s.k==='nat'?'nat':'reg'}${s.tbd?' tbd':''}" style="left:${pct(d)}%;top:${top}px" data-show="${i}"><i class="dot"></i>${esc(s.n)}${s.tbd?' · TBD':''}</button>`;});
+  html+='</div></div>';
+  html+=`<div class="row tall" id="lane-tent"><div class="lbl group">Tentpoles</div><div class="track">${vl}`;
+  tentpoles.forEach(t=>{const d=parse(t.s);if(!d)return;html+=`<div class="tent${t.lo?' lo':''}" style="left:${pct(d)}%"><i></i>${esc(t.n)}</div>`;});
+  html+='</div></div>';
+  campaigns.forEach((c,i)=>{
+    html+=`<div class="row"><div class="lbl"><div>${esc(c.n)}<small>${esc(c.sub)}</small></div></div><div class="track">${vl}`;
+    (c.phases||[]).forEach(p=>{const s=parse(p.s),e=parse(p.e);if(!s||!e)return;const l=pct(s),w=Math.max(0.4,pct(e)-l);html+=`<button class="bar ${esc(p.t)}" style="left:${l}%;width:${w}%" data-c="${i}" title="${esc(p.l)}">${esc(p.l)}</button>`;});
+    const cut=parse(c.cut), brief=parse(c.briefAt);
+    if(cut)html+=`<div class="cut" style="left:${pct(cut)}%" title="Overseas cutoff ${fmt(cut)}"></div>`;
+    if(brief)html+=`<div class="brief" style="left:calc(${pct(brief)}% - 5px)" title="Creative brief ${fmt(brief)}"></div>`;
+    html+='</div></div>';
+  });
+  html+='</div>';
+  g.innerHTML=html;
+
+  document.getElementById('qcards').innerHTML=quarters.map(q=>`<div class="qc"><div><div class="eyebrow">${esc(q.q)}</div><h3>${esc(q.name)}</h3></div><p>${esc(q.goal)}</p><ul><li><b>Promotion:</b> ${esc(q.promo)}</li></ul><div class="tag">Shows: ${esc(q.shows)}</div></div>`).join('');
+  applyToggles();
+  if(campaigns.length)showCampaign(0);else panel.innerHTML='';
+}
+
+function showCampaign(i){const c=state.campaigns[i];if(!c)return;const cut=parse(c.cut);
+  const chips=[c.brief?`<span class="chip">Brief ${esc(c.brief)}</span>`:'',c.flyer?`<span class="chip">Flyer and email ${esc(c.flyer)}</span>`:'',cut?`<span class="chip cutoff">Overseas cutoff ${fmt(cut)}</span>`:'',c.dom?`<span class="chip">Domestic until ${esc(c.dom)}</span>`:'',c.need?`<span class="chip">Hats in hand ${esc(c.need)}</span>`:''].join('');
   panel.innerHTML=`<div class="eyebrow">Campaign</div><h3>${esc(c.n)}</h3><div class="dates">${chips}</div><dl class="kv"><dt>Hero product</dt><dd>${esc(c.hero)}</dd><dt>Offer</dt><dd>${esc(c.offer)}</dd><dt>Materials</dt><dd>${esc(c.mat)}</dd></dl>`;
   document.querySelectorAll('.bar').forEach(b=>b.classList.toggle('dim',+b.dataset.c!==i));}
-function showShow(i){const s=shows[i];
-  panel.innerHTML=`<div class="eyebrow">Trade show${s.tbd?' · plan TBD':''}</div><h3>${esc(s.n)}</h3><div class="dates"><span class="chip">${fmt(s.s)}${+s.e!==+s.s?' to '+fmt(s.e):''}</span><span class="chip">${esc(s.city)}</span></div><dl class="kv"><dt>Who</dt><dd>${esc(s.who)}</dd><dt>Campaign role</dt><dd>${esc(s.role)}</dd></dl>`;
+function showShow(i){const s=state.shows[i];if(!s)return;const a=parse(s.s),b=parse(s.e);
+  panel.innerHTML=`<div class="eyebrow">Trade show${s.tbd?' · plan TBD':''}</div><h3>${esc(s.n)}</h3><div class="dates"><span class="chip">${a?fmt(a):''}${b&&a&&+b!==+a?' to '+fmt(b):''}</span><span class="chip">${esc(s.city)}</span></div><dl class="kv"><dt>Who</dt><dd>${esc(s.who)}</dd><dt>Campaign role</dt><dd>${esc(s.role)}</dd></dl>`;
   document.querySelectorAll('.bar').forEach(b=>b.classList.remove('dim'));}
 g.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b){showCampaign(+b.dataset.c);return;}const m=e.target.closest('[data-show]');if(m)showShow(+m.dataset.show);});
-showCampaign(0);
 
-document.getElementById('qcards').innerHTML=quarters.map(q=>`<div class="qc"><div><div class="eyebrow">${q.q}</div><h3>${esc(q.name)}</h3></div><p>${esc(q.goal)}</p><ul><li><b>Promotion:</b> ${esc(q.promo)}</li></ul><div class="tag">Shows: ${esc(q.shows)}</div></div>`).join('');
+const toggles={'t-shows':true,'t-tent':true,'t-cutoffs':true};
+function applyToggles(){
+  const ls=document.getElementById('lane-shows'),lt=document.getElementById('lane-tent');
+  if(ls)ls.hidden=!toggles['t-shows']; if(lt)lt.hidden=!toggles['t-tent'];
+  document.querySelectorAll('.cut,.brief').forEach(el=>el.hidden=!toggles['t-cutoffs']);
+  Object.keys(toggles).forEach(id=>document.getElementById(id).setAttribute('aria-pressed',String(toggles[id])));
+}
+Object.keys(toggles).forEach(id=>document.getElementById(id).addEventListener('click',()=>{toggles[id]=!toggles[id];applyToggles();}));
 
-function wire(id,lane){const t=document.getElementById(id);t.addEventListener('click',()=>{const on=t.getAttribute('aria-pressed')!=='true';t.setAttribute('aria-pressed',on);if(typeof lane==='string')document.getElementById(lane).hidden=!on;else lane(on);});}
-wire('t-shows','lane-shows');wire('t-tent','lane-tent');
-wire('t-cutoffs',on=>document.querySelectorAll('.cut,.brief').forEach(el=>el.hidden=!on));
+window.addEventListener('message',e=>{if(e.data&&e.data.type==='calendar-data')render(e.data.data);});
+if(window.parent!==window)window.parent.postMessage({type:'calendar-ready'},'*');
 </script>
 </body>
 </html>
