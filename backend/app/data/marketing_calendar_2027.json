@@ -1,6 +1,6 @@
 {
  "year": 2027,
- "intro": "Four quarterly themes, eight campaigns, three launch shows. Each campaign is sold in 4 months ahead, overseas orders close 3 months ahead, domestic stays open to 3 weeks out. Click any bar or marker for the brief.",
+ "intro": "Four quarterly themes, eight campaigns, three launch shows. Each campaign is sold in 4 months ahead, overseas orders close 2.5 months ahead, and domestic orders stay open until the campaign is in market. Click any bar or marker for the brief.",
  "footnote": "Show dates confirmed with organizers as of Sep 29, 2026. SAAC has not published 2027 dates; Impressions Long Beach, Promotions East and SAAC are marked TBD against the $100K show cap. Trade shows and marketing are each capped at $100K; there is no paid digital, the former ad budget funds Hats in Hand sampling.",
  "quarters": [
   {
@@ -40,6 +40,12 @@
    "cut": "",
    "phases": [
     {
+     "t": "domestic",
+     "s": "2027-01-01",
+     "e": "2027-01-05",
+     "l": "Domestic"
+    },
+    {
      "t": "live",
      "s": "2027-01-05",
      "e": "2027-02-28",
@@ -49,10 +55,10 @@
    "hero": "Elite (water-repellent, black), The Range, unconstructed 5-panel, 2027 price ladder",
    "offer": "Hats in Hand free sample; show specials on new lines",
    "mat": "2027 line sheet and price list, booth graphics, launch email to all three segments, LinkedIn launch, Instagram carousels from the Company Gift and Harvest Hours banks",
-   "need": "Jan 5 (ASI Orlando)",
+   "need": "Jan 5 (ASI Orlando); overseas cutoff was Oct 20, 2026",
    "brief": "Done, Sep 2026",
    "flyer": "Dec 15, 2026",
-   "dom": ""
+   "dom": "Jan 5"
   },
   {
    "n": "Spring Golf and Outdoor",
@@ -69,8 +75,8 @@
     {
      "t": "domestic",
      "s": "2027-01-15",
-     "e": "2027-03-10",
-     "l": "Domestic until Mar 10"
+     "e": "2027-04-01",
+     "l": "Domestic until Apr 1"
     },
     {
      "t": "live",
@@ -85,25 +91,25 @@
    "need": "Apr 1",
    "brief": "Nov 1, 2026",
    "flyer": "Jan 5 (in booth)",
-   "dom": "Mar 10"
+   "dom": "Apr 1"
   },
   {
    "n": "Summer Events",
    "sub": "Classic line, Buddy cap",
    "briefAt": "2027-01-04",
-   "cut": "2027-03-01",
+   "cut": "2027-03-15",
    "phases": [
     {
      "t": "sellin",
      "s": "2027-02-01",
-     "e": "2027-03-01",
+     "e": "2027-03-15",
      "l": "Sell-in Feb 1"
     },
     {
      "t": "domestic",
-     "s": "2027-03-01",
-     "e": "2027-05-10",
-     "l": "Domestic until May 10"
+     "s": "2027-03-15",
+     "e": "2027-06-01",
+     "l": "Domestic until Jun 1"
     },
     {
      "t": "live",
@@ -118,19 +124,25 @@
    "need": "Jun 1",
    "brief": "Jan 4",
    "flyer": "Feb 1",
-   "dom": "May 10"
+   "dom": "Jun 1"
   },
   {
    "n": "July 4 Red, White and Blue",
-   "sub": "Domestic only",
-   "briefAt": "2027-02-01",
-   "cut": "",
+   "sub": "Red, white and navy",
+   "briefAt": "2027-01-20",
+   "cut": "2027-04-05",
    "phases": [
     {
      "t": "sellin",
-     "s": "2027-04-01",
-     "e": "2027-06-10",
-     "l": "Sell-in, domestic only, order by Jun 10"
+     "s": "2027-02-20",
+     "e": "2027-04-05",
+     "l": "Sell-in Feb 20"
+    },
+    {
+     "t": "domestic",
+     "s": "2027-04-05",
+     "e": "2027-06-20",
+     "l": "Domestic until Jun 20"
     },
     {
      "t": "live",
@@ -141,29 +153,29 @@
    ],
    "hero": "Stocked red, white and navy blanks; flag and patch decoration (woven, PVC, faux suede)",
    "offer": "Bundle of 3 colorways at one price",
-   "mat": "One flyer, one email, one Instagram carousel; no overseas build",
-   "need": "Jun 25",
-   "brief": "Feb 1",
-   "flyer": "Apr 1",
-   "dom": "Jun 10"
+   "mat": "One flyer, one email, one Instagram carousel; overseas for planned runs, stocked red / white / navy for late orders",
+   "need": "Jun 20",
+   "brief": "Jan 20",
+   "flyer": "Feb 20",
+   "dom": "Jun 20"
   },
   {
    "n": "Back to School",
    "sub": "School colors, 3D embroidery",
    "briefAt": "2027-03-01",
-   "cut": "2027-05-01",
+   "cut": "2027-05-15",
    "phases": [
     {
      "t": "sellin",
      "s": "2027-04-01",
-     "e": "2027-05-01",
+     "e": "2027-05-15",
      "l": "Sell-in Apr 1"
     },
     {
      "t": "domestic",
-     "s": "2027-05-01",
-     "e": "2027-07-10",
-     "l": "Domestic until Jul 10"
+     "s": "2027-05-15",
+     "e": "2027-08-01",
+     "l": "Domestic until Aug 1"
     },
     {
      "t": "live",
@@ -178,7 +190,7 @@
    "need": "Aug 1",
    "brief": "Mar 1",
    "flyer": "Apr 1",
-   "dom": "Jul 10"
+   "dom": "Aug 1"
   },
   {
    "n": "Game Day",
@@ -195,8 +207,8 @@
     {
      "t": "domestic",
      "s": "2027-06-15",
-     "e": "2027-08-10",
-     "l": "Domestic until Aug 10"
+     "e": "2027-09-01",
+     "l": "Domestic until Sep 1"
     },
     {
      "t": "live",
@@ -211,7 +223,7 @@
    "need": "Sep 1",
    "brief": "Apr 1",
    "flyer": "May 1",
-   "dom": "Aug 10"
+   "dom": "Sep 1"
   },
   {
    "n": "Company Gift",
@@ -228,8 +240,8 @@
     {
      "t": "domestic",
      "s": "2027-08-15",
-     "e": "2027-10-25",
-     "l": "Domestic until Oct 25"
+     "e": "2027-11-01",
+     "l": "Domestic until Nov 1"
     },
     {
      "t": "live",
@@ -244,55 +256,67 @@
    "need": "Nov 15",
    "brief": "Jun 1",
    "flyer": "Jul 15 (ASI Chicago)",
-   "dom": "Oct 25"
+   "dom": "Nov 1"
   },
   {
    "n": "Year-End Quick Turn",
-   "sub": "Domestic only, budget flush",
-   "briefAt": "2027-06-15",
-   "cut": "",
+   "sub": "Budget flush, Versa Tags, patches",
+   "briefAt": "2027-07-01",
+   "cut": "2027-09-15",
    "phases": [
     {
      "t": "sellin",
-     "s": "2027-10-01",
-     "e": "2027-12-08",
-     "l": "Sell-in Oct 1, domestic only, order by Dec 8"
+     "s": "2027-08-01",
+     "e": "2027-09-15",
+     "l": "Sell-in Aug 1"
+    },
+    {
+     "t": "domestic",
+     "s": "2027-09-15",
+     "e": "2027-12-01",
+     "l": "Domestic until Dec 1"
     },
     {
      "t": "live",
-     "s": "2027-12-08",
-     "e": "2027-12-23",
-     "l": "Ships"
+     "s": "2027-12-01",
+     "e": "2027-12-20",
+     "l": "Year-end orders ship"
     }
    ],
    "hero": "Stocked blanks in core colors, Versa Tags domestic decoration, woven and PVC patches",
-   "offer": "15-day domestic turn; budget-flush bundles at 48 / 72 / 100",
+   "offer": "Overseas pricing for programs placed by Sep 15; 15-day domestic turn and budget-flush bundles at 48 / 72 / 100 until Dec 1",
    "mat": "Quick Turn flyer, weekly Klaviyo countdown of weeks left to order, rep call list of accounts with unspent budget",
-   "need": "Dec 15",
-   "brief": "Jun 15",
-   "flyer": "Oct 1",
-   "dom": "Dec 8"
+   "need": "Dec 1",
+   "brief": "Jul 1",
+   "flyer": "Aug 1",
+   "dom": "Dec 1"
   },
   {
    "n": "New Year Lineup 2028",
    "sub": "2028 sell-in",
    "briefAt": "2027-07-15",
-   "cut": "",
+   "cut": "2027-10-20",
    "phases": [
     {
      "t": "sellin",
-     "s": "2027-10-01",
+     "s": "2027-09-01",
+     "e": "2027-10-20",
+     "l": "2028 sell-in to top-100"
+    },
+    {
+     "t": "domestic",
+     "s": "2027-10-20",
      "e": "2027-12-31",
-     "l": "2028 creative, samples, preview to top-100 Dec 1"
+     "l": "Domestic into January"
     }
    ],
    "hero": "2028 additions, Elite colors beyond black, next-year pricing",
    "offer": "PPAI 2028 appointment booking; Hats in Hand round two",
-   "mat": "2028 line sheet, year-in-review thank-you note, PPAI 2028 invite, refreshed booth, new 2028 shoot",
-   "need": "Jan 2028 (PPAI)",
+   "mat": "2028 line sheet and price list by Sep 1, year-in-review thank-you note, PPAI 2028 invite, refreshed booth, new 2028 shoot",
+   "need": "Jan 4, 2028 (PPAI 2028)",
    "brief": "Jul 15",
-   "flyer": "Dec 15",
-   "dom": ""
+   "flyer": "Sep 1",
+   "dom": "Jan 4, 2028"
   }
  ],
  "shows": [
