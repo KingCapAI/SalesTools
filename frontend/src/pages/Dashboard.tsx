@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { useAuth } from '../context/AuthContext';
-import { Palette, Calculator, Megaphone, FileText, Layers, CalendarDays, Pipette, Library } from 'lucide-react';
+import { Palette, Calculator, Megaphone, FileText, Layers, CalendarDays, Pipette, Library, CalendarRange } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 
@@ -88,6 +88,13 @@ const groups: AppGroup[] = [
     iconColor: 'text-amber-400',
     apps: [
       {
+        id: 'marketing-calendar',
+        title: '2027 Marketing Calendar',
+        description: 'The full-year plan: quarterly themes, campaigns, trade shows, tentpoles, and the overseas and domestic order cutoffs behind each one.',
+        icon: CalendarRange,
+        to: '/marketing-calendar',
+      },
+      {
         id: 'marketing-tools',
         title: 'Marketing Tools',
         description: 'Access marketing materials, templates, and resources to support your sales efforts.',
@@ -107,7 +114,7 @@ const groups: AppGroup[] = [
   },
 ];
 
-const alwaysAvailable = ['production-planner', 'quote-estimator', 'pms-matcher', 'design-library'];
+const alwaysAvailable = ['production-planner', 'quote-estimator', 'pms-matcher', 'design-library', 'marketing-calendar'];
 
 export function Dashboard() {
   const { user } = useAuth();

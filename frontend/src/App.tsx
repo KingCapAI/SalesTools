@@ -16,6 +16,7 @@ import { QuoteEstimator } from './pages/QuoteEstimator';
 import { ProductionPlanner } from './pages/ProductionPlanner';
 import { MarketingTools } from './pages/MarketingTools';
 import { Policies } from './pages/Policies';
+import { MarketingCalendar } from './pages/MarketingCalendar';
 import { CustomDesignDashboard } from './pages/CustomDesignDashboard';
 import { CustomDesignBuilder } from './pages/CustomDesignBuilder';
 import { CustomDesignDetail } from './pages/CustomDesignDetail';
@@ -154,6 +155,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Policies />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/marketing-calendar"
+              element={
+                <ProtectedRoute>
+                  <MarketingCalendar />
                 </ProtectedRoute>
               }
             />
