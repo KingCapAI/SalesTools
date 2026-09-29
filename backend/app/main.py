@@ -16,6 +16,7 @@ from .routers import admin_analytics, admin_cms, admin_customers, admin_pricing,
 from .routers import cms_public, shipping_agent
 from .routers import purchasing, contact, sync, webhooks, store_returns, store_quotes
 from .routers import social_media, library
+from .routers import site_content
 from .services.store_seed_service import seed_store_data
 
 settings = get_settings()
@@ -257,6 +258,7 @@ app.include_router(purchasing.router, prefix="/api")
 
 # Include routers - Contact Form
 app.include_router(contact.router, prefix="/api")
+app.include_router(site_content.router, prefix="/api")
 
 # Include routers - CMS Public
 app.include_router(cms_public.router, prefix="/api")

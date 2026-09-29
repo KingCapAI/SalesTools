@@ -21,10 +21,12 @@ from .design_request import DesignRequest, DesignRequestVersion, DesignRequestCo
 from .sync import SyncLog, SyncCursor
 from .shipping import ShippingRate, ShipmentAnalysis, ShipmentBatch
 from .return_request import ReturnRequest, ReturnLineItem
+from .site_content import SiteContent
 
 __all__ = [
     # Existing models
     "Team",
+    "SiteContent",
     "User",
     "Customer",
     "Brand",
