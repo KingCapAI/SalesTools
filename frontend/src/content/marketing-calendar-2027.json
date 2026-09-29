@@ -1,6 +1,6 @@
 {
  "year": 2027,
- "intro": "Four quarterly themes, eight campaigns, three launch shows. Each campaign is sold in 4 months ahead, overseas orders close 3 months ahead, domestic stays open to 3 weeks out. Click any bar or marker for the brief.",
+ "intro": "Four quarterly themes, eight campaigns, three launch shows. Each campaign is sold in 4 months ahead, overseas orders close 2.5 months ahead, and domestic orders stay open until the campaign is in market. Click any bar or marker for the brief.",
  "footnote": "Show dates confirmed with organizers as of Sep 29, 2026. SAAC has not published 2027 dates; Impressions Long Beach, Promotions East and SAAC are marked TBD against the $100K show cap. Trade shows and marketing are each capped at $100K; there is no paid digital, the former ad budget funds Hats in Hand sampling.",
  "quarters": [
   {
@@ -69,8 +69,8 @@
     {
      "t": "domestic",
      "s": "2027-01-15",
-     "e": "2027-03-10",
-     "l": "Domestic until Mar 10"
+     "e": "2027-04-01",
+     "l": "Domestic until Apr 1"
     },
     {
      "t": "live",
@@ -85,25 +85,25 @@
    "need": "Apr 1",
    "brief": "Nov 1, 2026",
    "flyer": "Jan 5 (in booth)",
-   "dom": "Mar 10"
+   "dom": "Apr 1"
   },
   {
    "n": "Summer Events",
    "sub": "Classic line, Buddy cap",
    "briefAt": "2027-01-04",
-   "cut": "2027-03-01",
+   "cut": "2027-03-15",
    "phases": [
     {
      "t": "sellin",
      "s": "2027-02-01",
-     "e": "2027-03-01",
+     "e": "2027-03-15",
      "l": "Sell-in Feb 1"
     },
     {
      "t": "domestic",
-     "s": "2027-03-01",
-     "e": "2027-05-10",
-     "l": "Domestic until May 10"
+     "s": "2027-03-15",
+     "e": "2027-06-01",
+     "l": "Domestic until Jun 1"
     },
     {
      "t": "live",
@@ -118,7 +118,7 @@
    "need": "Jun 1",
    "brief": "Jan 4",
    "flyer": "Feb 1",
-   "dom": "May 10"
+   "dom": "Jun 1"
   },
   {
    "n": "July 4 Red, White and Blue",
@@ -129,8 +129,8 @@
     {
      "t": "sellin",
      "s": "2027-04-01",
-     "e": "2027-06-10",
-     "l": "Sell-in, domestic only, order by Jun 10"
+     "e": "2027-06-20",
+     "l": "Sell-in, domestic only, order by Jun 20"
     },
     {
      "t": "live",
@@ -145,25 +145,25 @@
    "need": "Jun 25",
    "brief": "Feb 1",
    "flyer": "Apr 1",
-   "dom": "Jun 10"
+   "dom": "Jun 20"
   },
   {
    "n": "Back to School",
    "sub": "School colors, 3D embroidery",
    "briefAt": "2027-03-01",
-   "cut": "2027-05-01",
+   "cut": "2027-05-15",
    "phases": [
     {
      "t": "sellin",
      "s": "2027-04-01",
-     "e": "2027-05-01",
+     "e": "2027-05-15",
      "l": "Sell-in Apr 1"
     },
     {
      "t": "domestic",
-     "s": "2027-05-01",
-     "e": "2027-07-10",
-     "l": "Domestic until Jul 10"
+     "s": "2027-05-15",
+     "e": "2027-08-01",
+     "l": "Domestic until Aug 1"
     },
     {
      "t": "live",
@@ -178,7 +178,7 @@
    "need": "Aug 1",
    "brief": "Mar 1",
    "flyer": "Apr 1",
-   "dom": "Jul 10"
+   "dom": "Aug 1"
   },
   {
    "n": "Game Day",
@@ -195,8 +195,8 @@
     {
      "t": "domestic",
      "s": "2027-06-15",
-     "e": "2027-08-10",
-     "l": "Domestic until Aug 10"
+     "e": "2027-09-01",
+     "l": "Domestic until Sep 1"
     },
     {
      "t": "live",
@@ -211,7 +211,7 @@
    "need": "Sep 1",
    "brief": "Apr 1",
    "flyer": "May 1",
-   "dom": "Aug 10"
+   "dom": "Sep 1"
   },
   {
    "n": "Company Gift",
@@ -228,8 +228,8 @@
     {
      "t": "domestic",
      "s": "2027-08-15",
-     "e": "2027-10-25",
-     "l": "Domestic until Oct 25"
+     "e": "2027-11-01",
+     "l": "Domestic until Nov 1"
     },
     {
      "t": "live",
@@ -244,7 +244,7 @@
    "need": "Nov 15",
    "brief": "Jun 1",
    "flyer": "Jul 15 (ASI Chicago)",
-   "dom": "Oct 25"
+   "dom": "Nov 1"
   },
   {
    "n": "Year-End Quick Turn",
